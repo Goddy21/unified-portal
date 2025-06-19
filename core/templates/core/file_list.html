@@ -1,0 +1,29 @@
+<h2>File Management</h2>
+
+<!-- Category Buttons -->
+<div>
+  <a href="{% url 'file_list' %}">All</a>
+  {% for category in categories %}
+    <a href="{% url 'file_list_by_category' category.name %}">
+      {{ category.name }}
+    </a>
+  {% endfor %}
+</div>
+
+<hr>
+
+<!-- Filtered Files -->
+<h3>{% if active_category %}{{ active_category }}{% else %}All Files{% endif %}</h3>
+
+<ul>
+  {% for file in files %}
+    <li>
+      <strong>{{ file.title }}</strong><br>
+      {{ file.description }}<br>
+      Uploaded by: {{ file.uploaded_by }}<br>
+      <a href="{{ file.file.url }}" download>Download</a>
+    </li>
+  {% empty %}
+    <li>No files found in this category.</li>
+  {% endfor %}
+</ul>
