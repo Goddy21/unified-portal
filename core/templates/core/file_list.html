@@ -1,29 +1,58 @@
-<h2>File Management</h2>
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>File Management</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="{% static 'css/file_list.css' %}">
+</head>
+<body>
+  <div class="container">
+    <h2>📂 File Management</h2>
 
-<!-- Category Buttons -->
-<div>
-  <a href="{% url 'file_list' %}">All</a>
-  {% for category in categories %}
-    <a href="{% url 'file_list_by_category' category.name %}">
-      {{ category.name }}
-    </a>
-  {% endfor %}
-</div>
+    <!-- Category Buttons -->
+    <div class="category-nav">
+      <a href="{% url 'upload_file' %}" class="upload-button">➕ Upload New File</a>
+      <a href="{% url 'file_list' %}">All</a>
+      {% for category in categories %}
+        <a href="{% url 'file_list_by_category' category.name %}">{{ category.name }}</a>
+      {% endfor %}
+    </div>
 
-<hr>
+    <h3>{% if active_category %}{{ active_category }}{% else %}All Files{% endif %}</h3>
 
-<!-- Filtered Files -->
-<h3>{% if active_category %}{{ active_category }}{% else %}All Files{% endif %}</h3>
+    <ul class="file-list">
+      {% for file in files %}
+        <li class="file-item">
+          <div class="file-preview">
+            {% if ".pdf" in file.file.name|lower %}
+              <img src="{% static 'icons/pdf.png' %}" alt="PDF" />
+            {% elif ".docx" in file.file.name|lower %}
+              <img src="{% static 'icons/docx.png' %}" alt="DOCX" />
+            {% elif ".jpg" in file.file.name|lower or ".png" in file.file.name|lower %}
+              <img src="{{ file.file.url }}" alt="Preview" class="image-thumb" />
+            {% else %}
+              <img src="{% static 'icons/file-icon.png' %}" alt="File" />
+            {% endif %}
+          </div>
 
-<ul>
-  {% for file in files %}
-    <li>
-      <strong>{{ file.title }}</strong><br>
-      {{ file.description }}<br>
-      Uploaded by: {{ file.uploaded_by }}<br>
-      <a href="{{ file.file.url }}" download>Download</a>
-    </li>
-  {% empty %}
-    <li>No files found in this category.</li>
-  {% endfor %}
-</ul>
+          <div class="file-info">
+            <strong>{{ file.title }}</strong>
+            <p>{{ file.description }}</p>
+            <p><strong>Size:</strong> {{ file.file.size|filesizeformat }}</p>
+            <p><strong>Access:</strong> 
+              {% if file.access_level == "public" %}<span class="tag public">Public</span>
+              {% else %}<span class="tag private">Private</span>{% endif %}
+            </p>
+            <p><strong>Uploaded by:</strong> {{ file.uploaded_by }}</p>
+            <a href="{{ file.file.url }}" download class="download-link">⬇ Download</a>
+          </div>
+        </li>
+      {% empty %}
+        <li class="file-item">No files found in this category.</li>
+      {% endfor %}
+    </ul>
+  </div>
+</body>
+</html>

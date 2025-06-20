@@ -1,0 +1,45 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Registered Users</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" type="text/css" href="{% static 'css/user_list.css' %}">
+</head>
+<body>
+
+<h2>Registered Users</h2>
+
+<div class="table-container">
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Email</th>
+        <th>Role</th>
+        <th>Status</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for user in users %}
+      <tr>
+        <td data-label="Name">{{ user.username }}</td>
+        <td data-label="Email">{{ user.email }}</td>
+        <td data-label="Role">{% if user.is_superuser %}Admin{% else %}Operator{% endif %}</td>
+        <td data-label="Status">{{ user.is_active|yesno:"Active,Inactive" }}</td>
+        <td data-label="Actions" class="actions">
+          <a href="#">View</a>
+          <a href="#">Edit</a>
+          <a href="#">Delete</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+</body>
+</html>

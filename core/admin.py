@@ -3,7 +3,10 @@ from .models import FileCategory, File, FileAccessLog, Ticket, TicketComment
 
 @admin.register(FileCategory)
 class FileCategoryAdmin(admin.ModelAdmin):
-    list_display = ('id', 'name')
+    list_display = ('id', 'name', 'file_count')
+    def file_count(self, obj):
+        return obj.file_set.filter(is_deleted=False).count()
+    file_count.short_description = 'Number of Files'
 
 @admin.register(File)
 class FileAdmin(admin.ModelAdmin):
