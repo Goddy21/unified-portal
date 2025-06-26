@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Problem Categories{% endblock %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'css/problem_category.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="tickets-container">
+  <div class="section-header">
+    <h2>🗂 Problem Categories</h2>
+    <p>List or manage problem categories here.</p>
+  </div>
+
+  <div class="ticket-actions">
+    <button class="btn btn-primary">Add New Category</button>
+    <input type="text" class="ticket-search" placeholder="Search categories..." />
+  </div>
+
+  <div class="ticket-table-wrapper">
+    <table class="ticket-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Category Name</th>
+          <th>Description</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Example row -->
+        <tr>
+          <td>1</td>
+          <td>Network Issue</td>
+          <td>Problems related to internet connectivity</td>
+          <td><a href="#" class="view-link">Edit</a></td>
+        </tr>
+        <!-- Loop through categories here -->
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

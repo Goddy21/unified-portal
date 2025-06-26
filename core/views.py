@@ -7,6 +7,9 @@ from core.models import FileCategory
 import os
 from collections import Counter
 from django.contrib.auth.models import User
+from django.utils.decorators import method_decorator
+from .forms import UserUpdateForm, ProfileUpdateForm
+from django.views import View
 
 
 def login(request):
@@ -28,14 +31,16 @@ def file_management_dashboard(request):
         ext_counter[ext] += 1
 
     file_types = [
-        {"type": "PDF Documents", "ext": ".pdf", "icon": "fas fa-file-pdf", "count": ext_counter[".pdf"]},
-        {"type": "Word Documents", "ext": ".docx", "icon": "fas fa-file-word", "count": ext_counter[".docx"]},
-        {"type": "Images", "ext": ".jpg", "icon": "fas fa-file-image", "count": ext_counter[".jpg"] + ext_counter[".png"]},
-        {"type": "Excel Sheets", "ext": ".xlsx", "icon": "fas fa-file-excel", "count": ext_counter[".xlsx"]},
+        {"type": "PDF Documents", "ext": ".pdf", "icon": "fas fa-file-pdf", "count": ext_counter.get(".pdf", 0)},
+        {"type": "Word Documents", "ext": ".docx", "icon": "fas fa-file-word", "count": ext_counter.get(".docx", 0)},
+        {"type": "Images", "ext": ".jpg", "icon": "fas fa-file-image", "count": ext_counter.get(".jpg", 0) + ext_counter.get(".png", 0)},
+        {"type": "Excel Sheets", "ext": ".xlsx", "icon": "fas fa-file-excel", "count": ext_counter.get(".xlsx", 0)},
         {"type": "Others", "ext": "other", "icon": "fas fa-file", "count": sum(ext_counter.values()) - (
-            ext_counter[".pdf"] + ext_counter[".docx"] + ext_counter[".jpg"] + ext_counter[".png"] + ext_counter[".xlsx"]
+            ext_counter.get(".pdf", 0) + ext_counter.get(".docx", 0) + ext_counter.get(".jpg", 0) +
+            ext_counter.get(".png", 0) + ext_counter.get(".xlsx", 0)
         )},
     ]
+
 
     categories = FileCategory.objects.annotate(
         file_count=Count('file', filter=Q(file__is_deleted=False))
@@ -85,5 +90,74 @@ def upload_file_view(request):
     
     return render(request, 'core/upload_file.html', {'form': form})
 
-def ticketing_dashboard(requrest):
-    return render(requrest, 'core/ticketing_dashboard.html')
+@login_required
+def profile_view(request):
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        return render(request, 'accounts/profile_content.html', {'user': request.user})
+    return render(request, 'accounts/profile.html', {'user': request.user})
+
+
+
+@method_decorator(login_required, name='dispatch')
+class SettingsView(View):
+    def get(self, request):
+        user_form = UserUpdateForm(instance=request.user)
+        profile_form = ProfileUpdateForm(instance=request.user.profile)
+        return render(request, 'accounts/settings.html', {
+            'user_form': user_form,
+            'profile_form': profile_form
+        })
+
+    def post(self, request):
+        user_form = UserUpdateForm(request.POST, instance=request.user)
+        profile_form = ProfileUpdateForm(request.POST, request.FILES, instance=request.user.profile)
+        if user_form.is_valid() and profile_form.is_valid():
+            user_form.save()
+            profile_form.save()
+            return redirect('profile_view')
+        return render(request, 'accounts/settings.html', {
+            'user_form': user_form,
+            'profile_form': profile_form
+        })
+
+# Tickets
+def admin_dashboard(request):
+    return render(request, 'core/admin_dashboard.html')
+
+def ticketing_dashboard(request):
+    return render(request, 'core/ticketing_dashboard.html')
+
+def tickets(request):
+    return render(request, 'core/tickets.html')
+
+def ticket_statuses(request):
+    return render(request, 'core/ticket_statuses.html')
+
+def problem_category(request):
+    return render(request, 'core/problem_category.html')
+
+# Master Data Views
+def customers(request):
+    return render(request, 'core/customers.html')
+
+def regions(request):
+    return render(request, 'core/regions.html')
+
+def terminals(request):
+    return render(request, 'core/terminals.html')
+
+def units(request):
+    return render(request, 'core/units.html')
+
+def system_users(request):  
+    return render(request, 'core/users.html')
+
+def zones(request):
+    return render(request, 'core/zones.html')
+
+# Reports Views
+def reports(request):
+    return render(request, 'core/reports.html')
+
+def version_controls(request):
+    return render(request, 'core/version_control.html')

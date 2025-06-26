@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+  <div class="dashboard-grid">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Ticket Summary</div>
+        <div class="card-menu"><i class="fas fa-ellipsis-h"></i></div>
+      </div>
+      <div class="chart-placeholder pie-chart"></div>
+      <div class="legend">
+        <div class="legend-item"><div class="legend-color-box" style="background-color:#007bff;"></div> Open</div>
+        <div class="legend-item"><div class="legend-color-box" style="background-color:#f7bb10;"></div> In Progress</div>
+      </div>
+    </div>
+    <!-- more cards -->
+  </div>
+{% endblock %}

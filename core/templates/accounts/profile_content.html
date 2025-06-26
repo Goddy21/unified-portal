@@ -1,0 +1,12 @@
+<div class="profile-container">
+    <h1>{{ user.get_full_name|default:user.username }}'s Profile</h1>
+    <div class="profile-details">
+        <p><strong>Username:</strong> {{ user.username }}</p>
+        <p><strong>Email:</strong> {{ user.email }}</p>
+        <p><strong>Date joined:</strong> {{ user.date_joined|date:"M d, Y" }}</p>
+    </div>
+    <div class="profile-links">
+        <a href="{% url 'settings' %}">⚙️ Settings</a>
+        <a href="{% url 'logout' %}">🚪 Logout</a>
+    </div>
+</div>

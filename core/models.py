@@ -26,6 +26,16 @@ class FileAccessLog(models.Model):
     accessed_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     access_time = models.DateTimeField(auto_now_add=True)
 
+def user_directory_path(instance, filename):
+    return f'user_{instance.user.id}/{filename}'
+
+class Profile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    avatar = models.ImageField(upload_to=user_directory_path, blank=True, null=True)
+
+    def __str__(self):
+        return self.user.username
+
 # Ticketing System Models
 class Ticket(models.Model):
     STATUS_CHOICES = [

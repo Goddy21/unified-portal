@@ -1,0 +1,40 @@
+{% load static %}
+<link rel="stylesheet" type="text/css" href="{% static 'css/sidebar.css' %}">
+<div class="sidebar" id="sidebar">
+    <img src="{% static 'icons/logo.png' %}" width="200px" height="150px">
+    <div class="sidebar-header">BRITS Helpdesk</div>
+    <ul>
+        <li><a href="{% url 'ticketing_dashboard' %}" class="{% if request.path == '/ticketing/' %}active{% endif %}">
+            <i class="fas fa-tachometer-alt icon"></i> Dashboard</a></li>
+
+        <li><a href="{% url 'tickets' %}" class="{% if request.path == '/tickets/' %}active{% endif %}">
+            <i class="fas fa-ticket-alt icon"></i> Tickets</a></li>
+
+        <li><a href="{% url 'ticket_statuses' %}" class="{% if request.path == '/ticket-statuses/' %}active{% endif %}">
+            <i class="fas fa-info-circle icon"></i> Ticket Statuses</a></li>
+
+        <li><a href="{% url 'problem_category' %}" class="{% if request.path == '/problem-category/' %}active{% endif %}">
+            <i class="fas fa-exclamation-triangle icon"></i> Problem Category</a></li>
+
+        <li class="has-submenu {% if request.path|slice:":14" == '/master-data/' %}expanded{% endif %}">
+            <a href="#"><i class="fas fa-database icon"></i> MASTER DATA <i class="fas fa-chevron-right toggle-icon"></i></a>
+            <ul class="sub-menu">
+                <li><a href="{% url 'customers' %}"> <i class="fas fa-users"></i> Customers</a></li>
+                <li><a href="{% url 'regions' %}"> <i class="fas fa-globe-americas"></i> Regions</a></li>
+                <li><a href="{% url 'terminals' %}"> <i class="fas fa-building"></i> Terminals</a></li>
+                <li><a href="{% url 'units' %}"> <i class="fas fa-cube"></i> Units</a></li>
+                <li><a href="{% url 'system_users' %}"> <i class="fas fa-user-friends"></i> Users</a></li>
+                <li><a href="{% url 'zones' %}"> <i class="fas fa-map-marker-alt"></i> Zones</a></li>
+            </ul>
+        </li>
+
+        <li class="has-submenu {% if request.path|slice:":9" == '/reports/' %}expanded{% endif %}">
+            <a href="#"><i class="fas fa-chart-pie icon"></i> REPORTS <i class="fas fa-chevron-right toggle-icon"></i></a>
+            <ul class="sub-menu">
+                <li><a href="{% url 'reports' %}"><i class="fas fa-file-alt"></i> Reports</a></li>
+                <li><a href="{% url 'version_controls' %}"><i class="fas fa-code-branch"></i> Version Controls</a></li>
+            </ul>
+        </li>
+    </ul>
+</div>
+<script src="{% static 'js/sidebar.js' %}"></script>
