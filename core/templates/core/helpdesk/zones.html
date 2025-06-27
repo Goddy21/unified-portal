@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Zones{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'css/zones.css' %}">
+
+<div class="page-container">
+  <h2><i class="fas fa-map-marker-alt"></i> Zones</h2>
+  <p>Manage zone classifications here.</p>
+
+  <form method="post" action="{% url 'zones' %}" class="zone-form">
+    {% csrf_token %}
+    <input type="text" name="name" placeholder="Zone Name" required>
+    <input type="text" name="region" placeholder="Associated Region" required>
+    <button type="submit" class="btn">Add Zone</button>
+  </form>
+
+  <div class="table-responsive">
+    <table class="zone-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Zone Name</th>
+          <th>Region</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for zone in zones %}
+        <tr>
+          <td>{{ forloop.counter }}</td>
+          <td>{{ zone.name }}</td>
+          <td>{{ zone.region }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="3">No zones available.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

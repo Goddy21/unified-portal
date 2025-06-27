@@ -1,0 +1,82 @@
+.page-container {
+  padding: 2rem;
+  background: #fff;
+  border-radius: 8px;
+  max-width: 900px;
+  margin: 2rem auto;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.page-container h2 {
+  color: #007bff;
+  margin-bottom: 1rem;
+}
+
+.terminal-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.terminal-form input[type="text"] {
+  flex: 1 1 40%;
+  padding: 10px 12px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+
+.terminal-form .btn {
+  padding: 10px 16px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.terminal-form .btn:hover {
+  background-color: #0056b3;
+}
+
+.table-responsive {
+  overflow-x: auto;
+}
+
+.terminal-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.terminal-table th,
+.terminal-table td {
+  padding: 12px;
+  border-bottom: 1px solid #dee2e6;
+  font-size: 0.95rem;
+}
+
+.terminal-table th {
+  background-color: #f8f9fa;
+  color: #343a40;
+  text-align: left;
+}
+
+.terminal-table tbody tr:hover {
+  background-color: #f1f1f1;
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .page-container {
+    padding: 1rem;
+  }
+
+  .terminal-form {
+    flex-direction: column;
+  }
+
+  .terminal-form input,
+  .terminal-form .btn {
+    width: 100%;
+  }
+}

@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Terminals{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'css/terminals.css' %}">
+
+<div class="page-container">
+  <h2><i class="fas fa-building"></i> Terminals</h2>
+  <p>Manage terminal information here.</p>
+
+  <form method="post" action="{% url 'terminals' %}" class="terminal-form">
+    {% csrf_token %}
+    <input type="text" name="name" placeholder="Terminal Name" required>
+    <input type="text" name="location" placeholder="Location" required>
+    <button type="submit" class="btn">Add Terminal</button>
+  </form>
+
+  <div class="table-responsive">
+    <table class="terminal-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Name</th>
+          <th>Location</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for terminal in terminals %}
+        <tr>
+          <td>{{ forloop.counter }}</td>
+          <td>{{ terminal.name }}</td>
+          <td>{{ terminal.location }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="3">No terminals added yet.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

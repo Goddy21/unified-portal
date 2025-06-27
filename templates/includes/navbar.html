@@ -1,16 +1,22 @@
+{% load static %}
+<link rel="stylesheet" type="text/css" href="{% static 'css/navbar.css' %}">
+
 <div class="top-navbar">
   <div class="hamburger" id="hamburger">
     <i class="fas fa-bars"></i>
   </div>
   <div class="logo">BRITS Helpdesk</div>
+
   <div class="nav-items">
     <div class="search-bar">
       <i class="fas fa-search"></i>
-      <input type="text" placeholder="Search...">
+      <input type="text" id="navbarSearchInput" placeholder="Search dashboard...">
     </div>
+
     <div class="language-selector">
       <span><i class="fas fa-globe"></i> EN</span>
     </div>
+
     <div class="user-profile" id="userProfile">
       <div class="profile-trigger">
         <i class="fas fa-user-circle"></i> Admin <i class="fas fa-chevron-down"></i>

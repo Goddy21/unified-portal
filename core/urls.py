@@ -33,6 +33,7 @@ urlpatterns = [
     # Master Data
     path('master-data/customers/', views.customers, name='customers'),
     path('master-data/regions/', views.regions, name='regions'),
+    path('regions/add/', views.regions, name='add_region'), 
     path('master-data/terminals/', views.terminals, name='terminals'),
     path('master-data/units/', views.units, name='units'),
     path('master-data/users/', views.system_users, name='system_users'), 

@@ -71,3 +71,47 @@ class TicketComment(models.Model):
 
     def __str__(self):
         return f"Comment by {self.commented_by} on {self.ticket}"
+
+class Customer(models.Model):
+    name = models.CharField(max_length=100)
+    email = models.EmailField(blank=True)
+    phone = models.CharField(max_length=20, blank=True)
+    region = models.CharField(max_length=100, blank=True)
+
+    def __str__(self):
+        return self.name
+    
+class Region(models.Model):
+    name = models.CharField(max_length=100)
+
+    def __str__(self):
+        return self.name
+    
+class Terminal(models.Model):
+    name = models.CharField(max_length=100)
+    location = models.CharField(max_length=150)
+
+    def __str__(self):
+        return self.name
+    
+class Unit(models.Model):
+    name = models.CharField(max_length=100)
+    description = models.TextField()
+
+    def __str__(self):
+        return self.name
+
+class SystemUser(models.Model):
+    username = models.CharField(max_length=100)
+    email = models.EmailField()
+    role = models.CharField(max_length=50)
+
+    def __str__(self):
+        return self.username
+    
+class Zone(models.Model):
+    name = models.CharField(max_length=100)
+    region = models.CharField(max_length=100)
+
+    def __str__(self):
+        return self.name

@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Tickets{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/tickets.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="tickets-container">
+  <div class="section-header">
+    <h2>🎫 Tickets</h2>
+    <p>This is the ticket management interface. You can view, filter, and manage support tickets here.</p>
+  </div>
+
+  <div class="ticket-actions">
+    <button class="btn btn-primary">Create New Ticket</button>
+    <input type="text" class="ticket-search" placeholder="Search tickets..." />
+  </div>
+
+  <div class="ticket-table-wrapper">
+    <table class="ticket-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Subject</th>
+          <th>Status</th>
+          <th>Priority</th>
+          <th>Created</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>#123</td>
+          <td>Unable to access file</td>
+          <td><span class="badge badge-open">Open</span></td>
+          <td><span class="badge badge-high">High</span></td>
+          <td>2025-06-25</td>
+          <td><a href="#" class="view-link">View</a></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Customers{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'css/customers.css' %}">
+<div class="page-container">
+  <h2><i class="fas fa-users"></i> Customers</h2>
+  <p>Manage customer records here.</p>
+
+  <!-- Upload Form -->
+  <form method="POST" enctype="multipart/form-data" class="upload-form">
+    {% csrf_token %}
+    <label for="file">Upload Customer CSV:</label>
+    <input type="file" name="file" accept=".csv" required>
+    <button type="submit" class="btn btn-primary">Upload</button>
+  </form>
+
+  <!-- Table of customers -->
+  <div class="table-responsive">
+    <table class="ticket-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Customer Name</th>
+          <th>Email</th>
+          <th>Phone</th>
+          <th>Region</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for customer in customers %}
+        <tr>
+          <td>{{ forloop.counter }}</td>
+          <td>{{ customer.name }}</td>
+          <td>{{ customer.email }}</td>
+          <td>{{ customer.phone }}</td>
+          <td>{{ customer.region }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5">No customers found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

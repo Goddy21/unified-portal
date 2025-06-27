@@ -1,0 +1,134 @@
+body {
+  font-family: "Segoe UI", sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: #f8f9fa;
+}
+
+.container {
+  max-width: 960px;
+  margin: auto;
+  padding: 1rem;
+}
+
+h2 {
+  text-align: center;
+  color: #343a40;
+}
+
+.category-nav {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+  margin: 1rem 0;
+}
+
+.category-nav a {
+  padding: 0.5rem 1rem;
+  background-color: #007bff;
+  color: white;
+  text-decoration: none;
+  border-radius: 5px;
+  font-size: 0.9rem;
+  transition: background-color 0.2s;
+}
+
+.category-nav a:hover {
+  background-color: #0056b3;
+}
+
+.upload-button {
+  background-color: #007bff;
+}
+.upload-button:hover{
+  background-color: #0056b3 !important;
+}
+
+.file-list {
+  list-style: none;
+  padding: 0;
+}
+
+.file-item {
+  display: flex;
+  align-items: flex-start;
+  background-color: #fff;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  border-radius: 10px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+  gap: 1rem;
+}
+
+.file-preview img {
+  width: 60px;
+  height: 60px;
+  object-fit: contain;
+  border-radius: 5px;
+  background-color: #f1f1f1;
+}
+
+.image-thumb {
+  width: 60px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 5px;
+}
+
+.file-info {
+  flex: 1;
+}
+
+.file-info p {
+  margin: 0.25rem 0;
+  font-size: 0.9rem;
+}
+
+.download-link {
+  display: inline-block;
+  margin-top: 0.5rem;
+  background-color: #17a2b8;
+  color: #fff;
+  padding: 0.4rem 0.8rem;
+  text-decoration: none;
+  border-radius: 5px;
+}
+
+.download-link:hover {
+  background-color: #117a8b;
+}
+
+.tag {
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: bold;
+}
+
+.tag.public {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.tag.private {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .file-item {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .file-info {
+    width: 100%;
+  }
+
+  .file-preview img {
+    margin-bottom: 1rem;
+  }
+}

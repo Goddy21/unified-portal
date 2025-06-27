@@ -10,7 +10,10 @@ from django.contrib.auth.models import User
 from django.utils.decorators import method_decorator
 from .forms import UserUpdateForm, ProfileUpdateForm
 from django.views import View
-
+import csv
+from .models import Customer, Region, Terminal, Unit, SystemUser, Zone
+from django.contrib import messages
+from datetime import datetime
 
 def login(request):
     return render(request, 'core/login.html')
@@ -20,7 +23,7 @@ def pre_dashboards(request):
 
 def user_list_view(request):
     users = User.objects.all()
-    return render(request, 'core/user_list.html', {'users': users})
+    return render(request, 'core/file_management/user_list.html', {'users': users})
 
 def file_management_dashboard(request):
     files = File.objects.filter(is_deleted=False)
@@ -49,7 +52,7 @@ def file_management_dashboard(request):
     recent_files = File.objects.filter(is_deleted=False).order_by('-upload_date')[:5]
 
 
-    return render(request, 'core/file_management_dashboard.html', {
+    return render(request, 'core/file_management/file_management_dashboard.html', {
         'categories': categories,
         'recent_files': recent_files,
         'file_types': file_types,
@@ -70,7 +73,7 @@ def file_list_view(request, category_name=None):
         files = files.order_by('title')
     categories = FileCategory.objects.all()  
 
-    return render(request, 'core/file_list.html', {
+    return render(request, 'core/file_management/file_list.html', {
         'files': files,
         'categories': categories,
         'active_category': category_name,
@@ -88,7 +91,7 @@ def upload_file_view(request):
     else:
         form = FileUploadForm()
     
-    return render(request, 'core/upload_file.html', {'form': form})
+    return render(request, 'core/file_management/upload_file.html', {'form': form})
 
 @login_required
 def profile_view(request):
@@ -122,42 +125,123 @@ class SettingsView(View):
 
 # Tickets
 def admin_dashboard(request):
-    return render(request, 'core/admin_dashboard.html')
+    return render(request, 'core/helpdesk/admin_dashboard.html')
 
 def ticketing_dashboard(request):
-    return render(request, 'core/ticketing_dashboard.html')
+    return render(request, 'core/helpdesk/ticketing_dashboard.html')
 
 def tickets(request):
-    return render(request, 'core/tickets.html')
+    return render(request, 'core/helpdesk/tickets.html')
 
 def ticket_statuses(request):
-    return render(request, 'core/ticket_statuses.html')
+    return render(request, 'core/helpdesk/ticket_statuses.html')
 
 def problem_category(request):
-    return render(request, 'core/problem_category.html')
+    return render(request, 'core/helpdesk/problem_category.html')
 
 # Master Data Views
 def customers(request):
-    return render(request, 'core/customers.html')
+    if request.method == "POST" and request.FILES.get("file"):
+        csv_file = request.FILES["file"]
+        decoded_file = csv_file.read().decode("utf-8").splitlines()
+        reader = csv.DictReader(decoded_file)
+
+        for row in reader:
+            Customer.objects.create(
+                name=row.get("name", ""),
+                email=row.get("email", ""),
+                phone=row.get("phone", ""),
+                region=row.get("region", "")
+            )
+        messages.success(request, "Customers uploaded successfully!")
+
+    all_customers = Customer.objects.all()
+    return render(request, "core/helpdesk/customers.html", {"customers": all_customers})
 
 def regions(request):
-    return render(request, 'core/regions.html')
+    if request.method == 'POST':
+        name = request.POST.get('region_name')
+        if name:
+            Region.objects.create(name=name)
+            return redirect('regions')
+
+    all_regions = Region.objects.all()
+    return render(request, 'core/helpdesk/regions.html', {'regions': all_regions})
 
 def terminals(request):
-    return render(request, 'core/terminals.html')
+    if request.method == 'POST':
+        name = request.POST.get('name')
+        location = request.POST.get('location')
+        if name and location:
+            Terminal.objects.create(name=name, location=location)
+        return redirect('terminals')
+
+    all_terminals = Terminal.objects.all()
+    return render(request, 'core/helpdesk/terminals.html', {'terminals': all_terminals})
 
 def units(request):
-    return render(request, 'core/units.html')
+    if request.method == 'POST':
+        name = request.POST.get('name')
+        description = request.POST.get('description')
+        if name and description:
+            Unit.objects.create(name=name, description=description)
+        return redirect('units')
 
-def system_users(request):  
-    return render(request, 'core/users.html')
+    all_units = Unit.objects.all()
+    return render(request, 'core/helpdesk/units.html', {'units': all_units})
+
+def system_users(request):
+    if request.method == 'POST':
+        username = request.POST.get('username')
+        email = request.POST.get('email')
+        role = request.POST.get('role')
+        if username and email and role:
+            SystemUser.objects.create(username=username, email=email, role=role)
+        return redirect('system_users')
+
+    all_users = SystemUser.objects.all()
+    return render(request, 'core/helpdesk/users.html', {'users': all_users})
 
 def zones(request):
-    return render(request, 'core/zones.html')
+    if request.method == 'POST':
+        name = request.POST.get('name')
+        region = request.POST.get('region')
+        if name and region:
+            Zone.objects.create(name=name, region=region)
+        return redirect('zones')
+
+    all_zones = Zone.objects.all()
+    return render(request, 'core/helpdesk/zones.html', {'zones': all_zones})
 
 # Reports Views
 def reports(request):
-    return render(request, 'core/reports.html')
+    # Sample dummy data — you can replace with DB results
+    reports_data = [
+        {"name": "Ticket Summary", "category": "tickets", "generated_at": "2025-06-25", "download_url": "#"},
+        {"name": "User Activity", "category": "users", "generated_at": "2025-06-24", "download_url": "#"},
+    ]
+
+    return render(request, 'core/helpdesk/reports.html', {
+        'reports': reports_data
+    })
+
+version_data = []
 
 def version_controls(request):
-    return render(request, 'core/version_control.html')
+    global version_data
+
+    if request.method == 'POST':
+        version = request.POST.get('version')
+        description = request.POST.get('description')
+        date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+        version_data.insert(0, {
+            'version': version,
+            'description': description,
+            'date': date,
+        })
+        return redirect('version_controls')
+
+    return render(request, 'core/helpdesk/version_control.html', {
+        'versions': version_data
+    })
