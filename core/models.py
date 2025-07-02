@@ -36,7 +36,59 @@ class Profile(models.Model):
     def __str__(self):
         return self.user.username
 
-# Ticketing System Models
+
+
+
+# === Master Data Models ===
+class Unit(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+    description = models.TextField(blank=True)
+
+    def __str__(self):
+        return self.name
+
+class Terminal(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+    location = models.CharField(max_length=150)
+
+    def __str__(self):
+        return self.name
+
+class SystemUser(models.Model):
+    username = models.CharField(max_length=100, unique=True)
+    email = models.EmailField()
+    role = models.CharField(max_length=50)
+
+    def __str__(self):
+        return self.username
+
+class Zone(models.Model):
+    name = models.CharField(max_length=100)
+    region = models.CharField(max_length=100)
+
+    def __str__(self):
+        return self.name
+
+class Customer(models.Model):
+    name = models.CharField(max_length=100)
+
+    def __str__(self):
+        return self.name
+
+class Region(models.Model):
+    name = models.CharField(max_length=100)
+
+    def __str__(self):
+        return self.name
+
+class ProblemCategory(models.Model):
+    brts_unit = models.ForeignKey(Unit, on_delete=models.CASCADE)
+    name = models.CharField(max_length=100)
+
+    def __str__(self):
+        return f"{self.name} ({self.brts_unit.name})"
+
+# === Ticketing Models ===
 class Ticket(models.Model):
     STATUS_CHOICES = [
         ('open', 'Open'),
@@ -52,11 +104,18 @@ class Ticket(models.Model):
     ]
 
     title = models.CharField(max_length=255)
+    brts_unit = models.ForeignKey(Unit, on_delete=models.SET_NULL, null=True)
+    problem_category = models.ForeignKey(ProblemCategory, on_delete=models.SET_NULL, null=True)
+    terminal = models.ForeignKey(Terminal, on_delete=models.SET_NULL, null=True)
     description = models.TextField()
+
     created_by = models.ForeignKey(User, related_name='created_tickets', on_delete=models.SET_NULL, null=True)
     assigned_to = models.ForeignKey(User, related_name='assigned_tickets', on_delete=models.SET_NULL, null=True, blank=True)
+    responsible = models.ForeignKey(SystemUser, on_delete=models.SET_NULL, null=True, blank=True)
+
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='open')
     priority = models.CharField(max_length=10, choices=PRIORITY_CHOICES, default='medium')
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -71,47 +130,3 @@ class TicketComment(models.Model):
 
     def __str__(self):
         return f"Comment by {self.commented_by} on {self.ticket}"
-
-class Customer(models.Model):
-    name = models.CharField(max_length=100)
-    email = models.EmailField(blank=True)
-    phone = models.CharField(max_length=20, blank=True)
-    region = models.CharField(max_length=100, blank=True)
-
-    def __str__(self):
-        return self.name
-    
-class Region(models.Model):
-    name = models.CharField(max_length=100)
-
-    def __str__(self):
-        return self.name
-    
-class Terminal(models.Model):
-    name = models.CharField(max_length=100)
-    location = models.CharField(max_length=150)
-
-    def __str__(self):
-        return self.name
-    
-class Unit(models.Model):
-    name = models.CharField(max_length=100)
-    description = models.TextField()
-
-    def __str__(self):
-        return self.name
-
-class SystemUser(models.Model):
-    username = models.CharField(max_length=100)
-    email = models.EmailField()
-    role = models.CharField(max_length=50)
-
-    def __str__(self):
-        return self.username
-    
-class Zone(models.Model):
-    name = models.CharField(max_length=100)
-    region = models.CharField(max_length=100)
-
-    def __str__(self):
-        return self.name

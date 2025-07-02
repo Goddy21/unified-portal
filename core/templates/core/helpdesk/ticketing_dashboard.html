@@ -4,7 +4,11 @@
 {% block title %}Ticketing Dashboard{% endblock %}
 
 {% block content %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <link rel="stylesheet" href="{% static 'css/ticketing_dashboard.css' %}">
+{% endblock %}
 
 <div class="dashboard-grid">
   <!-- Ticket Report Card -->

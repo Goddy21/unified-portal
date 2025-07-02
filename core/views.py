@@ -1,6 +1,6 @@
 from django.shortcuts import render, get_list_or_404, redirect
 from .models import File, FileCategory
-from .forms import FileUploadForm
+from .forms import FileUploadForm, ProblemCategoryForm, TicketForm
 from django.contrib.auth.decorators import login_required
 from django.db.models import Count, Q
 from core.models import FileCategory
@@ -133,11 +133,38 @@ def ticketing_dashboard(request):
 def tickets(request):
     return render(request, 'core/helpdesk/tickets.html')
 
+def create_ticket(request):
+    if request.method == 'POST':
+        form  = TicketForm(request.POST)
+        if form.is_valid():
+            ticket = form.save(commit=False)
+            ticket.created_by = request.user
+            ticket.save()
+            return redirect('ticketing_dashboard') 
+    else:
+        form = TicketForm()
+
+    return render(request, 'core/helpdesk/create_ticket.html', {'form': form})   
+
+
 def ticket_statuses(request):
     return render(request, 'core/helpdesk/ticket_statuses.html')
 
 def problem_category(request):
     return render(request, 'core/helpdesk/problem_category.html')
+
+def create_problem_category(request):
+    if request.method == 'POST':
+        form = ProblemCategoryForm(request.POST)
+        if form.is_valid():
+            form.save()
+            if 'create_another' in request.POST:
+                return redirect('create-problem-category')
+            return redirect('category-list')  # Or wherever you want to go after creation
+    else:
+        form = ProblemCategoryForm()
+
+    return render(request, 'core/helpdesk/create_problem_category.html', {'form': form})
 
 # Master Data Views
 def customers(request):
@@ -147,16 +174,28 @@ def customers(request):
         reader = csv.DictReader(decoded_file)
 
         for row in reader:
-            Customer.objects.create(
-                name=row.get("name", ""),
-                email=row.get("email", ""),
-                phone=row.get("phone", ""),
-                region=row.get("region", "")
-            )
+            name = row.get("name", "").strip()
+            if name: 
+                Customer.objects.create(name=name)
+
         messages.success(request, "Customers uploaded successfully!")
 
-    all_customers = Customer.objects.all()
+
+    all_customers = Customer.objects.exclude(name__exact="").exclude(name__isnull=True)
     return render(request, "core/helpdesk/customers.html", {"customers": all_customers})
+
+
+def create_customer(request):
+    if request.method == "POST":
+        name = request.POST.get("name", "").strip()
+        if name:
+            Customer.objects.create(name=name)
+            messages.success(request, "Customer added successfully.")
+            return redirect("customers")
+        else:
+            messages.error(request, "Customer name is required.")
+
+    return render(request, "core/helpdesk/create_customer.html")
 
 def regions(request):
     if request.method == 'POST':

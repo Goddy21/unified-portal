@@ -15,7 +15,7 @@
   </div>
 
   <div class="ticket-actions">
-    <button class="btn btn-primary">Create New Ticket</button>
+    <button class="btn btn-primary" id="create_ticket">Create New Ticket</button>
     <input type="text" class="ticket-search" placeholder="Search tickets..." />
   </div>
 
@@ -46,4 +46,17 @@
     </table>
   </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  document.addEventListener('DOMContentLoaded', function(){
+    const ticketBtn = document.getElementById('create_ticket');
+    if (ticketBtn){
+      ticketBtn.addEventListener('click', function(){
+        window.location.href = "{% url 'create_ticket' %}";
+      });
+    }
+  });
+</script>
 {% endblock %}

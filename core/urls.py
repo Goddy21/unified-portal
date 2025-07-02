@@ -27,11 +27,14 @@ urlpatterns = [
     path('admin_dashboard/', views.admin_dashboard, name='admin_dashboard'),
     path('ticketing/', views.ticketing_dashboard, name='ticketing_dashboard'),
     path('tickets/', views.tickets, name='tickets'),
+    path('create_ticket/', views.create_ticket, name= 'create_ticket'),
     path('ticket-statuses/', views.ticket_statuses, name='ticket_statuses'),
     path('problem-category/', views.problem_category, name='problem_category'), 
+    path('create_problem_category/', views.create_problem_category, name='create_problem_category'),
 
     # Master Data
     path('master-data/customers/', views.customers, name='customers'),
+    path("customers/create/", views.create_customer, name="create_customer"),
     path('master-data/regions/', views.regions, name='regions'),
     path('regions/add/', views.regions, name='add_region'), 
     path('master-data/terminals/', views.terminals, name='terminals'),
