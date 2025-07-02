@@ -9,15 +9,16 @@
   <p>Manage customer records here.</p>
 
   <!-- Upload Form -->
-  <div class="d-flex justify-content-between align-items-center mb-3">
+  <div class="page-header-actions">
     <form method="POST" enctype="multipart/form-data" class="upload-form">
       {% csrf_token %}
       <label for="file">Upload Customer CSV:</label>
       <input type="file" name="file" accept=".csv" required>
       <button type="submit" class="btn btn-primary">Upload</button>
     </form>
-    <a href="{% url 'create_customer' %}" class="btn btn-danger float-right" style="margin-bottom: 1rem;">New customer</a>
+    <a href="{% url 'create_customer' %}" class="btn btn-danger">New Customer</a>
   </div>
+
   <!-- Table of customers -->
   <div class="table-responsive">
     <table class="ticket-table">
