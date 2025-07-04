@@ -1,19 +1,27 @@
 from django.shortcuts import render, get_list_or_404, redirect
 from .models import File, FileCategory
+from django.http import FileResponse
 from .forms import FileUploadForm, ProblemCategoryForm, TicketForm
 from django.contrib.auth.decorators import login_required
 from django.db.models import Count, Q
+from django.utils.timezone import now
+from django.db.models.functions import TruncMonth
 from core.models import FileCategory
 import os
 from collections import Counter
 from django.contrib.auth.models import User
 from django.utils.decorators import method_decorator
-from .forms import UserUpdateForm, ProfileUpdateForm
+from .forms import UserUpdateForm, ProfileUpdateForm, TerminalForm, VersionControlForm
 from django.views import View
 import csv
-from .models import Customer, Region, Terminal, Unit, SystemUser, Zone
+from .models import Customer, Region, Terminal, Unit, SystemUser, Zone, ProblemCategory, VersionControl, Report, Ticket
 from django.contrib import messages
 from datetime import datetime
+from django.utils.dateparse import parse_date
+from django.utils import timezone
+import calendar
+from django.shortcuts import get_object_or_404
+from mimetypes import guess_type
 
 def login(request):
     return render(request, 'core/login.html')
@@ -24,6 +32,27 @@ def pre_dashboards(request):
 def user_list_view(request):
     users = User.objects.all()
     return render(request, 'core/file_management/user_list.html', {'users': users})
+
+def user_detail(request, user_id):
+    user = get_object_or_404(User, id=user_id)
+    return render(request, 'core/file_management/user_detail.html', {'user': user})
+
+def edit_user(request, user_id):
+    user = get_object_or_404(User, id=user_id)
+    if request.method == 'POST':
+        user.username = request.POST['username']
+        user.email = request.POST['email']
+        user.is_active = 'is_active' in request.POST
+        user.save()
+        messages.success(request, 'User updated successfully!')
+        return redirect('user_list')
+    return render(request, 'core/file_management/edit_user.html', {'user': user})
+
+def delete_user(request, user_id):
+    user = get_object_or_404(User, id=user_id)
+    user.delete()
+    messages.success(request, 'User deleted successfully!')
+    return redirect('user_list')
 
 def file_management_dashboard(request):
     files = File.objects.filter(is_deleted=False)
@@ -52,7 +81,7 @@ def file_management_dashboard(request):
     recent_files = File.objects.filter(is_deleted=False).order_by('-upload_date')[:5]
 
 
-    return render(request, 'core/file_management/file_management_dashboard.html', {
+    return render(request, 'core/file_management/dashboard.html', {
         'categories': categories,
         'recent_files': recent_files,
         'file_types': file_types,
@@ -79,6 +108,27 @@ def file_list_view(request, category_name=None):
         'active_category': category_name,
     })
 
+def preview_file(request, file_id):
+    file = get_object_or_404(File, id=file_id, is_deleted=False)
+
+    # Get the guessed content type (e.g., image/jpeg, application/pdf)
+    mime_type, _ = guess_type(file.file.name)
+    if mime_type in ['application/pdf', 'image/jpeg', 'image/png', 'image/gif']:
+        return FileResponse(file.file.open('rb'), content_type=mime_type)
+    
+    # If unsupported, render fallback page
+    return render(request, 'core/file_management/unsupported_preview.html', {'file': file})
+
+@login_required
+def delete_file(request, file_id):
+    file = get_object_or_404(File, id=file_id, is_deleted=False)
+
+    if request.method == "POST":
+        file.is_deleted = True
+        file.save()
+        messages.success(request, "File deleted successfully.")
+        return redirect('file_list')
+    
 @login_required
 def upload_file_view(request):
     if request.method == 'POST':
@@ -128,43 +178,129 @@ def admin_dashboard(request):
     return render(request, 'core/helpdesk/admin_dashboard.html')
 
 def ticketing_dashboard(request):
-    return render(request, 'core/helpdesk/ticketing_dashboard.html')
+    # Status summary
+    status_counts = Ticket.objects.values('status').annotate(count=Count('id'))
+
+    # Priority summary
+    priority_counts = Ticket.objects.values('priority').annotate(count=Count('id'))
+
+    # Monthly ticket trends
+    monthly_trends = (
+        Ticket.objects
+        .annotate(month=TruncMonth('created_at'))
+        .values('month')
+        .annotate(count=Count('id'))
+        .order_by('month')
+    )
+
+    # Tickets per terminal
+    terminal_data = (
+        Ticket.objects
+        .values('terminal__cdm_name')
+        .annotate(count=Count('id'))
+        .order_by('-count')[:10]
+    )
+
+    context = {
+        'status_data': list(status_counts),
+        'priority_data': list(priority_counts),
+        'monthly_data': [
+            {'month': calendar.month_abbr[d['month'].month], 'count': d['count']}
+            for d in monthly_trends if d['month']  # Guard against None
+        ],
+        'terminal_data': [
+            {'terminal': d['terminal__cdm_name'], 'count': d['count']}
+            for d in terminal_data
+        ],
+    }
+
+    return render(request, 'core/helpdesk/ticketing_dashboard.html', context)
 
 def tickets(request):
-    return render(request, 'core/helpdesk/tickets.html')
+    query = request.GET.get('search', '')
+    tickets = Ticket.objects.select_related('problem_category').filter(
+        Q(title__icontains=query) |
+        Q(description__icontains=query) |
+        Q(problem_category__name__icontains=query)
+    ).order_by('-created_at')
+
+    return render(request, 'core/helpdesk/tickets.html', {
+        'tickets': tickets,
+        'search_query': query
+    })
+
 
 def create_ticket(request):
     if request.method == 'POST':
-        form  = TicketForm(request.POST)
+        form = TicketForm(request.POST)
         if form.is_valid():
             ticket = form.save(commit=False)
             ticket.created_by = request.user
             ticket.save()
-            return redirect('ticketing_dashboard') 
+            return redirect('create_ticket' if 'create_another' in request.POST else 'ticketing_dashboard')
     else:
         form = TicketForm()
 
-    return render(request, 'core/helpdesk/create_ticket.html', {'form': form})   
+    return render(request, 'core/helpdesk/create_ticket.html', {'form': form})
 
+def ticket_detail(request, ticket_id):
+    ticket = get_object_or_404(Ticket, id=ticket_id)
+    return render(request, 'core/helpdesk/ticket_detail.html', {'ticket': ticket})
+
+def delete_ticket(request, ticket_id):
+    ticket = get_object_or_404(Ticket, id=ticket_id)
+    ticket.delete()
+    messages.success(request, "Ticket deleted successfully.")
+    return redirect('tickets')
 
 def ticket_statuses(request):
     return render(request, 'core/helpdesk/ticket_statuses.html')
 
 def problem_category(request):
-    return render(request, 'core/helpdesk/problem_category.html')
+    query = request.GET.get('search', '')
+    categories = ProblemCategory.objects.filter(name__icontains=query)
+    return render(request, 'core/helpdesk/problem_category.html', {
+        'categories': categories,
+        'search_query': query,
+    })
 
 def create_problem_category(request):
     if request.method == 'POST':
         form = ProblemCategoryForm(request.POST)
         if form.is_valid():
-            form.save()
+            category = form.save(commit=False)
+            category.save()
+
             if 'create_another' in request.POST:
-                return redirect('create-problem-category')
-            return redirect('category-list')  # Or wherever you want to go after creation
+                return redirect('create_problem_category')
+            return redirect('problem_category')  
     else:
         form = ProblemCategoryForm()
 
     return render(request, 'core/helpdesk/create_problem_category.html', {'form': form})
+
+def edit_problem_category(request, category_id):
+    category = get_object_or_404(ProblemCategory, pk=category_id)
+    if request.method == 'POST':
+        form = ProblemCategoryForm(request.POST, instance=category)
+        if form.is_valid():
+            form.save()
+            return redirect('problem_category')
+    else:
+        form = ProblemCategoryForm(instance=category)
+
+    return render(request, 'core/helpdesk/edit_problem_category.html', {'form': form})
+
+def delete_problem_category(request, category_id):
+    category = get_object_or_404(ProblemCategory, id=category_id)
+    category.delete()
+    messages.success(request, "Problem category deleted successfully.")
+    return redirect('problem_category')
+
+
+def list_problem_categories(request):
+    categories = ProblemCategory.objects.all()
+    return render(request, 'core/helpdesk/problem_category.html', {'categories': categories})
 
 # Master Data Views
 def customers(request):
@@ -197,6 +333,12 @@ def create_customer(request):
 
     return render(request, "core/helpdesk/create_customer.html")
 
+def delete_customer(request, id):
+    customer = get_object_or_404(Customer, id=id)
+    customer.delete()
+    messages.success(request, "Customer deleted successfully.")
+    return redirect('customers')
+
 def regions(request):
     if request.method == 'POST':
         name = request.POST.get('region_name')
@@ -207,16 +349,32 @@ def regions(request):
     all_regions = Region.objects.all()
     return render(request, 'core/helpdesk/regions.html', {'regions': all_regions})
 
+def delete_region(request, region_id):
+    region = get_object_or_404(Region, id=region_id)
+    region.delete()
+    messages.success(request, "Region deleted successfully.")
+    return redirect('regions')
+
 def terminals(request):
     if request.method == 'POST':
-        name = request.POST.get('name')
-        location = request.POST.get('location')
-        if name and location:
-            Terminal.objects.create(name=name, location=location)
-        return redirect('terminals')
+        form = TerminalForm(request.POST)
+        if form.is_valid():
+            form.save()
+            if 'create_another' in request.POST:
+                return redirect('terminals')
+            else:
+                return redirect('terminals') 
+    else:
+        form = TerminalForm()
 
     all_terminals = Terminal.objects.all()
-    return render(request, 'core/helpdesk/terminals.html', {'terminals': all_terminals})
+    return render(request, 'core/helpdesk/terminals.html', {'form': form, 'terminals': all_terminals})
+
+def delete_terminal(request, terminal_id):
+    terminal = get_object_or_404(Terminal, id=terminal_id)
+    terminal.delete()
+    messages.success(request, "Terminal removed successfully.")
+    return redirect('terminals')
 
 def units(request):
     if request.method == 'POST':
@@ -228,6 +386,12 @@ def units(request):
 
     all_units = Unit.objects.all()
     return render(request, 'core/helpdesk/units.html', {'units': all_units})
+
+def delete_unit(request, unit_id):
+    unit = get_object_or_404(Unit, id=unit_id)
+    unit.delete()
+    messages.success(request, "Unit removed successfully.")
+    return redirect('units')
 
 def system_users(request):
     if request.method == 'POST':
@@ -241,6 +405,15 @@ def system_users(request):
     all_users = SystemUser.objects.all()
     return render(request, 'core/helpdesk/users.html', {'users': all_users})
 
+def delete_user(request, user_id):
+    user = get_object_or_404(User, id=user_id)
+    if request.user == user:
+        messages.error(request, "You cannot delete your own account.")
+    else:
+        user.delete()
+        messages.success(request, "User deleted successfully.")
+    return redirect('system_users')
+
 def zones(request):
     if request.method == 'POST':
         name = request.POST.get('name')
@@ -252,35 +425,47 @@ def zones(request):
     all_zones = Zone.objects.all()
     return render(request, 'core/helpdesk/zones.html', {'zones': all_zones})
 
-# Reports Views
+def delete_zone(request, zone_id):
+    zone = get_object_or_404(Zone, id=zone_id)
+    zone.delete()
+    messages.success(request, "Zone deleted successfully.")
+    return redirect('zones') 
+
 def reports(request):
-    # Sample dummy data — you can replace with DB results
-    reports_data = [
-        {"name": "Ticket Summary", "category": "tickets", "generated_at": "2025-06-25", "download_url": "#"},
-        {"name": "User Activity", "category": "users", "generated_at": "2025-06-24", "download_url": "#"},
-    ]
+    reports_qs = Report.objects.all()
+
+    category = request.GET.get('category')
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+
+    if category:
+        reports_qs = reports_qs.filter(category=category)
+
+    if start_date:
+        reports_qs = reports_qs.filter(generated_at__date__gte=parse_date(start_date))
+    if end_date:
+        reports_qs = reports_qs.filter(generated_at__date__lte=parse_date(end_date))
 
     return render(request, 'core/helpdesk/reports.html', {
-        'reports': reports_data
+        'reports': reports_qs
     })
 
-version_data = []
 
 def version_controls(request):
-    global version_data
-
     if request.method == 'POST':
-        version = request.POST.get('version')
-        description = request.POST.get('description')
-        date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        form = VersionControlForm(request.POST)
+        if form.is_valid():
+            form.save()
+            if 'create_another' in request.POST:
+                return redirect('version_controls')
+            else:
+                return redirect('version_controls')
+    else:
+        form = VersionControlForm()
 
-        version_data.insert(0, {
-            'version': version,
-            'description': description,
-            'date': date,
-        })
-        return redirect('version_controls')
+    versions = VersionControl.objects.all().order_by('-created_at')
 
     return render(request, 'core/helpdesk/version_control.html', {
-        'versions': version_data
+        'form': form,
+        'versions': versions
     })

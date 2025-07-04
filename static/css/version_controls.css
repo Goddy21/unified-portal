@@ -2,24 +2,37 @@
   background: #fff;
   padding: 2rem;
   border-radius: 10px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
   margin-top: 2rem;
+  color: #212529;
+}
+
+.page-container h2 {
+  color: #333;
+  margin-bottom: 1rem;
 }
 
 .version-form {
   display: flex;
   flex-wrap: wrap;
   gap: 1rem;
-  margin-bottom: 1.5rem;
+  margin-bottom: 2rem;
 }
 
 .version-form input {
   padding: 10px;
-  font-size: 1rem;
+  flex: 1 1 300px;
   border: 1px solid #ccc;
   border-radius: 6px;
-  flex: 1;
-  min-width: 220px;
+  font-size: 1rem;
+  background-color: #f9f9f9;
+  color: #212529;
+}
+
+.version-form input:focus {
+  outline: none;
+  border-color: #007bff;
+  background-color: #fff;
 }
 
 .version-form .btn {
@@ -29,6 +42,7 @@
   padding: 10px 18px;
   border-radius: 6px;
   cursor: pointer;
+  transition: background-color 0.3s;
 }
 
 .version-form .btn:hover {
@@ -39,6 +53,7 @@
   width: 100%;
   border-collapse: collapse;
   border: 1px solid #dee2e6;
+  background-color: #fff;
 }
 
 .version-table th,
@@ -46,6 +61,7 @@
   padding: 12px 15px;
   border-bottom: 1px solid #eee;
   text-align: left;
+  color: #333;
 }
 
 .version-table th {
@@ -61,5 +77,10 @@
   .version-form input,
   .version-form .btn {
     width: 100%;
+  }
+
+  .version-table th,
+  .version-table td {
+    font-size: 0.9rem;
   }
 }

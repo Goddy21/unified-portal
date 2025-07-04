@@ -44,7 +44,7 @@
           <td>{{ report.name }}</td>
           <td>{{ report.category }}</td>
           <td>{{ report.generated_at }}</td>
-          <td><a href="{{ report.download_url }}" class="btn btn-sm">Download</a></td>
+          <td><a href="{{ report.file.url }}" class="btn btn-sm">Download</a></td>
         </tr>
         {% empty %}
         <tr>

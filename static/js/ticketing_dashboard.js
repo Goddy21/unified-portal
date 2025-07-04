@@ -94,13 +94,15 @@
 
   const ticketReportChart = document.getElementById('ticketReportChart');
   if (ticketReportChart) {
+    const statusLabels = STATUS_DATA.map(item => item.status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()));
+    const statusCounts = STATUS_DATA.map(item => item.count);
     new Chart(ticketReportChart, {
       type: 'bar',
       data: {
-        labels: ['Open', 'In Progress', 'Closed'],
+        labels: statusLabels,
         datasets: [{
           label: 'Tickets',
-          data: [12, 8, 5],
+          data: statusCounts,
           backgroundColor: ['#007bff', '#ffc107', '#28a745'],
           borderRadius: 5,
           barThickness: 40
@@ -124,13 +126,15 @@
 
   const monthlyTrendChart = document.getElementById('monthlyTrendChart');
   if (monthlyTrendChart) {
+    const monthlyLabels = MONTHLY_DATA.map(item => item.month);
+    const monthlyCounts = MONTHLY_DATA.map(item => item.count);
     new Chart(monthlyTrendChart, {
       type: 'line',
       data: {
-        labels: ['Jan', 'Feb', 'Mar', 'Apr'],
+        labels: monthlyLabels,
         datasets: [{
           label: 'Tickets',
-          data: [3, 7, 4, 9],
+          data: monthlyCounts,
           borderColor: '#007bff',
           backgroundColor: 'rgba(0, 123, 255, 0.1)',
           tension: 0.3,
@@ -151,13 +155,15 @@
 
   const terminalChart = document.getElementById('terminalChart');
   if (terminalChart) {
+    const terminalLabels = TERMINAL_DATA.map(item => item.terminal__cdm_name || 'Unnamed');
+    const terminalCounts = TERMINAL_DATA.map(item => item.count);
     new Chart(terminalChart, {
       type: 'bar',
       data: {
-        labels: ['Terminal A', 'B', 'C'],
+        labels: terminalLabels,
         datasets: [{
           label: 'Tickets',
-          data: [5, 3, 9],
+          data: terminalCounts,
           backgroundColor: ['#6c757d', '#17a2b8', '#ffc107'],
           borderRadius: 5,
           barThickness: 35
@@ -179,12 +185,14 @@
 
   const priorityChart = document.getElementById('priorityChart');
   if (priorityChart) {
+    const priorityLabels = PRIORITY_DATA.map(item => item.priority.replace(/\b\w/g, l => l.toUpperCase()));
+    const priorityCounts = PRIORITY_DATA.map(item => item.count);
     new Chart(priorityChart, {
       type: 'pie',
       data: {
-        labels: ['High', 'Medium', 'Low', 'Urgent'],
+        labels: priorityLabels,
         datasets: [{
-          data: [10, 15, 8, 2],
+          data: priorityCounts,
           backgroundColor: ['#007bff', '#ffc107', '#28a745', '#dc3545'],
           borderWidth: 1
         }]

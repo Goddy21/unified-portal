@@ -16,7 +16,10 @@
 
   <div class="ticket-actions">
     <button class="btn btn-primary" id="new_category">Add New Category</button>
-    <input type="text" class="ticket-search" placeholder="Search categories..." />
+    <form method="GET" class="ticket-search-form">
+      <input type="text" name="search" class="ticket-search" value="{{ search_query }}" placeholder="Search categories..." />
+      <button type="submit" class="btn btn-primary">Search</button>
+    </form>
   </div>
 
   <div class="ticket-table-wrapper">
@@ -30,14 +33,29 @@
         </tr>
       </thead>
       <tbody>
-        <!-- Example row -->
+        {% if messages %}
+          <ul class="messages">
+            {% for message in messages %}
+              <li class="alert alert-{{ message.tags }}">{{ message }}</li>
+            {% endfor %}
+          </ul>
+        {% endif %}
+
+        {% for category in categories %}
         <tr>
-          <td>1</td>
-          <td>Network Issue</td>
-          <td>Problems related to internet connectivity</td>
-          <td><a href="#" class="view-link">Edit</a></td>
+          <td>{{ forloop.counter }}</td>
+          <td>{{ category.name }}</td>
+          <td>{{ category.brts_unit.description }}</td>
+          <td>
+            <a href="{% url 'edit_problem_category' category.id %}" class="view-link">Edit</a>
+            <a href="{% url 'delete_problem_category' category.id %}" class="remove-link" onclick="return confirm('Are you sure you want to delete this category?');">Remove</a>
+          </td>
         </tr>
-        <!-- Loop through categories here -->
+        {% empty %}
+        <tr>
+          <td colspan="4">No categories found.</td>
+        </tr>
+        {% endfor %}
       </tbody>
     </table>
   </div>

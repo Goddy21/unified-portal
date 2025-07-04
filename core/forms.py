@@ -2,7 +2,7 @@
 from django import forms
 from .models import File, ProblemCategory, Ticket
 from django.contrib.auth.models import User
-from .models import Profile
+from .models import Profile, Terminal, VersionControl
 
 class FileUploadForm(forms.ModelForm):
     class Meta:
@@ -41,11 +41,10 @@ class ProfileUpdateForm(forms.ModelForm):
         model = Profile
         fields = ['avatar']
 
-
 class TicketForm(forms.ModelForm):
     class Meta:
         model = Ticket
-        fields = '__all__'
+        exclude = ['created_by', 'assigned_to', 'created_at', 'updated_at']
         widgets = {
             'title': forms.TextInput(attrs={'class': 'form-control'}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
@@ -55,10 +54,6 @@ class TicketForm(forms.ModelForm):
             'priority': forms.Select(attrs={'class': 'form-control'}),
             'status': forms.Select(attrs={'class': 'form-control'}),
             'responsible': forms.Select(attrs={'class': 'form-control'}),
-            'created_by': forms.HiddenInput(),
-            'assigned_to': forms.HiddenInput(),
-            'created_at': forms.DateTimeInput(attrs={'class': 'form-control', 'type': 'datetime-local', 'readonly': True}, format='%Y-%m-%dT%H:%M'),
-            'updated_at': forms.DateTimeInput(attrs={'class': 'form-control', 'type': 'datetime-local', 'readonly': True}, format='%Y-%m-%dT%H:%M'),
         }
 
 
@@ -70,4 +65,29 @@ class ProblemCategoryForm(forms.ModelForm):
         widgets = {
             'brts_unit': forms.Select(attrs={'class': 'form-control'}),
             'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter category name'}),
+        }
+
+class TerminalForm(forms.ModelForm):
+    class Meta:
+        model = Terminal
+        fields = ['customer', 'branch_name', 'cdm_name', 'serial_number', 'region', 'model', 'zone']
+        widgets = {
+            'customer': forms.Select(attrs={'class': 'form-control'}),
+            'branch_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'cdm_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'serial_number': forms.TextInput(attrs={'class': 'form-control'}),
+            'region': forms.Select(attrs={'class': 'form-control'}),
+            'model': forms.TextInput(attrs={'class': 'form-control'}),
+            'zone': forms.Select(attrs={'class': 'form-control'}),
+        }
+
+class VersionControlForm(forms.ModelForm):
+    class Meta:
+        model = VersionControl
+        fields = ['terminal', 'manufacturer', 'template', 'firmware']
+        widgets = {
+            'terminal': forms.Select(attrs={'class': 'form-control'}),
+            'manufacturer': forms.TextInput(attrs={'class': 'form-control'}),
+            'template': forms.TextInput(attrs={'class': 'form-control'}),
+            'firmware': forms.TextInput(attrs={'class': 'form-control'}),
         }

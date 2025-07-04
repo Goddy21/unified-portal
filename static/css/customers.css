@@ -101,6 +101,15 @@
 .page-header-actions .btn-danger:hover {
   background-color: #c82333;
 }
+.view-link {
+  color: #007bff;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.view-link:hover {
+  color: #0056b3;
+}
+
 
 /* Mobile Responsiveness */
 @media (max-width: 768px) {
@@ -128,6 +137,12 @@
   .upload-form input[type="file"] {
     width: 100%;
     text-align: center;
+  }
+
+  .ticket-table th,
+  .ticket-table td {
+    padding: 10px;
+    font-size: 0.9rem;
   }
 }
 

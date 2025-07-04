@@ -38,8 +38,7 @@ class Profile(models.Model):
 
 
 
-
-# === Master Data Models ===
+# Help desk models
 class Unit(models.Model):
     name = models.CharField(max_length=100, unique=True)
     description = models.TextField(blank=True)
@@ -48,11 +47,19 @@ class Unit(models.Model):
         return self.name
 
 class Terminal(models.Model):
-    name = models.CharField(max_length=100, unique=True)
-    location = models.CharField(max_length=150)
+    customer = models.ForeignKey('Customer', on_delete=models.CASCADE, null=True)
+    branch_name = models.CharField(max_length=100, default='Main Branch')
+    cdm_name = models.CharField(max_length=100, default='CDM-Default')
+    serial_number = models.CharField(max_length=100, unique=True, default='SN0000')
+    region = models.ForeignKey('Region', on_delete=models.SET_NULL, null=True)
+    model = models.CharField(max_length=100, default='ModelX')
+    zone = models.ForeignKey('Zone', on_delete=models.SET_NULL, null=True)
 
     def __str__(self):
-        return self.name
+        return f"{self.customer.name if self.customer else 'No Customer'} - {self.cdm_name}"
+
+
+
 
 class SystemUser(models.Model):
     username = models.CharField(max_length=100, unique=True)
@@ -87,8 +94,30 @@ class ProblemCategory(models.Model):
 
     def __str__(self):
         return f"{self.name} ({self.brts_unit.name})"
+    
+class VersionControl(models.Model):
+    terminal = models.ForeignKey(Terminal, on_delete=models.CASCADE)
+    manufacturer = models.CharField(max_length=100)
+    template = models.CharField(max_length=100)
+    firmware = models.CharField(max_length=100)
+    created_at = models.DateTimeField(auto_now_add=True)
 
-# === Ticketing Models ===
+    def __str__(self):
+        return f"{self.terminal} - {self.firmware}"
+    
+class Report(models.Model):
+    name = models.CharField(max_length=255)
+    category = models.CharField(max_length=50)
+    generated_at = models.DateTimeField(auto_now_add=True)
+    file = models.FileField(upload_to='reports/')
+
+    def __str__(self):
+        return self.name
+
+    def download_url(self):
+        return self.file.url
+
+
 class Ticket(models.Model):
     STATUS_CHOICES = [
         ('open', 'Open'),
