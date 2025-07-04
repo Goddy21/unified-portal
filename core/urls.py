@@ -8,7 +8,10 @@ from .views import SettingsView
 
 urlpatterns = [
     #path('', views.login, name='login'),
+    path('login/', auth_views.LoginView.as_view(template_name='accounts/login.html'), name='login'),
+    path('logout/', auth_views.LogoutView.as_view(), name='logout'),
     path('', views.pre_dashboards, name='pre_dashboards'),
+    
 
     path('users/', views.user_list_view, name='user_list'),
     path('users/<int:user_id>/', views.user_detail, name='user_detail'),  
@@ -63,7 +66,7 @@ urlpatterns = [
     path('units/delete/<int:unit_id>/', views.delete_unit, name='delete_unit'),
 
     path('master-data/users/', views.system_users, name='system_users'), 
-    path('users/delete/<int:user_id>/', views.delete_user, name='delete_user'),
+    path('users/delete/<int:user_id>/', views.delete_system_user, name='delete_user'),
 
     path('master-data/zones/', views.zones, name='zones'),
     path('zones/delete/<int:zone_id>/', views.delete_zone, name='delete_zone'),

@@ -20,3 +20,14 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 });
+
+function filterTable() {
+  const input = document.getElementById("searchInput");
+  const filter = input.value.toLowerCase();
+  const rows = document.querySelectorAll(".version-table tbody tr");
+
+  rows.forEach(row => {
+    const rowText = row.textContent.toLowerCase();
+    row.style.display = rowText.includes(filter) ? "" : "none";
+  });
+}

@@ -2,7 +2,7 @@ from django.shortcuts import render, get_list_or_404, redirect
 from .models import File, FileCategory
 from django.http import FileResponse
 from .forms import FileUploadForm, ProblemCategoryForm, TicketForm
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, permission_required
 from django.db.models import Count, Q
 from django.utils.timezone import now
 from django.db.models.functions import TruncMonth
@@ -11,7 +11,7 @@ import os
 from collections import Counter
 from django.contrib.auth.models import User
 from django.utils.decorators import method_decorator
-from .forms import UserUpdateForm, ProfileUpdateForm, TerminalForm, VersionControlForm
+from .forms import UserUpdateForm, ProfileUpdateForm, TerminalForm, VersionControlForm, FileUploadForm
 from django.views import View
 import csv
 from .models import Customer, Region, Terminal, Unit, SystemUser, Zone, ProblemCategory, VersionControl, Report, Ticket
@@ -22,9 +22,31 @@ from django.utils import timezone
 import calendar
 from django.shortcuts import get_object_or_404
 from mimetypes import guess_type
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 
 def login(request):
     return render(request, 'core/login.html')
+
+@login_required
+@permission_required('core.view_file', raise_exception=True)
+def view_files(request):
+    files = File.objects.all()
+    return render(request, 'file_list.html', {'files': files})
+
+@login_required
+@permission_required('core.change_file', raise_exception=True)
+def edit_file(request, file_id):
+    file = get_object_or_404(File, pk=file_id)
+
+    if request.method == 'POST':
+        form = FileUploadForm(request.POST, instance=file)
+        if form.is_valid():
+            form.save()
+            return redirect('view_files')
+    else:
+        form = FileUploadForm(instance=file)
+
+    return render(request, 'edit_file.html', {'form': form, 'file': file})
 
 def pre_dashboards(request):
     return render(request, 'core/pre_dashboards.html')
@@ -85,7 +107,7 @@ def file_management_dashboard(request):
         'categories': categories,
         'recent_files': recent_files,
         'file_types': file_types,
-        'user_name': request.user.get_full_name() or request.user.username  
+        'user_name': 'Okaka'#request.user.get_full_name() or request.user.username  
     })
 
 
@@ -100,10 +122,20 @@ def file_list_view(request, category_name=None):
         files = files.order_by('-upload_date')
     else:
         files = files.order_by('title')
+         # PAGINATION START
+    paginator = Paginator(files, 10) 
+    page = request.GET.get('page')
+    try:
+        paginated_files = paginator.page(page)
+    except PageNotAnInteger:
+        paginated_files = paginator.page(1)
+    except EmptyPage:
+        paginated_files = paginator.page(paginator.num_pages)
+    # PAGINATION END
     categories = FileCategory.objects.all()  
 
     return render(request, 'core/file_management/file_list.html', {
-        'files': files,
+        'files': paginated_files,
         'categories': categories,
         'active_category': category_name,
     })
@@ -405,7 +437,7 @@ def system_users(request):
     all_users = SystemUser.objects.all()
     return render(request, 'core/helpdesk/users.html', {'users': all_users})
 
-def delete_user(request, user_id):
+def delete_system_user(request, user_id):
     user = get_object_or_404(User, id=user_id)
     if request.user == user:
         messages.error(request, "You cannot delete your own account.")
@@ -417,13 +449,23 @@ def delete_user(request, user_id):
 def zones(request):
     if request.method == 'POST':
         name = request.POST.get('name')
-        region = request.POST.get('region')
-        if name and region:
+        region_id = request.POST.get('region')
+
+        if name and region_id:
+            region = get_object_or_404(Region, pk=region_id)
             Zone.objects.create(name=name, region=region)
-        return redirect('zones')
+            messages.success(request, "Zone created successfully.")
+            return redirect('zones')
+        else:
+            messages.error(request, "Name and region are required.")
 
     all_zones = Zone.objects.all()
-    return render(request, 'core/helpdesk/zones.html', {'zones': all_zones})
+    all_regions = Region.objects.all()  # You'll need this to populate the dropdown
+
+    return render(request, 'core/helpdesk/zones.html', {
+        'zones': all_zones,
+        'regions': all_regions
+    })
 
 def delete_zone(request, zone_id):
     zone = get_object_or_404(Zone, id=zone_id)

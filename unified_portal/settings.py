@@ -37,8 +37,8 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "core",
     "crispy_forms",
+    'core.apps.CoreConfig',
 ]
 
 MIDDLEWARE = [
@@ -92,6 +92,11 @@ CRISPY_TEMPLATE_PACK = 'bootstrap4'
 
 #LOGIN_URL = '/login/'  
 #LOGIN_REDIRECT_URL = '/admin_dashboard'
+
+LOGIN_URL = 'login'
+LOGIN_REDIRECT_URL = 'dashboard'
+LOGOUT_REDIRECT_URL = 'login'
+
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
