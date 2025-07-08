@@ -2,16 +2,16 @@ from django.shortcuts import render, get_list_or_404, redirect
 from .models import File, FileCategory
 from django.http import FileResponse
 from .forms import FileUploadForm, ProblemCategoryForm, TicketForm
-from django.contrib.auth.decorators import login_required, permission_required
+from django.contrib.auth.decorators import login_required, permission_required, user_passes_test
 from django.db.models import Count, Q
 from django.utils.timezone import now
 from django.db.models.functions import TruncMonth
 from core.models import FileCategory
 import os
 from collections import Counter
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, Group
 from django.utils.decorators import method_decorator
-from .forms import UserUpdateForm, ProfileUpdateForm, TerminalForm, VersionControlForm, FileUploadForm
+from .forms import UserUpdateForm, ProfileUpdateForm, TerminalForm, VersionControlForm, FileUploadForm, CustomUserCreationForm
 from django.views import View
 import csv
 from .models import Customer, Region, Terminal, Unit, SystemUser, Zone, ProblemCategory, VersionControl, Report, Ticket
@@ -23,9 +23,69 @@ import calendar
 from django.shortcuts import get_object_or_404
 from mimetypes import guess_type
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from django.contrib.auth import login
+from django import forms
 
-def login(request):
-    return render(request, 'core/login.html')
+def is_admin(user):
+    return user.is_superuser or user.groups.filter(name='Admin').exists()
+
+@user_passes_test(is_admin)
+def admin_dashboard(request):
+    context = {
+        'total_users': User.objects.count(),
+        'total_files': File.objects.count(),
+        'open_tickets': Ticket.objects.filter(status='open').count(),
+    }
+    return render(request, 'accounts/admin_dashboard.html', context)
+
+@user_passes_test(is_admin)
+def create_user(request):
+    if request.method == 'POST':
+        username = request.POST.get('username')
+        first_name = request.POST.get('first_name') or ''
+        last_name = request.POST.get('last_name') or ''
+        email = request.POST.get('email')
+        password = request.POST.get('password')
+        role = request.POST.get('role')
+
+        if User.objects.filter(username=username).exists():
+            messages.error(request, 'Username already exists.')
+            return redirect('create_user')
+
+        user = User.objects.create_user(
+            username=username,
+            email=email,
+            password=password
+        )
+
+        user.first_name = first_name
+        user.last_name = last_name
+        user.save()
+
+        group, _ = Group.objects.get_or_create(name=role)
+        user.groups.add(group)
+
+        messages.success(request, f"{role} user created successfully.")
+        return redirect('admin_dashboard')
+
+    return render(request, 'accounts/create_user.html')
+class RegistrationForm(forms.ModelForm):
+    password = forms.CharField(widget=forms.PasswordInput)
+    class Meta:
+        model = User
+        fields = ['username', 'email', 'password']
+
+
+def register_view(request):
+    if request.method == 'POST':
+        form = CustomUserCreationForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('login')
+    else:
+        form = CustomUserCreationForm()
+    return render(request, 'accounts/register.html', {'form': form})
+
 
 @login_required
 @permission_required('core.view_file', raise_exception=True)
@@ -206,8 +266,8 @@ class SettingsView(View):
         })
 
 # Tickets
-def admin_dashboard(request):
-    return render(request, 'core/helpdesk/admin_dashboard.html')
+#def admin_dashboard(request):
+#    return render(request, 'core/helpdesk/admin_dashboard.html')
 
 def ticketing_dashboard(request):
     # Status summary
@@ -460,7 +520,7 @@ def zones(request):
             messages.error(request, "Name and region are required.")
 
     all_zones = Zone.objects.all()
-    all_regions = Region.objects.all()  # You'll need this to populate the dropdown
+    all_regions = Region.objects.all()  
 
     return render(request, 'core/helpdesk/zones.html', {
         'zones': all_zones,

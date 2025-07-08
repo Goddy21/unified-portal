@@ -2,6 +2,7 @@
 from django.contrib import admin
 from .models import FileCategory, File, FileAccessLog, Ticket, TicketComment
 
+
 @admin.register(FileCategory)
 class FileCategoryAdmin(admin.ModelAdmin):
     list_display = ('id', 'name', 'file_count')

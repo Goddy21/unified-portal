@@ -7,10 +7,31 @@ from .views import SettingsView
 
 
 urlpatterns = [
-    #path('', views.login, name='login'),
-    path('login/', auth_views.LoginView.as_view(template_name='accounts/login.html'), name='login'),
+    path('', auth_views.LoginView.as_view(template_name='accounts/login.html'), name='login'),
+    path('register/', views.register_view, name='register'),
+
+        
+    path('password-reset/', auth_views.PasswordResetView.as_view(
+        template_name='accounts/password_reset_form.html'), name='password_reset'),
+
+    
+    path('password-reset/done/', auth_views.PasswordResetDoneView.as_view(
+        template_name='accounts/password_reset_done.html'), name='password_reset_done'),
+
+   
+    path('reset/<uidb64>/<token>/', auth_views.PasswordResetConfirmView.as_view(
+        template_name='accounts/password_reset_confirm.html'), name='password_reset_confirm'),
+
+    
+    path('reset/done/', auth_views.PasswordResetCompleteView.as_view(
+        template_name='accounts/password_reset_complete.html'), name='password_reset_complete'),
+
+
     path('logout/', auth_views.LogoutView.as_view(), name='logout'),
-    path('', views.pre_dashboards, name='pre_dashboards'),
+    path('admin-dashboard/', views.admin_dashboard, name='admin_dashboard'),
+    path('create-user/', views.create_user, name='create_user'),
+
+    path('pre_dashboards/', views.pre_dashboards, name='pre_dashboards'),
     
 
     path('users/', views.user_list_view, name='user_list'),
@@ -37,7 +58,7 @@ urlpatterns = [
     path('files/delete/<int:file_id>/', views.delete_file, name='delete_file'),
 
 
-    path('admin_dashboard/', views.admin_dashboard, name='admin_dashboard'),
+    #path('admin_dashboard/', views.admin_dashboard, name='admin_dashboard'),
     path('ticketing/', views.ticketing_dashboard, name='ticketing_dashboard'),
     path('tickets/', views.tickets, name='tickets'),
     path('create_ticket/', views.create_ticket, name= 'create_ticket'),
