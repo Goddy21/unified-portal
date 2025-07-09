@@ -15,7 +15,7 @@
 
   <div class="user-profile" id="userProfile">
     <div class="profile-dropdown">
-      <img src="{{ user.profile.avatar.url|default:'https://placehold.co/40x40' }}" alt="User Avatar">
+      <img src="{% if user.profile.avatar %}{{ user.profile.avatar.url }}{% else %}https://placehold.co/40x40{% endif %}" alt="User Avatar">
       <span>{{ user.get_full_name|default:user.username }}</span>
       <i class="fas fa-chevron-down"></i>
     </div>

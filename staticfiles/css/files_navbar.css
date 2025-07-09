@@ -1,0 +1,32 @@
+.user-profile {
+  position: relative;
+}
+
+.dropdown-content {
+  display: none;
+  position: absolute;
+  right: 0;
+  background-color: white;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  border-radius: 6px;
+  margin-top: 0.5rem;
+  z-index: 1000;
+  min-width: 150px;
+  overflow: hidden;
+}
+
+.user-profile.show-dropdown .dropdown-content {
+  display: block;
+}
+
+.dropdown-content a {
+  display: block;
+  padding: 0.75rem 1rem;
+  color: #333;
+  text-decoration: none;
+  border-bottom: 1px solid #eee;
+}
+
+.dropdown-content a:hover {
+  background-color: #f0f0f0;
+}

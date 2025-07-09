@@ -1,3 +1,4 @@
+/* Base styling */
 body {
     font-family: 'Segoe UI', sans-serif;
     margin: 0;
@@ -5,6 +6,7 @@ body {
     background-color: #f9f9f9;
 }
 
+/* Shared container for both profile and settings */
 .profile-container,
 .settings-container {
     max-width: 600px;
@@ -16,17 +18,21 @@ body {
 }
 
 h1 {
-    font-size: 1.5rem;
-    margin-bottom: 1rem;
+    font-size: 1.75rem;
+    margin-bottom: 1.5rem;
     text-align: center;
+    color: #333;
 }
 
+/* Profile info and details */
 .profile-details p,
 .settings-links a {
     font-size: 1rem;
     margin: 0.5rem 0;
+    color: #444;
 }
 
+/* Link containers */
 .profile-links,
 .settings-links {
     margin-top: 1.5rem;
@@ -49,17 +55,38 @@ h1 {
     color: #0056b3;
 }
 
+/* Form fields */
 form fieldset {
     border: none;
     margin-bottom: 1.5rem;
+}
+
+form legend {
+    font-weight: bold;
+    margin-bottom: 0.5rem;
 }
 
 form img {
     display: block;
     margin: 1rem auto;
     border-radius: 8px;
+    max-width: 120px;
+    height: auto;
+    object-fit: cover;
 }
 
+input,
+select,
+textarea {
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 0.5rem;
+    width: 100%;
+    box-sizing: border-box;
+    margin-bottom: 1rem;
+}
+
+/* Button */
 button {
     background-color: #007bff;
     color: white;
@@ -70,11 +97,14 @@ button {
     cursor: pointer;
     display: block;
     margin: 0 auto;
+    transition: background-color 0.3s ease;
 }
 
 button:hover {
     background-color: #0056b3;
 }
+
+/* Modal Styles */
 .modal {
     display: none;
     position: fixed;
@@ -98,6 +128,7 @@ button:hover {
     transform: scale(0.95);
     opacity: 0;
 }
+
 .modal.show .modal-content {
     transform: scale(1);
     opacity: 1;
@@ -112,31 +143,28 @@ button:hover {
     cursor: pointer;
     transition: color 0.3s ease;
 }
+
 .close:hover {
     color: #000;
 }
-input, select, textarea {
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    padding: 0.5rem;
-    width: 100%;
-    box-sizing: border-box;
-    margin-bottom: 1rem;
-}
 
-/* Mobile responsiveness */
+/* Responsive Styling */
 @media screen and (max-width: 600px) {
     .profile-container,
     .settings-container {
         margin: 1rem;
-        padding: 1.5rem;
+        padding: 1.25rem;
     }
 
     h1 {
-        font-size: 1.2rem;
+        font-size: 1.4rem;
     }
 
     button {
         width: 100%;
+    }
+
+    form img {
+        max-width: 100px;
     }
 }

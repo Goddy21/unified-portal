@@ -239,7 +239,7 @@ def upload_file_view(request):
 def profile_view(request):
     if request.headers.get('x-requested-with') == 'XMLHttpRequest':
         return render(request, 'accounts/profile_content.html', {'user': request.user})
-    return render(request, 'accounts/profile.html', {'user': request.user})
+    return render(request, 'accounts/profile_content.html', {'user': request.user})
 
 
 
