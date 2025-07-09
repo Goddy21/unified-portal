@@ -52,6 +52,16 @@
   background-color: #f8f9fa;
   font-weight: bold;
 }
+.view-link {
+  color: #dc3545;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.view-link:hover {
+  text-decoration: underline;
+  color: #c82333;
+}
 
 @media (max-width: 768px) {
   .user-form {

@@ -14,7 +14,7 @@ from django.utils.decorators import method_decorator
 from .forms import UserUpdateForm, ProfileUpdateForm, TerminalForm, VersionControlForm, FileUploadForm, CustomUserCreationForm
 from django.views import View
 import csv
-from .models import Customer, Region, Terminal, Unit, SystemUser, Zone, ProblemCategory, VersionControl, Report, Ticket
+from .models import Customer, Region, Terminal, Unit, SystemUser, Zone, ProblemCategory, VersionControl, Report, Ticket, Profile
 from django.contrib import messages
 from datetime import datetime
 from django.utils.dateparse import parse_date
@@ -28,6 +28,12 @@ from django import forms
 
 def is_admin(user):
     return user.is_superuser or user.groups.filter(name='Admin').exists()
+def is_editor(user):
+    return user.groups.filter(name='Editor').exists()
+def is_viewer(user):
+    return user.groups.filter(name='Viewer').exists()
+def is_customer(user):
+    return user.groups.filter(name='Customer').exists()
 
 @user_passes_test(is_admin)
 def admin_dashboard(request):
@@ -42,8 +48,8 @@ def admin_dashboard(request):
 def create_user(request):
     if request.method == 'POST':
         username = request.POST.get('username')
-        first_name = request.POST.get('first_name') or ''
-        last_name = request.POST.get('last_name') or ''
+        first_name = request.POST.get('first_name') 
+        last_name = request.POST.get('last_name') 
         email = request.POST.get('email')
         password = request.POST.get('password')
         role = request.POST.get('role')
@@ -69,6 +75,25 @@ def create_user(request):
         return redirect('admin_dashboard')
 
     return render(request, 'accounts/create_user.html')
+
+@user_passes_test(is_admin)
+def manage_user_roles(request):
+    users = User.objects.exclude(username=request.user.username)
+
+    if request.method == 'POST':
+        user_id = request.POST.get('user_id')
+        new_role = request.POST.get('new_role')
+
+        user = get_object_or_404(User, id=user_id)
+        user.groups.clear()
+        group, _ = Group.objects.get_or_create(name=new_role)
+        user.groups.add(group)
+
+        messages.success(request, f"{user.username}'s role updated to {new_role}.")
+        return redirect('manage_user_roles')
+
+    return render(request, 'accounts/manage_user_roles.html', {'users': users})
+
 class RegistrationForm(forms.ModelForm):
     password = forms.CharField(widget=forms.PasswordInput)
     class Meta:
@@ -85,7 +110,6 @@ def register_view(request):
     else:
         form = CustomUserCreationForm()
     return render(request, 'accounts/register.html', {'form': form})
-
 
 @login_required
 @permission_required('core.view_file', raise_exception=True)
@@ -111,14 +135,17 @@ def edit_file(request, file_id):
 def pre_dashboards(request):
     return render(request, 'core/pre_dashboards.html')
 
+@user_passes_test(is_viewer)
 def user_list_view(request):
     users = User.objects.all()
     return render(request, 'core/file_management/user_list.html', {'users': users})
 
+@user_passes_test(is_viewer)
 def user_detail(request, user_id):
     user = get_object_or_404(User, id=user_id)
     return render(request, 'core/file_management/user_detail.html', {'user': user})
 
+@user_passes_test(is_editor)
 def edit_user(request, user_id):
     user = get_object_or_404(User, id=user_id)
     if request.method == 'POST':
@@ -130,6 +157,7 @@ def edit_user(request, user_id):
         return redirect('user_list')
     return render(request, 'core/file_management/edit_user.html', {'user': user})
 
+@user_passes_test(is_admin)
 def delete_user(request, user_id):
     user = get_object_or_404(User, id=user_id)
     user.delete()
@@ -167,10 +195,10 @@ def file_management_dashboard(request):
         'categories': categories,
         'recent_files': recent_files,
         'file_types': file_types,
-        'user_name': 'Okaka'#request.user.get_full_name() or request.user.username  
+        'user_name': request.user.get_full_name() or request.user.username  
     })
 
-
+#@user_passes_test(is_viewer)
 def file_list_view(request, category_name=None):
     files = File.objects.filter(is_deleted=False)
 
@@ -200,6 +228,8 @@ def file_list_view(request, category_name=None):
         'active_category': category_name,
     })
 
+#@user_passes_test(is_viewer)
+#@permission_required('core.view_file', raise_exception=True)
 def preview_file(request, file_id):
     file = get_object_or_404(File, id=file_id, is_deleted=False)
 
@@ -212,6 +242,7 @@ def preview_file(request, file_id):
     return render(request, 'core/file_management/unsupported_preview.html', {'file': file})
 
 @login_required
+@permission_required('core.delete_file', raise_exception=True)
 def delete_file(request, file_id):
     file = get_object_or_404(File, id=file_id, is_deleted=False)
 
@@ -222,6 +253,7 @@ def delete_file(request, file_id):
         return redirect('file_list')
     
 @login_required
+@permission_required('core.add_file', raise_exception=True)
 def upload_file_view(request):
     if request.method == 'POST':
         form = FileUploadForm(request.POST, request.FILES)
@@ -235,19 +267,26 @@ def upload_file_view(request):
     
     return render(request, 'core/file_management/upload_file.html', {'form': form})
 
-@login_required
+@user_passes_test(is_viewer)
 def profile_view(request):
-    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-        return render(request, 'accounts/profile_content.html', {'user': request.user})
-    return render(request, 'accounts/profile_content.html', {'user': request.user})
+    context = {
+        'user': request.user,
+        'user_form': UserUpdateForm(instance=request.user),
+        'profile_form': ProfileUpdateForm(instance=request.user.profile),
+    }
 
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        return render(request, 'accounts/profile_content.html', context)
+
+    return render(request, 'accounts/profile.html', context)
 
 
 @method_decorator(login_required, name='dispatch')
 class SettingsView(View):
     def get(self, request):
         user_form = UserUpdateForm(instance=request.user)
-        profile_form = ProfileUpdateForm(instance=request.user.profile)
+        profile, created = Profile.objects.get_or_create(user=request.user)
+        profile_form = ProfileUpdateForm(instance=profile)
         return render(request, 'accounts/settings.html', {
             'user_form': user_form,
             'profile_form': profile_form
@@ -255,7 +294,8 @@ class SettingsView(View):
 
     def post(self, request):
         user_form = UserUpdateForm(request.POST, instance=request.user)
-        profile_form = ProfileUpdateForm(request.POST, request.FILES, instance=request.user.profile)
+        profile, created = Profile.objects.get_or_create(user=request.user)
+        profile_form = ProfileUpdateForm(request.POST, request.FILES, instance=profile)
         if user_form.is_valid() and profile_form.is_valid():
             user_form.save()
             profile_form.save()
@@ -265,10 +305,8 @@ class SettingsView(View):
             'profile_form': profile_form
         })
 
-# Tickets
-#def admin_dashboard(request):
-#    return render(request, 'core/helpdesk/admin_dashboard.html')
 
+# Tickets
 def ticketing_dashboard(request):
     # Status summary
     status_counts = Ticket.objects.values('status').annotate(count=Count('id'))
@@ -339,6 +377,7 @@ def ticket_detail(request, ticket_id):
     ticket = get_object_or_404(Ticket, id=ticket_id)
     return render(request, 'core/helpdesk/ticket_detail.html', {'ticket': ticket})
 
+@user_passes_test(is_admin)
 def delete_ticket(request, ticket_id):
     ticket = get_object_or_404(Ticket, id=ticket_id)
     ticket.delete()
@@ -356,6 +395,7 @@ def problem_category(request):
         'search_query': query,
     })
 
+@user_passes_test(is_admin)
 def create_problem_category(request):
     if request.method == 'POST':
         form = ProblemCategoryForm(request.POST)
@@ -371,6 +411,7 @@ def create_problem_category(request):
 
     return render(request, 'core/helpdesk/create_problem_category.html', {'form': form})
 
+@user_passes_test(is_admin)
 def edit_problem_category(request, category_id):
     category = get_object_or_404(ProblemCategory, pk=category_id)
     if request.method == 'POST':
@@ -383,6 +424,7 @@ def edit_problem_category(request, category_id):
 
     return render(request, 'core/helpdesk/edit_problem_category.html', {'form': form})
 
+@user_passes_test(is_admin)
 def delete_problem_category(request, category_id):
     category = get_object_or_404(ProblemCategory, id=category_id)
     category.delete()
@@ -412,7 +454,7 @@ def customers(request):
     all_customers = Customer.objects.exclude(name__exact="").exclude(name__isnull=True)
     return render(request, "core/helpdesk/customers.html", {"customers": all_customers})
 
-
+@user_passes_test(is_admin)
 def create_customer(request):
     if request.method == "POST":
         name = request.POST.get("name", "").strip()
@@ -425,6 +467,7 @@ def create_customer(request):
 
     return render(request, "core/helpdesk/create_customer.html")
 
+@user_passes_test(is_admin)
 def delete_customer(request, id):
     customer = get_object_or_404(Customer, id=id)
     customer.delete()
@@ -441,6 +484,7 @@ def regions(request):
     all_regions = Region.objects.all()
     return render(request, 'core/helpdesk/regions.html', {'regions': all_regions})
 
+@user_passes_test(is_admin)
 def delete_region(request, region_id):
     region = get_object_or_404(Region, id=region_id)
     region.delete()
@@ -462,6 +506,7 @@ def terminals(request):
     all_terminals = Terminal.objects.all()
     return render(request, 'core/helpdesk/terminals.html', {'form': form, 'terminals': all_terminals})
 
+@user_passes_test(is_admin)
 def delete_terminal(request, terminal_id):
     terminal = get_object_or_404(Terminal, id=terminal_id)
     terminal.delete()
@@ -479,6 +524,7 @@ def units(request):
     all_units = Unit.objects.all()
     return render(request, 'core/helpdesk/units.html', {'units': all_units})
 
+@user_passes_test(is_admin)
 def delete_unit(request, unit_id):
     unit = get_object_or_404(Unit, id=unit_id)
     unit.delete()
@@ -497,6 +543,7 @@ def system_users(request):
     all_users = SystemUser.objects.all()
     return render(request, 'core/helpdesk/users.html', {'users': all_users})
 
+@user_passes_test(is_admin)
 def delete_system_user(request, user_id):
     user = get_object_or_404(User, id=user_id)
     if request.user == user:
@@ -527,6 +574,7 @@ def zones(request):
         'regions': all_regions
     })
 
+@user_passes_test(is_admin)
 def delete_zone(request, zone_id):
     zone = get_object_or_404(Zone, id=zone_id)
     zone.delete()

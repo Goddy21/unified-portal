@@ -6,13 +6,6 @@ from django.contrib.contenttypes.models import ContentType
 from core.models import File, Profile
 from django.core.exceptions import ObjectDoesNotExist
 
-@receiver(post_migrate)
-def create_default_user(sender, **kwargs):
-    if not User.objects.filter(username='john').exists():
-        user = User.objects.create_user(username='john', email='john@example.com')
-        user.set_password('securePassword123')
-        user.save()
-
 
 @receiver(post_migrate)
 def setup_groups_and_permissions(sender, **kwargs):
@@ -47,15 +40,13 @@ def setup_groups_and_permissions(sender, **kwargs):
     viewer_group.permissions.set([view_perm])
     customer_group.permissions.set([view_perm])  
 
-
 @receiver(post_save, sender=User)
-def create_or_update_user_profile(sender, instance, created, **kwargs):
+def manage_user_profile(sender, instance, created, **kwargs):
     if created:
         Profile.objects.create(user=instance)
         if instance.is_superuser:
-            admin_group = Group.objects.get(name='Admin')
+            admin_group, _ = Group.objects.get_or_create(name='Admin')
             instance.groups.add(admin_group)
     else:
         if hasattr(instance, 'profile'):
             instance.profile.save()
-

@@ -368,6 +368,20 @@ body {
 .dropdown-content.show {
     display: block;
 }
+.sidebar-logo {
+  display: block;
+  max-width: 160px;         
+  height: auto;            
+  margin: 0 auto 30px auto; 
+  padding-top: 10px;
+  object-fit: contain;     
+  border-radius: 10px;     
+  transition: transform 0.3s ease;
+}
+
+.sidebar-logo:hover {
+  transform: scale(1.05);   
+}
 
 /* Mobile Responsiveness */
 @media (max-width: 992px) {
@@ -436,6 +450,10 @@ body {
     }
     .top-navbar .user-profile {
         margin-left: auto;
+    }
+    .sidebar-logo {
+    max-width: 120px;
+    margin-bottom: 20px;
     }
 }
 

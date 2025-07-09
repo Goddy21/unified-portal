@@ -37,7 +37,6 @@ class Profile(models.Model):
         return self.user.username
 
 
-
 # Help desk models
 class Unit(models.Model):
     name = models.CharField(max_length=100, unique=True)

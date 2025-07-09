@@ -10,9 +10,9 @@
 </head>
 <body>
   <header class="dashboard-header">
-    <div class="logo">AdminPanel</div>
+    <div class="logo"><i class="fas fa-tools"></i> AdminPanel</div>
     <nav>
-      <a href="{% url 'logout' %}">Logout</a>
+      <a href="{% url 'logout' %}"><i class="fas fa-sign-out-alt"></i> Logout</a>
     </nav>
   </header>
 
@@ -40,7 +40,7 @@
       </div>
 
       <div class="card stat-card">
-        <i class="fas fa-ticket card-icon"></i>
+        <i class="fas fa-ticket-alt card-icon"></i>
         <div class="card-info">
           <h3>Open Tickets</h3>
           <p>{{ open_tickets }}</p>
@@ -49,32 +49,78 @@
 
       <div class="card chart-card">
         <h3>User Roles Overview</h3>
-        <div class="chart-placeholder">[ Chart here (e.g. Chart.js) ]</div>
+        <div class="chart-placeholder">📊 Chart.js placeholder</div>
       </div>
 
       <div class="card chart-card">
         <h3>File Upload Activity</h3>
-        <div class="chart-placeholder">[ Chart here ]</div>
+        <div class="chart-placeholder">📈 Chart placeholder</div>
       </div>
     </section>
+
+    <div class="container">
+      <h2>👤 Manage User Roles</h2>
+      <table class="user-table">
+        <thead>
+          <tr>
+            <th>Username</th>
+            <th>Email</th>
+            <th>Current Role</th>
+            <th>Change Role</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for user in users %}
+          <tr>
+            <td>{{ user.username }}</td>
+            <td>{{ user.email }}</td>
+            <td>
+              {% if user.groups.first %}
+                {{ user.groups.first.name }}
+              {% else %}
+                <em>No Role</em>
+              {% endif %}
+            </td>
+            <td>
+              <form method="post" action="{% url 'manage_user_roles' %}">
+                {% csrf_token %}
+                <input type="hidden" name="user_id" value="{{ user.id }}">
+                <select name="new_role" required>
+                  <option value="">--Select--</option>
+                  <option value="Director">Director</option>
+                  <option value="Manager">Manager</option>
+                  <option value="Staff">Staff</option>
+                  <option value="Customer">Customer</option>
+                </select>
+                <button type="submit" class="btn-update">Update</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
     <section class="user-management">
-    <h3>Create New User</h3>
-    <form method="post" action="{% url 'create_user' %}" class="create-user-form">
+      <h3>Create New User</h3>
+      <form method="post" action="{% url 'create_user' %}" class="create-user-form">
         {% csrf_token %}
+        <input type="text" name="first_name" placeholder="First Name" required>
+        <input type="text" name="last_name" placeholder="Last Name" required>
         <input type="text" name="username" placeholder="Username" required>
         <input type="email" name="email" placeholder="Email" required>
         <input type="password" name="password" placeholder="Password" required>
 
         <select name="role" required>
-        <option value="">Select Role</option>
-        <option value="Director">Director</option>
-        <option value="Manager">Manager</option>
-        <option value="Staff">Staff</option>
-        <option value="Customer">Customer</option>
+          <option value="">Select Role</option>
+          <option value="Director">Director</option>
+          <option value="Manager">Manager</option>
+          <option value="Staff">Staff</option>
+          <option value="Customer">Customer</option>
         </select>
 
-        <button type="submit" class="btn-create">Create User</button>
-    </form>
+        <button type="submit" class="btn-create"><i class="fas fa-user-plus"></i> Create User</button>
+      </form>
     </section>
   </main>
 </body>
