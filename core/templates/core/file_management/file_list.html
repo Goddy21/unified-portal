@@ -47,12 +47,20 @@
           <p><strong>Uploaded by:</strong> {{ file.uploaded_by }}</p>
 
           <div class="file-actions">
+            {% if perms.core.view_file or perms.core.change_file %}
             <a href="{{ file.file.url }}" download class="btn download-link">⬇ Download</a>
+            {% endif %}
+
+            {% if perms.core.view_file %}
             <a href="{% url 'preview_file' file.id %}" target="_blank" class="btn preview-link">👁 Preview</a>
+            {% endif %}
+            
+            {% if perms.core.delete_file %}
             <form method="POST" action="{% url 'delete_file' file.id %}" class="delete-form" onsubmit="return confirm('Are you sure you want to delete this file?');">
               {% csrf_token %}
               <button type="submit" class="delete-link">🗑 Delete</button>
             </form>
+            {% endif %}
           </div>
         </div>
       </li>

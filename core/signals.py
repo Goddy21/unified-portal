@@ -11,34 +11,52 @@ from django.core.exceptions import ObjectDoesNotExist
 def setup_groups_and_permissions(sender, **kwargs):
     from django.core.exceptions import ObjectDoesNotExist
 
-    content_type = ContentType.objects.get_for_model(File)
+    # File model permissions
+    file_content_type = ContentType.objects.get_for_model(File)
+    user_content_type = ContentType.objects.get_for_model(User)
 
     # Create groups
     admin_group, _ = Group.objects.get_or_create(name='Admin')
     editor_group, _ = Group.objects.get_or_create(name='Editor')
     viewer_group, _ = Group.objects.get_or_create(name='Viewer')
-    customer_group, _ = Group.objects.get_or_create(name='Customer')
 
     try:
-        # Get built-in file model permissions
-        view_perm = Permission.objects.get(codename='view_file')
-        edit_perm = Permission.objects.get(codename='change_file')
-        delete_perm = Permission.objects.get(codename='delete_file')
+        # File permissions
+        view_file = Permission.objects.get(codename='view_file')
+        change_file = Permission.objects.get(codename='change_file')
+        delete_file = Permission.objects.get(codename='delete_file')
+        add_file = Permission.objects.get(codename='add_file')  
+
+        can_edit_file_perm, _ = Permission.objects.get_or_create(
+            codename='can_edit_file',
+            name='Can edit file',
+            content_type=file_content_type
+        )
+
+        # User model permissions
+        view_user = Permission.objects.get(codename='view_user')
+        change_user = Permission.objects.get(codename='change_user')
+        delete_user = Permission.objects.get(codename='delete_user')
+
     except ObjectDoesNotExist:
         return
 
-    # Optional custom permission
-    can_edit_file_perm, _ = Permission.objects.get_or_create(
-        codename='can_edit_file',
-        name='Can edit file',
-        content_type=content_type
-    )
+    # Assign permissions to groups
+    admin_group.permissions.set([
+        view_file, change_file, delete_file, add_file, can_edit_file_perm,
+        view_user, change_user, delete_user
+    ])
 
-    # Assign permissions
-    admin_group.permissions.set([view_perm, edit_perm, delete_perm, can_edit_file_perm])
-    editor_group.permissions.set([view_perm, edit_perm])
-    viewer_group.permissions.set([view_perm])
-    customer_group.permissions.set([view_perm])  
+    editor_group.permissions.set([
+        view_file, change_file, add_file, 
+        view_user, change_user
+    ])
+
+    viewer_group.permissions.set([
+        view_file,
+        view_user
+    ])
+
 
 @receiver(post_save, sender=User)
 def manage_user_profile(sender, instance, created, **kwargs):

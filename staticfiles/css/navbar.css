@@ -130,7 +130,7 @@
   color: #007bff;
 }
 
-.dropdown-link.logout-btn {
+#logout-form {
   background: none;
   border: none;
   width: 100%;
@@ -139,7 +139,9 @@
   font: inherit;
   cursor: pointer;
 }
-
+#logout-form:hover {
+  background-color: #f0f0f0;
+}
 /* Animation */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(-10px); }

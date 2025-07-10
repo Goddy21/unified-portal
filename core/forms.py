@@ -4,7 +4,13 @@ from .models import File, ProblemCategory, Ticket
 from django.contrib.auth.models import User
 from .models import Profile, Terminal, VersionControl
 
+class LoginForm(forms.Form):
+    username = forms.CharField()
+    password = forms.CharField(widget=forms.PasswordInput)
 
+class OTPForm(forms.Form):
+    otp = forms.CharField(max_length=6)
+    
 class CustomUserCreationForm(forms.ModelForm):
     password = forms.CharField(label='Password', widget=forms.PasswordInput)
     password2 = forms.CharField(label='Confirm Password', widget=forms.PasswordInput)

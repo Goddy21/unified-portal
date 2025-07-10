@@ -61,17 +61,6 @@
   color: #495057;
 }
 
-/* Language selector */
-.language-selector {
-  font-size: 0.95rem;
-  color: #495057;
-  cursor: pointer;
-}
-
-.language-selector:hover {
-  color: #007bff;
-}
-
 /* User profile dropdown */
 .user-profile {
   position: relative;

@@ -1,6 +1,6 @@
 from django.shortcuts import render, get_list_or_404, redirect
-from .models import File, FileCategory
-from django.http import FileResponse
+from .models import File
+from django.http import FileResponse, JsonResponse
 from .forms import FileUploadForm, ProblemCategoryForm, TicketForm
 from django.contrib.auth.decorators import login_required, permission_required, user_passes_test
 from django.db.models import Count, Q
@@ -11,10 +11,11 @@ import os
 from collections import Counter
 from django.contrib.auth.models import User, Group
 from django.utils.decorators import method_decorator
-from .forms import UserUpdateForm, ProfileUpdateForm, TerminalForm, VersionControlForm, FileUploadForm, CustomUserCreationForm
+from .forms import UserUpdateForm, ProfileUpdateForm, TerminalForm, VersionControlForm, FileUploadForm, CustomUserCreationForm, LoginForm, OTPForm
 from django.views import View
 import csv
-from .models import Customer, Region, Terminal, Unit, SystemUser, Zone, ProblemCategory, VersionControl, Report, Ticket, Profile
+from .models import Customer, Region, Terminal, Unit, SystemUser, Zone, ProblemCategory, VersionControl, Report, Ticket, Profile, EmailOTP
+from django.core.mail import send_mail
 from django.contrib import messages
 from datetime import datetime
 from django.utils.dateparse import parse_date
@@ -23,26 +24,85 @@ import calendar
 from django.shortcuts import get_object_or_404
 from mimetypes import guess_type
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
-from django.contrib.auth import login
+from django.contrib.auth import login as auth_login, authenticate
 from django import forms
+import random
+from django.core.exceptions import PermissionDenied
+from core.utils import can_user_access_file
+from .utils import is_admin  
 
+def in_group(user, group_name):
+    return user.is_authenticated and (user.is_superuser or user.groups.filter(name=group_name).exists())
 def is_admin(user):
-    return user.is_superuser or user.groups.filter(name='Admin').exists()
+    return in_group(user, 'Admin')
 def is_editor(user):
-    return user.groups.filter(name='Editor').exists()
+    return in_group(user, 'Editor')
 def is_viewer(user):
-    return user.groups.filter(name='Viewer').exists()
-def is_customer(user):
-    return user.groups.filter(name='Customer').exists()
+    return in_group(user, 'Viewer')
 
 @user_passes_test(is_admin)
 def admin_dashboard(request):
+    if request.method == 'POST':
+        action = request.POST.get('action')
+
+        if action == 'update_role':
+            user_id = request.POST.get('user_id')
+            new_role = request.POST.get('new_role')
+            user = get_object_or_404(User, id=user_id)
+            user.groups.clear()
+            group, _ = Group.objects.get_or_create(name=new_role)
+            user.groups.add(group)
+            messages.success(request, f"{user.username}'s role updated to {new_role}.")
+
+        elif action == 'delete_user':
+            user_id = request.POST.get('user_id')
+            user = get_object_or_404(User, id=user_id)
+            user.delete()
+            messages.success(request, f"User {user.username} has been deleted.")
+
+    users = User.objects.exclude(id=request.user.id)
+
     context = {
+        'users': users,
         'total_users': User.objects.count(),
         'total_files': File.objects.count(),
         'open_tickets': Ticket.objects.filter(status='open').count(),
     }
     return render(request, 'accounts/admin_dashboard.html', context)
+
+@user_passes_test(is_admin)
+def manage_file_categories(request):
+    categories = FileCategory.objects.all()
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+
+        if action == 'create':
+            name = request.POST.get('name')
+            if name:
+                FileCategory.objects.create(name=name)
+                messages.success(request, f'Category "{name}" created successfully.')
+                return redirect('manage_file_categories')
+
+        elif action == 'update':
+            category_id = request.POST.get('category_id')
+            new_name = request.POST.get('new_name')
+            category = get_object_or_404(FileCategory, id=category_id)
+            category.name = new_name
+            category.save()
+            messages.success(request, f'Category "{new_name}" updated successfully.')
+            return redirect('manage_file_categories')
+
+        elif action == 'delete':
+            category_id = request.POST.get('category_id')
+            category = get_object_or_404(FileCategory, id=category_id)
+            category.delete()
+            messages.success(request, f'Category "{category.name}" deleted.')
+            return redirect('manage_file_categories')
+
+    return render(request, 'accounts/manage_file_categories.html', {
+        'categories': categories
+    })
 
 @user_passes_test(is_admin)
 def create_user(request):
@@ -76,24 +136,6 @@ def create_user(request):
 
     return render(request, 'accounts/create_user.html')
 
-@user_passes_test(is_admin)
-def manage_user_roles(request):
-    users = User.objects.exclude(username=request.user.username)
-
-    if request.method == 'POST':
-        user_id = request.POST.get('user_id')
-        new_role = request.POST.get('new_role')
-
-        user = get_object_or_404(User, id=user_id)
-        user.groups.clear()
-        group, _ = Group.objects.get_or_create(name=new_role)
-        user.groups.add(group)
-
-        messages.success(request, f"{user.username}'s role updated to {new_role}.")
-        return redirect('manage_user_roles')
-
-    return render(request, 'accounts/manage_user_roles.html', {'users': users})
-
 class RegistrationForm(forms.ModelForm):
     password = forms.CharField(widget=forms.PasswordInput)
     class Meta:
@@ -111,19 +153,80 @@ def register_view(request):
         form = CustomUserCreationForm()
     return render(request, 'accounts/register.html', {'form': form})
 
+def login_view(request):
+    form = LoginForm()
+
+
+    if request.method == 'POST':
+        form = LoginForm(request.POST)
+        
+        if form.is_valid():
+            username = form.cleaned_data['username']
+            password = form.cleaned_data["password"]
+            user = authenticate(username=username, password=password)
+            if user:
+                request.session['pre_otp_user'] = user.id 
+                 # Generate and send OTP
+                otp = str(random.randint(100000, 999999))
+                EmailOTP.objects.update_or_create(user=user, defaults={'otp': otp})
+                send_mail(
+                    'Your OTP Code',
+                    f'Your OTP is {otp}',
+                    'no-reply@yourapp.com',
+                    [user.email],
+                    fail_silently=False,
+                )
+                return JsonResponse({'status': 'otp_sent'})
+            else:
+                return JsonResponse({'status':'error', 'message':'Invalid username or password'})
+        else:
+            return JsonResponse({'status': 'error', 'message': 'Invalid form input'})
+    return render(request, 'accounts/login.html', {'form': form})
+
+def verify_otp_view(request):
+    user_id = request.session.get('pre_otp_user')
+    if not user_id:
+        return JsonResponse({'status': 'error', 'message':'session expired. please login again.'})
+    try:
+        user = User.objects.get(id=user_id)
+    except User.DoesNotExist:
+        return JsonResponse({'status': 'error', 'message':'user not found'})
+
+
+    if request.method == "POST":
+        form = OTPForm(request.POST)
+        if form.is_valid():
+            otp_input = form.cleaned_data["otp"]
+            otp_instance = EmailOTP.objects.filter(user=user).first()
+            if otp_instance and not otp_instance.is_expired() and otp_input == otp_instance.otp:
+                auth_login(request, user)
+                del request.session['pre_otp_user']
+                otp_instance.delete()
+
+                return JsonResponse({'status': 'verified', 'redirect_url': '/pre_dashboards/'})
+            
+                
+            else:
+                return JsonResponse({'status': 'error', 'message': 'Invalid or expired OTP'})
+        else:
+            return JsonResponse({'status': 'error', 'message': 'Invalid OTP input' })
+    return JsonResponse({'status': 'error', 'message': 'invalid request method'})
+
 @login_required
-@permission_required('core.view_file', raise_exception=True)
 def view_files(request):
+    if not request.user.has_perm('core.view_file'):
+        raise PermissionDenied('You do not have permission to view this file!')
     files = File.objects.all()
     return render(request, 'file_list.html', {'files': files})
 
 @login_required
-@permission_required('core.change_file', raise_exception=True)
 def edit_file(request, file_id):
+    if not request.user.has_perm('core.change_file'):
+        raise PermissionDenied("You do not have permission to edit this file")
     file = get_object_or_404(File, pk=file_id)
 
     if request.method == 'POST':
-        form = FileUploadForm(request.POST, instance=file)
+        form = FileUploadForm(request.POST, request.FILES, instance=file)
         if form.is_valid():
             form.save()
             return redirect('view_files')
@@ -135,7 +238,8 @@ def edit_file(request, file_id):
 def pre_dashboards(request):
     return render(request, 'core/pre_dashboards.html')
 
-@user_passes_test(is_viewer)
+
+#@user_passes_test(is_viewer)
 def user_list_view(request):
     users = User.objects.all()
     return render(request, 'core/file_management/user_list.html', {'users': users})
@@ -157,7 +261,7 @@ def edit_user(request, user_id):
         return redirect('user_list')
     return render(request, 'core/file_management/edit_user.html', {'user': user})
 
-@user_passes_test(is_admin)
+@permission_required('auth.delete_user', raise_exception=True)
 def delete_user(request, user_id):
     user = get_object_or_404(User, id=user_id)
     user.delete()
@@ -228,10 +332,27 @@ def file_list_view(request, category_name=None):
         'active_category': category_name,
     })
 
+def search(request):
+    query = request.GET.get('q', '')
+    files = File.objects.filter(title__icontains=query, is_deleted=False)
+    categories = FileCategory.objects.filter(name__icontains=query)
+    users = User.objects.filter(username__icontains=query)
+
+    context = {
+        'query': query,
+        'files': files,
+        'categories': categories,
+        'users': users,
+    }
+    return render(request, 'core/file_management/search_result.html', context)
+
 #@user_passes_test(is_viewer)
 #@permission_required('core.view_file', raise_exception=True)
 def preview_file(request, file_id):
     file = get_object_or_404(File, id=file_id, is_deleted=False)
+    
+    if not can_user_access_file(request.user, file):
+        raise PermissionDenied("You do not have access to this file.")
 
     # Get the guessed content type (e.g., image/jpeg, application/pdf)
     mime_type, _ = guess_type(file.file.name)
@@ -242,8 +363,9 @@ def preview_file(request, file_id):
     return render(request, 'core/file_management/unsupported_preview.html', {'file': file})
 
 @login_required
-@permission_required('core.delete_file', raise_exception=True)
 def delete_file(request, file_id):
+    if not request.user.has_perm('core.delete_file'):
+        raise PermissionDenied('You do not have permission to delete this file')
     file = get_object_or_404(File, id=file_id, is_deleted=False)
 
     if request.method == "POST":
@@ -251,6 +373,8 @@ def delete_file(request, file_id):
         file.save()
         messages.success(request, "File deleted successfully.")
         return redirect('file_list')
+    
+    return redirect('file_list')
     
 @login_required
 @permission_required('core.add_file', raise_exception=True)
@@ -536,11 +660,12 @@ def system_users(request):
         username = request.POST.get('username')
         email = request.POST.get('email')
         role = request.POST.get('role')
+        users = User.objects.all()
         if username and email and role:
             SystemUser.objects.create(username=username, email=email, role=role)
         return redirect('system_users')
 
-    all_users = SystemUser.objects.all()
+    all_users = User.objects.all()
     return render(request, 'core/helpdesk/users.html', {'users': all_users})
 
 @user_passes_test(is_admin)

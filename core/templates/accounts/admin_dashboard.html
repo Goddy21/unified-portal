@@ -12,7 +12,10 @@
   <header class="dashboard-header">
     <div class="logo"><i class="fas fa-tools"></i> AdminPanel</div>
     <nav>
-      <a href="{% url 'logout' %}"><i class="fas fa-sign-out-alt"></i> Logout</a>
+      <form id="logout-form" method="post" action="{% url 'logout' %}" style="margin: 0;">
+        {% csrf_token %}
+        <button type="submit" ><i class="fas fa-sign-out-alt"></i> 🚪 Logout</button>
+      </form>
     </nav>
   </header>
 
@@ -58,6 +61,12 @@
       </div>
     </section>
 
+    <section class="quick-actions">
+      <a href="{% url 'manage_file_categories' %}" class="btn-nav">
+        📂 Manage File Categories
+      </a>
+    </section>
+
     <div class="container">
       <h2>👤 Manage User Roles</h2>
       <table class="user-table">
@@ -82,17 +91,26 @@
               {% endif %}
             </td>
             <td>
-              <form method="post" action="{% url 'manage_user_roles' %}">
+              <!-- Role Change Form -->
+              <form method="post" action="{% url 'admin_dashboard' %}" style="display:inline;">
                 {% csrf_token %}
                 <input type="hidden" name="user_id" value="{{ user.id }}">
+                <input type="hidden" name="action" value="update_role">
                 <select name="new_role" required>
                   <option value="">--Select--</option>
-                  <option value="Director">Director</option>
-                  <option value="Manager">Manager</option>
-                  <option value="Staff">Staff</option>
-                  <option value="Customer">Customer</option>
+                  <option value="Admin">Admin</option>
+                  <option value="Editor">Editor</option>
+                  <option value="Viewer">Viewer</option>
                 </select>
                 <button type="submit" class="btn-update">Update</button>
+              </form>
+
+              <!-- Delete Form -->
+              <form method="post" action="{% url 'admin_dashboard' %}" style="display:inline;">
+                {% csrf_token %}
+                <input type="hidden" name="user_id" value="{{ user.id }}">
+                <input type="hidden" name="action" value="delete_user">
+                <button type="submit" class="btn-delete"><i class="fas fa-trash-alt"></i></button>
               </form>
             </td>
           </tr>
@@ -113,10 +131,9 @@
 
         <select name="role" required>
           <option value="">Select Role</option>
-          <option value="Director">Director</option>
-          <option value="Manager">Manager</option>
-          <option value="Staff">Staff</option>
-          <option value="Customer">Customer</option>
+          <option value="Admin">Admin</option>
+          <option value="Editor">Editor</option>
+          <option value="Viewer">Viewer</option>
         </select>
 
         <button type="submit" class="btn-create"><i class="fas fa-user-plus"></i> Create User</button>

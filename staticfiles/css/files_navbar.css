@@ -1,7 +1,23 @@
 .user-profile {
   position: relative;
 }
+.profile-dropdown {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.95rem;
+  color: #343a40;
+}
 
+.profile-dropdown img {
+  width: 32px;
+  height: 32px;
+  max-width: 32px;
+  max-height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #ddd;
+}
 .dropdown-content {
   display: none;
   position: absolute;
@@ -35,7 +51,7 @@
   margin: 0;
 }
 
-.dropdown-link.logout-btn {
+#logout-form {
   width: 100%;
   background: none;
   border: none;
@@ -49,7 +65,7 @@
   display: block;
 }
 
-.dropdown-link.logout-btn:hover {
+#logout-form:hover {
   background-color: #f0f0f0;
 }
 .modal {

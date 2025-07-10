@@ -3,11 +3,14 @@ from . import views
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib.auth import views as auth_views
-from .views import SettingsView
+from .views import SettingsView, manage_file_categories
 
 
 urlpatterns = [
-    path('', auth_views.LoginView.as_view(template_name='accounts/login.html'), name='login'),
+    #path('', auth_views.LoginView.as_view(template_name='accounts/login.html'), name='login'),
+    path('', views.login_view, name='login'),
+    path('verify-otp/', views.verify_otp_view, name='verify_otp'),
+
     path('register/', views.register_view, name='register'),
 
         
@@ -43,6 +46,9 @@ urlpatterns = [
     path('files-management/', views.file_management_dashboard, name='file_management_dashboard'),
     path('dashboard/', views.file_management_dashboard, name='dashboard'),
     path('files-management/', views.file_management_dashboard, name='dashboard'),
+    path('file-categories/', manage_file_categories, name='manage_file_categories'),
+
+     path('search/', views.search, name='search'),
 
     path('profile/', views.profile_view, name='profile_view'),
     path('settings/', SettingsView.as_view(), name='settings'),

@@ -37,14 +37,14 @@ body {
 }
 
 .search-bar i {
-  color: #6c757d;
+  color: darkblue;
   margin-right: 10px;
 }
 
 .search-bar input {
   border: none;
   background: transparent;
-  color: white;
+  color: darkblue;
   width: 100%;
   outline: none;
   font-size: 1rem;
@@ -151,6 +151,15 @@ body {
 /* Show dropdown when .active is added to .user-profile */
 .user-profile.active .dropdown-content {
   display: block;
+}
+.dropdown-link.logout-btn {
+  background: none;
+  border: none;
+  width: 100%;
+  text-align: left;
+  padding: 0.75rem 1rem;
+  font: inherit;
+  cursor: pointer;
 }
 
 /* Responsive */

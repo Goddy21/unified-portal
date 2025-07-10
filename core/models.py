@@ -1,12 +1,32 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.utils import timezone
+from datetime import timedelta
 
+class EmailOTP(models.Model):
+        user = models.OneToOneField(User, on_delete=models.CASCADE)
+        otp = models.CharField(max_length=6)
+        created_at = models.DateTimeField(auto_now_add=True)
+
+        def is_expired(self):
+            now = timezone.now()
+            return now >  self.created_at + timedelta(minutes=50) 
+        
+        def __str__(self):
+            return f"{self.user.username} - {self.otp}"
+        
 # File Management Models
 class FileCategory(models.Model):
     name = models.CharField(max_length=100, unique=True)
 
     def __str__(self):
         return self.name
+    
+ACCESS_LEVEL_CHOICES = [
+    ('admin', 'Admin'),
+    ('editor', 'Editor'),
+    ('viewer', 'Viewer'),
+]
 
 class File(models.Model):
     title = models.CharField(max_length=255)
@@ -16,7 +36,7 @@ class File(models.Model):
     uploaded_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     upload_date = models.DateTimeField(auto_now_add=True)
     is_deleted = models.BooleanField(default=False)
-    access_level = models.CharField(max_length=20, choices=[('admin', 'Admin'), ('operator', 'Operator')])
+    access_level = models.CharField(max_length=20, choices=ACCESS_LEVEL_CHOICES)
 
     def __str__(self):
         return self.title
@@ -56,8 +76,6 @@ class Terminal(models.Model):
 
     def __str__(self):
         return f"{self.customer.name if self.customer else 'No Customer'} - {self.cdm_name}"
-
-
 
 
 class SystemUser(models.Model):
