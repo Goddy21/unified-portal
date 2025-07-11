@@ -22,6 +22,20 @@
       <div><strong>Created By:</strong> {{ ticket.created_by }}</div>
       <div><strong>Created At:</strong> {{ ticket.created_at|date:"Y-m-d H:i" }}</div>
     </div>
+    
+    {% if is_admin or is_editor %}
+    <form method="post" action="{% url 'resolve_ticket' ticket.id %}">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-success">Resolve Ticket</button>
+    </form>
+    {% elif can_resolve %}
+        <form method="post" action="{% url 'resolve_ticket' ticket.id %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-success">Resolve Ticket</button>
+        </form>
+    {% else %}
+        <span class="badge badge-success">Resolved</span>
+    {% endif %}
 
     <a href="{% url 'ticketing_dashboard' %}" class="btn btn-back">← Back to Tickets</a>
   </div>

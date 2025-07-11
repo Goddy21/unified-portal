@@ -11,7 +11,7 @@ import os
 from collections import Counter
 from django.contrib.auth.models import User, Group
 from django.utils.decorators import method_decorator
-from .forms import UserUpdateForm, ProfileUpdateForm, TerminalForm, VersionControlForm, FileUploadForm, CustomUserCreationForm, LoginForm, OTPForm
+from .forms import UserUpdateForm, ProfileUpdateForm, TerminalForm,TerminalUploadForm, VersionControlForm, FileUploadForm, CustomUserCreationForm, LoginForm, OTPForm
 from django.views import View
 import csv
 from .models import Customer, Region, Terminal, Unit, SystemUser, Zone, ProblemCategory, VersionControl, Report, Ticket, Profile, EmailOTP
@@ -30,6 +30,8 @@ import random
 from django.core.exceptions import PermissionDenied
 from core.utils import can_user_access_file
 from .utils import is_admin  
+import json
+import pandas as pd
 
 def in_group(user, group_name):
     return user.is_authenticated and (user.is_superuser or user.groups.filter(name=group_name).exists())
@@ -187,11 +189,11 @@ def verify_otp_view(request):
     user_id = request.session.get('pre_otp_user')
     if not user_id:
         return JsonResponse({'status': 'error', 'message':'session expired. please login again.'})
+
     try:
         user = User.objects.get(id=user_id)
     except User.DoesNotExist:
         return JsonResponse({'status': 'error', 'message':'user not found'})
-
 
     if request.method == "POST":
         form = OTPForm(request.POST)
@@ -200,17 +202,21 @@ def verify_otp_view(request):
             otp_instance = EmailOTP.objects.filter(user=user).first()
             if otp_instance and not otp_instance.is_expired() and otp_input == otp_instance.otp:
                 auth_login(request, user)
-                del request.session['pre_otp_user']
+                
+                if 'pre_otp_user' in request.session:
+                    del request.session['pre_otp_user']
+                
                 otp_instance.delete()
 
                 return JsonResponse({'status': 'verified', 'redirect_url': '/pre_dashboards/'})
-            
                 
             else:
                 return JsonResponse({'status': 'error', 'message': 'Invalid or expired OTP'})
         else:
-            return JsonResponse({'status': 'error', 'message': 'Invalid OTP input' })
+            return JsonResponse({'status': 'error', 'message': 'Invalid OTP input'})
+    
     return JsonResponse({'status': 'error', 'message': 'invalid request method'})
+
 
 @login_required
 def view_files(request):
@@ -456,32 +462,39 @@ def ticketing_dashboard(request):
     )
 
     context = {
-        'status_data': list(status_counts),
-        'priority_data': list(priority_counts),
-        'monthly_data': [
-            {'month': calendar.month_abbr[d['month'].month], 'count': d['count']}
-            for d in monthly_trends if d['month']  # Guard against None
-        ],
-        'terminal_data': [
-            {'terminal': d['terminal__cdm_name'], 'count': d['count']}
-            for d in terminal_data
-        ],
-    }
+    'status_data': json.dumps(list(status_counts)),
+    'priority_data': json.dumps(list(priority_counts)),
+    'monthly_data': json.dumps([
+        {'month': calendar.month_abbr[d['month'].month], 'count': d['count']}
+        for d in monthly_trends if d['month']
+    ]),
+    'terminal_data': json.dumps([
+        {'terminal': d['terminal__cdm_name'], 'count': d['count']}
+        for d in terminal_data
+    ]),
+}
 
     return render(request, 'core/helpdesk/ticketing_dashboard.html', context)
 
 def tickets(request):
     query = request.GET.get('search', '')
+    status_filter = request.GET.get('status', '') 
+    
     tickets = Ticket.objects.select_related('problem_category').filter(
         Q(title__icontains=query) |
         Q(description__icontains=query) |
         Q(problem_category__name__icontains=query)
     ).order_by('-created_at')
 
+    if status_filter:
+        tickets = tickets.filter(status=status_filter)
+
     return render(request, 'core/helpdesk/tickets.html', {
         'tickets': tickets,
-        'search_query': query
+        'search_query': query,
+        'status_filter': status_filter
     })
+
 
 
 def create_ticket(request):
@@ -499,7 +512,63 @@ def create_ticket(request):
 
 def ticket_detail(request, ticket_id):
     ticket = get_object_or_404(Ticket, id=ticket_id)
-    return render(request, 'core/helpdesk/ticket_detail.html', {'ticket': ticket})
+    
+    # Check if the user has permission to resolve the ticket
+    can_resolve = request.user.has_perm('can_resolve_ticket')
+    
+    context = {
+        'ticket': ticket,
+        'is_admin': is_admin(request.user),
+        'is_editor': is_editor(request.user),
+        'can_resolve': can_resolve,  
+    }
+    
+    # Admin and editor can always resolve the ticket
+    if is_admin(request.user) or is_editor(request.user):
+        return render(request, 'core/helpdesk/ticket_detail.html', context)
+    
+    # Viewer can only view the ticket if it is resolved
+    elif is_viewer(request.user):
+        if ticket.status == 'resolved':
+            return render(request, 'core/helpdesk/ticket_detail.html', context)
+        else:
+            return render(request, 'core/helpdesk/permission_denied.html')
+    
+    return render(request, 'core/helpdesk/permission_denied.html')
+
+
+
+@login_required
+def resolve_ticket_view(request, ticket_id):
+    ticket = get_object_or_404(Ticket, id=ticket_id)
+
+    # Check if the user is authorized to resolve the ticket
+    if is_admin(request.user) or is_editor(request.user):
+        # Admins and Editors can resolve tickets
+        if ticket.status != 'resolved':
+            ticket.status = 'resolved'
+            ticket.save()
+            messages.success(request, 'Ticket resolved successfully!')
+            return redirect('ticket_detail', ticket_id=ticket.id)
+        else:
+            messages.error(request, 'Ticket already resolved')
+            return render(request, 'core/helpdesk/error.html')
+
+    elif request.user.has_perm('can_resolve_ticket'):
+        # Custom permission check
+        if ticket.status != 'resolved':
+            ticket.status = 'resolved'
+            ticket.save()
+            messages.success(request, 'Ticket resolved successfully!')
+            return redirect('ticket_detail', ticket_id=ticket.id)
+        else:
+            messages.error(request, 'Ticket already resolved!')
+            return render(request, 'core/helpdesk/error.html')
+
+    # If the user doesn't have permission
+    messages.error(request, 'You do not have permission to resolve this ticket.')
+    return render(request, 'core/helpdesk/permission_denied.html')
+
 
 @user_passes_test(is_admin)
 def delete_ticket(request, ticket_id):
@@ -616,19 +685,50 @@ def delete_region(request, region_id):
     return redirect('regions')
 
 def terminals(request):
+    form = TerminalForm()
+    upload_form = TerminalUploadForm()
+
     if request.method == 'POST':
-        form = TerminalForm(request.POST)
-        if form.is_valid():
-            form.save()
-            if 'create_another' in request.POST:
+        if 'create' in request.POST or 'create_another' in request.POST:
+            form = TerminalForm(request.POST)
+            if form.is_valid():
+                form.save()
+                messages.success(request, "Terminal created successfully.")
                 return redirect('terminals')
-            else:
-                return redirect('terminals') 
-    else:
-        form = TerminalForm()
+
+        elif 'upload_file' in request.POST:
+            upload_form = TerminalUploadForm(request.POST, request.FILES)
+            if upload_form.is_valid():
+                file = upload_form.cleaned_data['file']
+                try:
+                    if file.name.endswith('.csv'):
+                        df = pd.read_csv(file)
+                    else:
+                        df = pd.read_excel(file)
+
+                    # Ensure column names match model fields or clean them here
+                    for _, row in df.iterrows():
+                        Terminal.objects.create(
+                            customer=Customer.objects.get(name=row['customer']),
+                            branch_name=row['branch_name'],
+                            cdm_name=row['cdm_name'],
+                            serial_number=row['serial_number'],
+                            region=Region.objects.get(name=row['region']),
+                            model=row['model'],
+                            zone=Zone.objects.get(name=row['zone']),
+                        )
+                    messages.success(request, "Terminals imported successfully.")
+                except Exception as e:
+                    messages.error(request, f"Error importing file: {e}")
+
+                return redirect('terminals')
 
     all_terminals = Terminal.objects.all()
-    return render(request, 'core/helpdesk/terminals.html', {'form': form, 'terminals': all_terminals})
+    return render(request, 'core/helpdesk/terminals.html', {
+        'form': form,
+        'upload_form': upload_form,
+        'terminals': all_terminals
+    })
 
 @user_passes_test(is_admin)
 def delete_terminal(request, terminal_id):

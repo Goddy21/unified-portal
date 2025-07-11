@@ -64,11 +64,11 @@ urlpatterns = [
     path('files/delete/<int:file_id>/', views.delete_file, name='delete_file'),
 
 
-    #path('admin_dashboard/', views.admin_dashboard, name='admin_dashboard'),
     path('ticketing/', views.ticketing_dashboard, name='ticketing_dashboard'),
     path('tickets/', views.tickets, name='tickets'),
     path('create_ticket/', views.create_ticket, name= 'create_ticket'),
     path('tickets/<int:ticket_id>/', views.ticket_detail, name='ticket_detail'), 
+    path('ticket/<int:ticket_id>/resolve/', views.resolve_ticket_view, name='resolve_ticket'),
     path('tickets/delete/<int:ticket_id>/', views.delete_ticket, name='delete_ticket'),
     path('ticket-statuses/', views.ticket_statuses, name='ticket_statuses'),
     path('problem-category/', views.problem_category, name='problem_category'), 

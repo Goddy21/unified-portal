@@ -75,14 +75,18 @@
 {% endblock %}
 
 {% block extra_js %}
-<script>
-  const STATUS_DATA = JSON.parse('{{ status_data|escapejs }}');
-  const PRIORITY_DATA = JSON.parse('{{ priority_data|escapejs }}');
-  const MONTHLY_DATA = JSON.parse('{{ monthly_data|escapejs }}');
-  const TERMINAL_DATA = JSON.parse('{{ terminal_data|escapejs }}');
-</script>
+  <script>
+    const STATUS_DATA = {{ status_data|safe }};
+    const PRIORITY_DATA = {{ priority_data|safe }};
+    const MONTHLY_DATA = {{ monthly_data|safe }};
+    const TERMINAL_DATA = {{ terminal_data|safe }};
+  </script>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
-<script src="{% static 'js/ticketing_dashboard.js' %}"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
+
+  <script src="{% static 'js/ticketing_dashboard.js' %}"></script>
 {% endblock %}
+
+
+

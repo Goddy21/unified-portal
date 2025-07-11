@@ -164,6 +164,12 @@ class Ticket(models.Model):
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        permissions = [
+            ('can_view_ticket', 'Can view ticket'),
+            ('can_resolve_ticket', 'Can resolve ticket'),
+        ]
 
     def __str__(self):
         return self.title

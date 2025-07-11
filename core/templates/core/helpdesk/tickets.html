@@ -21,6 +21,15 @@
       <button type="submit" class="btn btn-sm btn-primary">Search</button>
     </form>
   </div>
+  <form method="get" class="status-filter-form">
+    <select name="status" class="form-control" onchange="this.form.submit()">
+        <option value="">All Tickets</option>
+        <option value="open" {% if status_filter == 'open' %}selected{% endif %}>Open</option>
+        <option value="in_progress" {% if status_filter == 'in_progress' %}selected{% endif %}>In Progress</option>
+        <option value="resolved" {% if status_filter == 'resolved' %}selected{% endif %}>Resolved</option>
+    </select>
+  </form>
+
 
   <div class="ticket-table-wrapper">
     {% if messages %}

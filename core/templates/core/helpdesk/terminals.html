@@ -9,42 +9,52 @@
 <link rel="stylesheet" href="{% static 'css/terminals.css' %}">
 {% endblock %}
 
-<div class="page-container">
-  <h2><i class="fas fa-building"></i> Terminals</h2>
-  <p>Manage terminal information here.</p>
+  <div class="page-container">
+    <h2><i class="fas fa-building"></i> Terminals</h2>
+    <p>Manage terminal information here.</p>
 
-  <form method="post" action="{% url 'terminals' %}" class="terminal-form">
+    <form method="post" action="{% url 'terminals' %}" class="terminal-form">
+      {% csrf_token %}
+      <div class="form-section">
+        <div class="form-group">
+          {{ form.customer.label_tag }}{{ form.customer }}
+        </div>
+        <div class="form-group">
+          {{ form.branch_name.label_tag }}{{ form.branch_name }}
+        </div>
+        <div class="form-group">
+          {{ form.cdm_name.label_tag }}{{ form.cdm_name }}
+        </div>
+        <div class="form-group">
+          {{ form.serial_number.label_tag }}{{ form.serial_number }}
+        </div>
+        <div class="form-group">
+          {{ form.region.label_tag }}{{ form.region }}
+        </div>
+        <div class="form-group">
+          {{ form.model.label_tag }}{{ form.model }}
+        </div>
+        <div class="form-group">
+          {{ form.zone.label_tag }}{{ form.zone }}
+        </div>
+      </div>
+
+      <div class="form-buttons">
+        <button type="submit" name="create" class="btn btn-danger">Create</button>
+        <button type="submit" name="create_another" class="btn btn-secondary">Create & create another</button>
+        <a href="{% url 'terminals' %}" class="btn btn-outline-light">Cancel</a>
+      </div>
+    </form>
+    <form method="post" enctype="multipart/form-data" class="upload-form">
     {% csrf_token %}
-    <div class="form-section">
-      <div class="form-group">
-        {{ form.customer.label_tag }}{{ form.customer }}
-      </div>
-      <div class="form-group">
-        {{ form.branch_name.label_tag }}{{ form.branch_name }}
-      </div>
-      <div class="form-group">
-        {{ form.cdm_name.label_tag }}{{ form.cdm_name }}
-      </div>
-      <div class="form-group">
-        {{ form.serial_number.label_tag }}{{ form.serial_number }}
-      </div>
-      <div class="form-group">
-        {{ form.region.label_tag }}{{ form.region }}
-      </div>
-      <div class="form-group">
-        {{ form.model.label_tag }}{{ form.model }}
-      </div>
-      <div class="form-group">
-        {{ form.zone.label_tag }}{{ form.zone }}
-      </div>
+    <div class="form-group">
+      <label for="file">Upload Terminals via Excel/CSV</label>
+      <input type="file" name="file" id="file" class="form-control">
     </div>
-
-    <div class="form-buttons">
-      <button type="submit" name="create" class="btn btn-danger">Create</button>
-      <button type="submit" name="create_another" class="btn btn-secondary">Create & create another</button>
-      <a href="{% url 'terminals' %}" class="btn btn-outline-light">Cancel</a>
-    </div>
+    
+    <button type="submit" name="upload_file" class="btn btn-primary mt-2">Upload</button>
   </form>
+
 
 
   <div class="table-responsive">

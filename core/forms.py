@@ -110,6 +110,12 @@ class TerminalForm(forms.ModelForm):
             'model': forms.TextInput(attrs={'class': 'form-control'}),
             'zone': forms.Select(attrs={'class': 'form-control'}),
         }
+    
+class TerminalUploadForm(forms.Form):
+    file = forms.FileField(
+        label='Upload CSV or Excel File',
+        widget=forms.FileInput(attrs={'accept': '.csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'})
+    )
 
 class VersionControlForm(forms.ModelForm):
     class Meta:

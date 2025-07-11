@@ -46,8 +46,14 @@
       </div>
     </div>
   </div>
+  <div id="loader" class="loader-overlay">
+    <div class="loader"></div>
+  </div>
 
-
+  <script>
+    const loginUrl = "{% url 'login' %}";
+    const verifyOtpUrl = "{% url 'verify_otp' %}";
+  </script>
    <script src="{% static 'js/login.js' %}"></script> 
  
 </body>

@@ -125,6 +125,41 @@
   text-decoration: underline;
   color: #c82333;
 }
+/* File input styling */
+.upload-form input[type="file"] {
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 0.95rem;
+  background-color: #fff;
+  color: #333;
+  width: 100%;
+}
+
+/* Button styling */
+.upload-form .btn {
+  padding: 10px 16px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  font-size: 0.95rem;
+}
+
+.upload-form .btn:hover {
+  background-color: #0056b3;
+}
+
+.upload-form .btn-primary {
+  background-color: #007bff;
+}
+
+.upload-form .btn-primary:hover {
+  background-color: #0056b3;
+}
+
 
 /* Mobile responsive tweaks */
 @media (max-width: 768px) {
