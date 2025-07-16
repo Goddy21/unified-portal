@@ -32,7 +32,7 @@
           <th>Actions</th>
         </tr>
       </thead>
-     <tbody>
+      <tbody>
         {% for region in regions %}
         <tr>
           <td>{{ forloop.counter }}</td>
@@ -46,6 +46,23 @@
         {% endfor %}
       </tbody>
     </table>
+  </div>
+
+  <!-- Pagination Controls -->
+  <div class="pagination">
+    <span class="page-links">
+      {% if regions.has_previous %}
+        <a href="?page=1">First</a>
+        <a href="?page={{ regions.previous_page_number }}">Previous</a>
+      {% endif %}
+      
+      <span class="current-page">Page {{ regions.number }} of {{ regions.paginator.num_pages }}</span>
+
+      {% if regions.has_next %}
+        <a href="?page={{ regions.next_page_number }}">Next</a>
+        <a href="?page={{ regions.paginator.num_pages }}">Last</a>
+      {% endif %}
+    </span>
   </div>
 </div>
 <script src="{% static 'js/ticketing_dashboard.js' %}"></script>

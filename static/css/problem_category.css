@@ -74,7 +74,7 @@
   border: 1px solid var(--border-color);
   border-radius: 8px;
   overflow: hidden;
-  min-width: 600px; /* allows horizontal scroll on small screens */
+  min-width: 600px; 
 }
 .ticket-table th,
 .ticket-table td {
@@ -134,6 +134,36 @@
 }
 .remove-link:hover{
   text-decoration: underline;
+}
+/* Pagination Controls */
+.pagination {
+  text-align: center;
+  margin-top: 20px;
+}
+
+.page-links {
+  display: inline-block;
+}
+
+.page-links a {
+  color: var(--primary-color);
+  text-decoration: none;
+  padding: 8px 16px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  margin: 0 5px;
+  font-size: 1em;
+  transition: background-color 0.3s ease;
+}
+
+.page-links a:hover {
+  background-color: #f1f1f1;
+}
+
+.current-page {
+  padding: 8px 16px;
+  font-size: 1em;
+  color: #6c757d;
 }
 
 /* Responsive */

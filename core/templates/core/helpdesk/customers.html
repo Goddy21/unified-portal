@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
+
 {% block title %}Customers{% endblock %}
 
 {% block content %}
@@ -48,8 +49,25 @@
       {% empty %}
       <tr><td colspan="3">No customers found.</td></tr>
       {% endfor %}
-    </tbody>
+      </tbody>
     </table>
+  </div>
+
+  <!-- Pagination Controls -->
+  <div class="pagination">
+    <span class="page-links">
+      {% if customers.has_previous %}
+        <a href="?page=1">First</a>
+        <a href="?page={{ customers.previous_page_number }}">Previous</a>
+      {% endif %}
+      
+      <span class="current-page">Page {{ customers.number }} of {{ customers.paginator.num_pages }}</span>
+
+      {% if customers.has_next %}
+        <a href="?page={{ customers.next_page_number }}">Next</a>
+        <a href="?page={{ customers.paginator.num_pages }}">Last</a>
+      {% endif %}
+    </span>
   </div>
 </div>
 <script src="{% static 'js/ticketing_dashboard.js' %}"></script>

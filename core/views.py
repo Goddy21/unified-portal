@@ -442,7 +442,11 @@ def pre_dashboards(request):
 #@user_passes_test(is_viewer)
 def user_list_view(request):
     users = User.objects.all()
-    return render(request, 'core/file_management/user_list.html', {'users': users})
+    # Add pagination: Show 10 users per page
+    paginator = Paginator(users, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    return render(request, 'core/file_management/user_list.html', {'page_obj': page_obj})
 
 @user_passes_test(is_viewer)
 def user_detail(request, user_id):
@@ -782,8 +786,14 @@ def ticket_statuses(request):
 def problem_category(request):
     query = request.GET.get('search', '')
     categories = ProblemCategory.objects.filter(name__icontains=query)
+    
+    # Pagination setup
+    paginator = Paginator(categories, 10)  
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
     return render(request, 'core/helpdesk/problem_category.html', {
-        'categories': categories,
+        'categories': page_obj, 
         'search_query': query,
     })
 
@@ -842,9 +852,13 @@ def customers(request):
 
         messages.success(request, "Customers uploaded successfully!")
 
-
+    # Pagination setup
     all_customers = Customer.objects.exclude(name__exact="").exclude(name__isnull=True)
-    return render(request, "core/helpdesk/customers.html", {"customers": all_customers})
+    paginator = Paginator(all_customers, 10)  # Show 10 customers per page
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    return render(request, "core/helpdesk/customers.html", {"customers": page_obj})
 
 @user_passes_test(is_admin)
 def create_customer(request):
@@ -873,8 +887,15 @@ def regions(request):
             Region.objects.create(name=name)
             return redirect('regions')
 
+    # Fetch all regions
     all_regions = Region.objects.all()
-    return render(request, 'core/helpdesk/regions.html', {'regions': all_regions})
+
+    # Pagination setup
+    paginator = Paginator(all_regions, 10)  
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    return render(request, 'core/helpdesk/regions.html', {'regions': page_obj})
 
 @user_passes_test(is_admin)
 def delete_region(request, region_id):
@@ -882,6 +903,11 @@ def delete_region(request, region_id):
     region.delete()
     messages.success(request, "Region deleted successfully.")
     return redirect('regions')
+
+from django.core.paginator import Paginator
+from django.shortcuts import render, redirect
+from .forms import TerminalForm, TerminalUploadForm
+from .models import Terminal
 
 def terminals(request):
     form = TerminalForm()
@@ -928,12 +954,18 @@ def terminals(request):
                     messages.error(request, f"Error importing file: {e}")
                 return redirect('terminals')
 
+    # Fetch all terminals 
     all_terminals = Terminal.objects.all()
+    paginator = Paginator(all_terminals, 10)  
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
     return render(request, 'core/helpdesk/terminals.html', {
         'form': form,
         'upload_form': upload_form,
-        'terminals': all_terminals
+        'terminals': page_obj  
     })
+
 
 
 @user_passes_test(is_admin)
@@ -952,7 +984,12 @@ def units(request):
         return redirect('units')
 
     all_units = Unit.objects.all()
-    return render(request, 'core/helpdesk/units.html', {'units': all_units})
+    
+    paginator = Paginator(all_units, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    return render(request, 'core/helpdesk/units.html', {'page_obj': page_obj})
 
 @user_passes_test(is_admin)
 def delete_unit(request, unit_id):
@@ -972,7 +1009,11 @@ def system_users(request):
         return redirect('system_users')
 
     all_users = User.objects.all()
-    return render(request, 'core/helpdesk/users.html', {'users': all_users})
+    # Add pagination: Show 10 users per page
+    paginator = Paginator(all_users, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    return render(request, 'core/helpdesk/users.html', {'page_obj': page_obj})
 
 @user_passes_test(is_admin)
 def delete_system_user(request, user_id):
@@ -993,12 +1034,17 @@ def zones(request):
             messages.success(request, "Zone created successfully.")
             return redirect('zones')
         else:
-            messages.error(request, "Name and region are required.")
+            messages.error(request, "Name is required.")
 
     all_zones = Zone.objects.all()
 
+    # Add pagination: Show 10 zones per page
+    paginator = Paginator(all_zones, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
     return render(request, 'core/helpdesk/zones.html', {
-        'zones': all_zones,
+        'page_obj': page_obj,
     })
 
 @user_passes_test(is_admin)

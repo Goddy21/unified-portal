@@ -2,8 +2,9 @@
 {% load static %}
 
 {% block extra_css %}
-<link rel="stylesheet" type="text/css" href="{% static 'css/terminals.css' %}" >
-{%endblock%}
+<link rel="stylesheet" type="text/css" href="{% static 'css/terminals.css' %}">
+{% endblock %}
+
 {% block title %}Terminals{% endblock %}
 
 {% block content %}
@@ -113,6 +114,24 @@
             </tbody>
         </table>
     </div>
+
+    <!-- Pagination Controls -->
+    <div class="pagination">
+        <span class="page-links">
+            {% if terminals.has_previous %}
+                <a href="?page=1">First</a>
+                <a href="?page={{ terminals.previous_page_number }}">Previous</a>
+            {% endif %}
+            
+            <span class="current-page">Page {{ terminals.number }} of {{ terminals.paginator.num_pages }}</span>
+
+            {% if terminals.has_next %}
+                <a href="?page={{ terminals.next_page_number }}">Next</a>
+                <a href="?page={{ terminals.paginator.num_pages }}">Last</a>
+            {% endif %}
+        </span>
+    </div>
+
 </div>
 <script src="{% static 'js/ticketing_dashboard.js' %}"></script>
 {% endblock %}
