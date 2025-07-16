@@ -98,7 +98,25 @@
 .view-link:hover {
   text-decoration: underline;
 }
+.status-filter-form {
+  display: inline-block;
+  margin-left: 20px;
+}
 
+.status-filter-form select {
+  padding: 8px 15px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  font-size: 0.9em;
+  background-color: #fff;
+  color: #212529;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.status-filter-form select:hover {
+  background-color: #f1f1f1;
+}
 /* ===============================
    Responsive Adjustments
 ================================== */
@@ -128,6 +146,15 @@
 
   .ticket-table {
     font-size: 0.9em;
+  }
+  .status-filter-form {
+    width: 100%;
+    margin-left: 0;
+    margin-top: 10px;
+  }
+
+  .status-filter-form select {
+    width: 100%;
   }
 }
 

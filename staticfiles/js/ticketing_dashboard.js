@@ -1,3 +1,4 @@
+window.addEventListener('DOMContentLoaded', () => {
 (() => {
   // === User Profile Dropdown Toggle ===
   const userProfile = document.getElementById('userProfile');
@@ -91,9 +92,19 @@
   };
 
   // === Initialize Charts ===
+  // Helper function to safely destroy existing chart
+  function destroyExistingChart(canvasId) {
+    const chartInstance = Chart.getChart(canvasId);
+    if (chartInstance) {
+      chartInstance.destroy();
+    }
+  }
+
 
   const ticketReportChart = document.getElementById('ticketReportChart');
   if (ticketReportChart) {
+    destroyExistingChart('ticketReportChart'); 
+
     const statusLabels = STATUS_DATA.map(item => item.status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()));
     const statusCounts = STATUS_DATA.map(item => item.count);
     new Chart(ticketReportChart, {
@@ -126,6 +137,8 @@
 
   const monthlyTrendChart = document.getElementById('monthlyTrendChart');
   if (monthlyTrendChart) {
+    destroyExistingChart('monthlyTrendChart'); 
+
     const monthlyLabels = MONTHLY_DATA.map(item => item.month);
     const monthlyCounts = MONTHLY_DATA.map(item => item.count);
     new Chart(monthlyTrendChart, {
@@ -155,7 +168,9 @@
 
   const terminalChart = document.getElementById('terminalChart');
   if (terminalChart) {
-    const terminalLabels = TERMINAL_DATA.map(item => item.terminal__cdm_name || 'Unnamed');
+    destroyExistingChart('terminalChart');
+
+    const terminalLabels = TERMINAL_DATA.map(item => item.terminal || 'Unnamed');
     const terminalCounts = TERMINAL_DATA.map(item => item.count);
     new Chart(terminalChart, {
       type: 'bar',
@@ -185,6 +200,8 @@
 
   const priorityChart = document.getElementById('priorityChart');
   if (priorityChart) {
+    destroyExistingChart('priorityChart');
+
     const priorityLabels = PRIORITY_DATA.map(item => item.priority.replace(/\b\w/g, l => l.toUpperCase()));
     const priorityCounts = PRIORITY_DATA.map(item => item.count);
     new Chart(priorityChart, {
@@ -203,12 +220,16 @@
 
   const statusChart = document.getElementById('statusChart');
   if (statusChart) {
+    destroyExistingChart('statusChart'); 
+    
+    const statusLabels = STATUS_DATA.map(item => item.status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()));
+    const statusCounts = STATUS_DATA.map(item => item.count);
     new Chart(statusChart, {
       type: 'pie',
       data: {
-        labels: ['Open', 'Pending', 'In Progress', 'Closed'],
+        labels: statusLabels,
         datasets: [{
-          data: [6, 4, 3, 5],
+          data: statusCounts,
           backgroundColor: ['#28a745', '#ffc107', '#007bff', '#6c757d'],
           borderWidth: 1
         }]
@@ -217,6 +238,6 @@
     });
   }
 
-  // Optional debug line to confirm loading
   console.log("ticketing_dashboard.js executed successfully. Chart.js available:", typeof Chart !== "undefined");
 })();
+});

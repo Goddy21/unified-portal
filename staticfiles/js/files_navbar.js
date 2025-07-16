@@ -1,97 +1,59 @@
-document.addEventListener('DOMContentLoaded', function () {
-  const hamburger = document.getElementById('hamburger');
+document.addEventListener("DOMContentLoaded", function () {
+  // Profile dropdown toggle
   const userProfile = document.getElementById('userProfile');
-  const modal = document.getElementById("profileModal");
-  const modalContent = document.getElementById("profileModalContent");
-  const closeBtn = document.getElementById("closeProfileModal");
-  const searchInput = document.getElementById("searchInput");
-
-  // 1. Toggle dropdown
-  if (hamburger && userProfile) {
-    hamburger.addEventListener('click', () => {
-      userProfile.classList.toggle('show-dropdown');
+  if (userProfile) {
+    userProfile.addEventListener('click', function (e) {
+      this.classList.toggle('active');
+      e.stopPropagation();
     });
 
-    window.addEventListener('click', function (event) {
-      if (!userProfile.contains(event.target) && !hamburger.contains(event.target)) {
-        userProfile.classList.remove('show-dropdown');
+    window.addEventListener('click', function (e) {
+      if (!userProfile.contains(e.target)) {
+        userProfile.classList.remove('active');
       }
     });
   }
 
-  // 2. Search filter
+  // Sidebar toggle (hamburger)
+  const hamburger = document.getElementById('hamburger');
+  const sidebarToggle = document.getElementById('sidebarToggle');
+  const sidebar = document.getElementById('sidebar');
+
+  const toggleSidebar = () => {
+    if (sidebar) sidebar.classList.toggle('active');
+  };
+
+  if (hamburger) {
+    hamburger.addEventListener('click', toggleSidebar);
+  }
+
+  if (sidebarToggle) {
+    sidebarToggle.addEventListener('click', toggleSidebar);
+  }
+
+  // Navbar search input (Enter key redirect)
+  const searchInput = document.getElementById('navbarSearchInput');
   if (searchInput) {
-    searchInput.addEventListener("keyup", function () {
-      const filter = searchInput.value.toLowerCase();
-      const table = document.querySelector("table");
-      if (!table) return;
-
-      const rows = table.querySelectorAll("tbody tr");
-      rows.forEach(row => {
-        const text = row.textContent.toLowerCase();
-        row.style.display = text.includes(filter) ? "" : "none";
-      });
+    searchInput.addEventListener('keypress', function (e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const query = searchInput.value.trim();
+        if (query !== '') {
+          window.location.href = `/search/?q=${encodeURIComponent(query)}`;
+        }
+      }
     });
   }
-
-  // 3. Modal close logic
-  if (closeBtn) {
-    closeBtn.addEventListener("click", () => {
-      modal.style.display = "none";
-    });
-  }
-
-  window.addEventListener("click", function (event) {
-    if (event.target === modal) {
-      modal.style.display = "none";
-    }
-  });
 });
 
-// 4. Global function to open modal
-window.openProfileModal = function (event) {
-  event.preventDefault();
-  const modal = document.getElementById("profileModal");
-  const modalContent = document.getElementById("profileModalContent");
+// Table filter function (remains outside since it's called on input events)
+function filterTable() {
+  const input = document.getElementById("searchInput");
+  const filter = input.value.toLowerCase();
+  const rows = document.querySelectorAll(".version-table tbody tr");
 
-  modal.style.display = "block";
-  modalContent.innerHTML = "Loading...";
-
-  fetch(profileViewUrl, {
-    headers: {
-      "X-Requested-With": "XMLHttpRequest"
-    }
-  })
-    .then(res => res.text())
-    .then(html => {
-      modalContent.innerHTML = html;
-      setupProfileForm();
-    })
-    .catch(() => {
-      modalContent.innerHTML = "<p>Error loading profile.</p>";
-    });
-};
-
-// 5. Setup profile form AJAX
-function setupProfileForm() {
-  const form = document.getElementById('profileForm');
-  if (!form) return;
-
-  form.addEventListener('submit', function (e) {
-    e.preventDefault();
-    const formData = new FormData(form);
-
-    fetch(profileViewUrl, {
-      method: "POST",
-      body: formData,
-      headers: {
-        "X-Requested-With": "XMLHttpRequest"
-      }
-    })
-      .then(res => res.text())
-      .then(html => {
-        document.getElementById("profileModalContent").innerHTML = html;
-        setupProfileForm(); 
-      });
+  rows.forEach(row => {
+    const rowText = row.textContent.toLowerCase();
+    row.style.display = rowText.includes(filter) ? "" : "none";
   });
 }

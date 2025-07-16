@@ -1,109 +1,178 @@
+body {
+  margin: 0;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+.top-navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: #fff;
+  padding: 0 20px;
+  color: #007bff;
+  z-index: 1000;
+}
+
+
+.logo {
+  font-weight: bold;
+  font-size: 1.2rem;
+  white-space: nowrap;
+}
+
+.search-bar {
+  display: flex;
+  align-items: center;
+  background-color: #f1f3f5;
+  padding: 5px 10px;
+  border-radius: 5px;
+  margin: 0 20px;
+  flex: 1;
+  max-width: 500px;
+}
+
+.search-bar i {
+  color: darkblue;
+  margin-right: 10px;
+}
+
+.search-bar input {
+  border: none;
+  background: transparent;
+  color: darkblue;
+  width: 100%;
+  outline: none;
+  font-size: 1rem;
+}
+
 .user-profile {
   position: relative;
+  cursor: pointer;
 }
+
 .profile-dropdown {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  font-size: 0.95rem;
-  color: #343a40;
+  gap: 8px;
 }
 
 .profile-dropdown img {
+  border-radius: 50%;
   width: 32px;
   height: 32px;
-  max-width: 32px;
-  max-height: 32px;
-  border-radius: 50%;
   object-fit: cover;
-  border: 2px solid #ddd;
 }
+
 .dropdown-content {
   display: none;
   position: absolute;
+  top: 45px;
   right: 0;
-  background-color: white;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-  border-radius: 6px;
-  margin-top: 0.5rem;
-  z-index: 1000;
-  min-width: 150px;
+  background: white;
+  color: black;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 5px;
   overflow: hidden;
-}
-
-.user-profile.show-dropdown .dropdown-content {
-  display: block;
+  min-width: 150px;
+  z-index: 1001;
 }
 
 .dropdown-content a {
   display: block;
-  padding: 0.75rem 1rem;
-  color: #333;
+  padding: 10px;
   text-decoration: none;
-  border-bottom: 1px solid #eee;
+  color: #333;
 }
 
 .dropdown-content a:hover {
   background-color: #f0f0f0;
 }
-/* Match logout button to dropdown links */
-.dropdown-content form {
-  margin: 0;
-}
 
-#logout-form {
-  width: 100%;
-  background: none;
-  border: none;
-  padding: 0.75rem 1rem;
-  color: #333;
-  text-align: left;
-  font-family: inherit;
-  font-size: 1rem;
-  cursor: pointer;
-  border-bottom: 1px solid #eee;
+.user-profile.active .dropdown-content {
   display: block;
 }
 
-#logout-form:hover {
-  background-color: #f0f0f0;
-}
-.modal {
+.hamburger {
   display: none;
-  position: fixed;
-  z-index: 1000;
-  left: 0; top: 0;
-  width: 100%; height: 100%;
-  overflow: auto;
-  background-color: rgba(0,0,0,0.4);
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1.5rem;
+  margin-right: 10px;
 }
-
-.modal-content {
-  background-color: #fff;
-  margin: 10% auto;
-  padding: 2rem;
-  border-radius: 10px;
-  width: 90%;
-  max-width: 600px;
+.user-profile {
   position: relative;
-  box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-  animation: fadeIn 0.3s ease-in-out;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: scale(0.95); }
-  to { opacity: 1; transform: scale(1); }
-}
-
-.close {
-  color: #aaa;
-  position: absolute;
-  top: 10px; right: 20px;
-  font-size: 28px;
-  font-weight: bold;
   cursor: pointer;
 }
 
-.close:hover {
-  color: #000;
+.profile-dropdown {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.profile-dropdown img {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.dropdown-content {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: #fff;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  padding: 0.5rem 0;
+  min-width: 160px;
+  display: none;
+  z-index: 1000;
+}
+
+.dropdown-content a {
+  display: block;
+  padding: 0.5rem 1rem;
+  color: #333;
+  text-decoration: none;
+  transition: background-color 0.2s;
+}
+
+.dropdown-content a:hover {
+  background-color: #f1f1f1;
+}
+
+/* Show dropdown when .active is added to .user-profile */
+.user-profile.active .dropdown-content {
+  display: block;
+}
+.dropdown-link.logout-btn {
+  background: none;
+  border: none;
+  width: 100%;
+  text-align: left;
+  padding: 0.75rem 1rem;
+  font: inherit;
+  cursor: pointer;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .hamburger {
+    display: block;
+  }
+
+  .search-bar {
+    display: none;
+  }
+
+  .logo {
+    font-size: 1rem;
+  }
 }

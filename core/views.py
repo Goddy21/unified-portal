@@ -81,16 +81,22 @@ def manage_file_categories(request):
 
         if action == 'create':
             name = request.POST.get('name')
-            if name:
-                FileCategory.objects.create(name=name)
+            icon = request.POST.get('icon')
+            if name and icon:  # Ensure both name and icon are provided
+                FileCategory.objects.create(name=name, icon=icon)
                 messages.success(request, f'Category "{name}" created successfully.')
                 return redirect('manage_file_categories')
 
         elif action == 'update':
             category_id = request.POST.get('category_id')
             new_name = request.POST.get('new_name')
+            new_icon = request.POST.get('icon')
             category = get_object_or_404(FileCategory, id=category_id)
+            
+            # Preserve the existing icon if no new icon is selected
             category.name = new_name
+            if new_icon:
+                category.icon = new_icon  # Update icon only if a new one is selected
             category.save()
             messages.success(request, f'Category "{new_name}" updated successfully.')
             return redirect('manage_file_categories')
@@ -105,6 +111,7 @@ def manage_file_categories(request):
     return render(request, 'accounts/manage_file_categories.html', {
         'categories': categories
     })
+
 
 @user_passes_test(is_admin)
 def create_user(request):
@@ -283,29 +290,29 @@ def file_management_dashboard(request):
         ext_counter[ext] += 1
 
     file_types = [
-        {"type": "PDF Documents", "ext": ".pdf", "icon": "fas fa-file-pdf", "count": ext_counter.get(".pdf", 0)},
-        {"type": "Word Documents", "ext": ".docx", "icon": "fas fa-file-word", "count": ext_counter.get(".docx", 0)},
-        {"type": "Images", "ext": ".jpg", "icon": "fas fa-file-image", "count": ext_counter.get(".jpg", 0) + ext_counter.get(".png", 0)},
-        {"type": "Excel Sheets", "ext": ".xlsx", "icon": "fas fa-file-excel", "count": ext_counter.get(".xlsx", 0)},
-        {"type": "Others", "ext": "other", "icon": "fas fa-file", "count": sum(ext_counter.values()) - (
+        {"type": "PDF Documents", "ext": ".pdf", "icon": "pdf", "count": ext_counter.get(".pdf", 0)},
+        {"type": "Word Documents", "ext": ".docx", "icon": "docx", "count": ext_counter.get(".docx", 0)},
+        {"type": "Images", "ext": ".jpg", "icon": "image", "count": ext_counter.get(".jpg", 0) + ext_counter.get(".png", 0)},
+        {"type": "Excel Sheets", "ext": ".xlsx", "icon": "xlsx", "count": ext_counter.get(".xlsx", 0)},
+        {"type": "Others", "ext": "other", "icon": "file", "count": sum(ext_counter.values()) - (
             ext_counter.get(".pdf", 0) + ext_counter.get(".docx", 0) + ext_counter.get(".jpg", 0) +
             ext_counter.get(".png", 0) + ext_counter.get(".xlsx", 0)
         )},
     ]
 
-
     categories = FileCategory.objects.annotate(
         file_count=Count('file', filter=Q(file__is_deleted=False))
-    )
+    )    
 
     recent_files = File.objects.filter(is_deleted=False).order_by('-upload_date')[:5]
-
+    for file in recent_files:
+        file.extension = os.path.splitext(file.file.name)[1]
 
     return render(request, 'core/file_management/dashboard.html', {
         'categories': categories,
         'recent_files': recent_files,
         'file_types': file_types,
-        'user_name': request.user.get_full_name() or request.user.username  
+        'user_name': request.user.username  
     })
 
 #@user_passes_test(is_viewer)

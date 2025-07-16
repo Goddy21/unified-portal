@@ -5,31 +5,39 @@
   left: 0;
   height: calc(100% - 60px);
   width: 250px;
-  background-color: #ffffff;
+  background: linear-gradient(to bottom, #ffffff, #f8f9fa);
   color: #333;
   padding: 20px 15px;
   border-right: 1px solid #e0e0e0;
-  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.05);
+  box-shadow: 4px 0 12px rgba(0, 0, 0, 0.06);
   overflow-y: auto;
-  transition: transform 0.3s ease-in-out;
+  transform: translateX(0);
+  transition: transform 0.4s ease, box-shadow 0.3s ease;
   z-index: 999;
+  animation: slideIn 0.5s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
 }
 
 /* Logo */
-.sidebar img {
+.sidebar-logo {
   display: block;
-  margin: 0 auto 20px;
+  margin: 0 auto 30px;
   max-width: 150px;
-  height: auto;
+  transition: transform 0.3s ease;
 }
 
-/* Header */
-.sidebar-header {
-  font-size: 1.2rem;
-  font-weight: 600;
-  text-align: center;
-  margin-bottom: 20px;
-  color: #007bff;
+.sidebar-logo:hover {
+  transform: scale(1.05);
 }
 
 /* Nav List */
@@ -40,38 +48,43 @@
 }
 
 .sidebar li {
-  margin-bottom: 10px;
+  margin-bottom: 15px;
 }
 
 .sidebar a {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 10px 15px;
+  gap: 14px;
+  padding: 12px 18px;
+  border-radius: 10px;
   text-decoration: none;
   color: #333;
-  border-radius: 8px;
   font-size: 0.95rem;
-  transition: all 0.2s ease;
+  transition: background 0.25s ease, color 0.25s ease, transform 0.2s ease;
+  position: relative;
 }
 
-.sidebar a i {
-  font-size: 1rem;
+.sidebar a .icon {
+  font-size: 1.1rem;
   color: #007bff;
-  min-width: 20px;
+  transition: transform 0.3s ease;
 }
 
-/* Hover and Active */
 .sidebar a:hover {
-  background-color: #f0f4ff;
+  background-color: #eaf3ff;
   color: #007bff;
-  box-shadow: inset 2px 0 0 #007bff;
+  transform: translateX(4px);
+  box-shadow: 0 2px 10px rgba(0, 123, 255, 0.1);
+}
+
+.sidebar a:hover .icon {
+  transform: scale(1.2);
 }
 
 .sidebar a.active {
-  background-color: #e7f1ff;
+  background-color: #d4e9ff;
   font-weight: 600;
-  color: #007bff;
+  color: #0056b3;
   box-shadow: inset 4px 0 0 #007bff;
 }
 
@@ -79,7 +92,6 @@
 @media (max-width: 768px) {
   .sidebar {
     transform: translateX(-100%);
-    width: 240px;
   }
 
   .sidebar.active {

@@ -77,7 +77,26 @@
 .btn-back:hover {
   background-color: #0056b3;
 }
+.btn-success {
+  background-color: #28a745;  /* Green background */
+  color: white;
+  padding: 12px 20px;
+  border: none;
+  border-radius: 6px;
+  font-size: 1em;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
 
+.btn-success:hover {
+  background-color: #218838;  
+  transform: scale(1.05);  
+}
+
+.btn-success:focus {
+  outline: none; 
+  box-shadow: 0 0 10px rgba(40, 167, 69, 0.6);  
+}
 /* Responsive behavior */
 @media (max-width: 768px) {
   .ticket-info strong {

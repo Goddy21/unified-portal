@@ -18,6 +18,7 @@ class EmailOTP(models.Model):
 # File Management Models
 class FileCategory(models.Model):
     name = models.CharField(max_length=100, unique=True)
+    icon = models.CharField(max_length=255, default='default_icon')
 
     def __str__(self):
         return self.name
