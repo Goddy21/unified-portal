@@ -40,8 +40,18 @@
             <img src="{% static 'icons/docx.png' %}" alt="DOCX Icon" />
           {% elif ".jpg" in file.file.name|lower or ".png" in file.file.name|lower %}
             <img src="{{ file.file.url }}" alt="Image" />
+          {% elif ".xlsx" in file.file.name|lower %}
+            <img src="{% static 'icons/xlsx.png' %}" alt="Excel Icon" />
+          {% elif ".txt" in file.file.name|lower %}
+            <img src="{% static 'icons/text.png' %}" alt="Text Icon" />
+          {% elif ".csv" in file.file.name|lower %}
+            <img src="{% static 'icons/csv.png' %}" alt="CSV Icon" />
+          {% elif ".xml" in file.file.name|lower %}
+            <img src="{% static 'icons/xml.png' %}" alt="XML Icon" />
+          {% elif ".ppt" in file.file.name|lower %}
+            <img src="{% static 'icons/ppt.png' %}" alt="PPT Icon" />
           {% else %}
-            <img src="{% static 'icons/file-icon.png' %}" alt="File Icon" />
+            <img src="{% static 'icons/file.png' %}" alt="File Icon" />
           {% endif %}
           <div class="file-title-group">
             <span class="file-title">{{ file.title }}</span>

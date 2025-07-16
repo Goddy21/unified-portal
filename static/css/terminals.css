@@ -126,6 +126,9 @@
   color: #c82333;
 }
 /* File input styling */
+.upload-form {
+    margin-bottom: 1.5rem;
+}
 .upload-form input[type="file"] {
   padding: 10px;
   border: 1px solid #ccc;
@@ -158,6 +161,28 @@
 
 .upload-form .btn-primary:hover {
   background-color: #0056b3;
+}
+/* Modal custom styles */
+.modal-dialog {
+    max-width: 800px;
+}
+
+.modal-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.modal-title {
+    font-weight: bold;
+}
+
+.modal-body {
+    padding: 2rem;
+}
+
+/* Form inside modal */
+.terminal-form {
+    margin-top: 1rem;
 }
 
 

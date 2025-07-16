@@ -183,27 +183,52 @@ body {
 }
 
 .user-table {
+  background: linear-gradient(120deg, #f9fafb 0%, #eef3fb 100%);
+  border-radius: 1rem;
+  box-shadow: 0 6px 32px 0 rgba(30, 34, 90, 0.09);
+  overflow: hidden;
+  margin: 2rem 0;
   width: 100%;
   border-collapse: separate;
-  border-spacing: 0 10px;
+  animation: tableFadeIn 0.8s cubic-bezier(.62,.44,.23,1.01) 0.1s both;
+  font-family: 'Poppins', 'Rubik', Arial, sans-serif;
 }
 
+@keyframes tableFadeIn {
+  from { opacity: 0; transform: translateY(32px);}
+  to { opacity: 1; transform: translateY(0);}
+}
 .user-table th {
-  background: #f1f6ff;
-  font-weight: 600;
-  padding: 12px;
+  background: #5055fa;
+  color: #fff;
   text-align: left;
-  color: #333;
+  font-weight: 600;
+  letter-spacing: 1px;
+  padding: 1.3rem 1rem;
+  border-bottom: 2px solid #eceaff;
+  text-shadow: 0 2px 8px #0001;
+  font-size: 1.08rem;
+  position: relative;
 }
-
+.user-table tr {
+  transition: background 0.25s, box-shadow 0.3s;
+}
 .user-table td {
-  background: #ffffff;
-  padding: 14px;
-  border-radius: 6px;
-  border-bottom: 1px solid #eee;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+  background: #fff;
+  text-align: left;
+  padding: 1rem;
+  font-size: 1.02rem;
+  border-bottom: 1px solid #f3f4f8;
+  animation: rowFadeIn 1s cubic-bezier(.62,.44,.23,1.01) both;
 }
-
+@keyframes rowFadeIn {
+  from { opacity: 0; transform: translateY(12px);}
+  to { opacity: 1; transform: translateY(0);}
+}
+.user-table tbody tr:hover {
+  background: linear-gradient(90deg, #ebedfa 35%, #f6f7fc 100%);
+  box-shadow: 0 4px 32px 0 rgba(80, 85, 250, 0.08);
+}
 .user-table select {
   padding: 6px;
   border-radius: 4px;
@@ -289,8 +314,44 @@ button,
   border-radius: 8px;
   font-size: 1rem;
 }
-
 /* Responsive */
+@media (max-width: 800px) {
+  .user-table, .user-table th, .user-table td, .user-table tr {
+    display: block;
+    width: 100%;
+  }
+  .user-table th {
+    border-bottom: 0;
+    padding: 0.7rem 1rem;
+  }
+  .user-table td {
+    border-radius: 0.55rem;
+    margin-bottom: 1rem;
+    background: #f5f8ff;
+  }
+}
+
+.user-table i.fa {
+  margin-right: 0.5em;
+  color: #5055fa;
+  font-size: 1.2em;
+  vertical-align: -0.14em;
+  filter: drop-shadow(0 2px 8px #5055fa15);
+  transition: color 0.25s, transform 0.21s;
+}
+
+
+.user-table td:hover i.fa,
+.user-table th:hover i.fa {
+  color: #fb6adc;
+  animation: fa-bounce 0.5s;
+}
+@keyframes fa-bounce {
+  0%,100% {transform: translateY(0);}
+  50% {transform: translateY(-7px);}
+}
+
+
 @media (max-width: 768px) {
   .dashboard-header {
     flex-direction: column;

@@ -15,7 +15,8 @@ from .forms import UserUpdateForm, ProfileUpdateForm, TerminalForm,TerminalUploa
 from django.views import View
 import csv
 from .models import Customer, Region, Terminal, Unit, SystemUser, Zone, ProblemCategory, VersionControl, Report, Ticket, Profile, EmailOTP
-from django.core.mail import send_mail
+from django.core.mail import send_mail, EmailMultiAlternatives, EmailMessage
+from django.utils.html import strip_tags
 from django.contrib import messages
 from datetime import datetime
 from django.utils.dateparse import parse_date
@@ -32,6 +33,7 @@ from core.utils import can_user_access_file
 from .utils import is_admin  
 import json
 import pandas as pd
+from email.mime.image import MIMEImage
 
 def in_group(user, group_name):
     return user.is_authenticated and (user.is_superuser or user.groups.filter(name=group_name).exists())
@@ -82,7 +84,7 @@ def manage_file_categories(request):
         if action == 'create':
             name = request.POST.get('name')
             icon = request.POST.get('icon')
-            if name and icon:  # Ensure both name and icon are provided
+            if name and icon:  
                 FileCategory.objects.create(name=name, icon=icon)
                 messages.success(request, f'Category "{name}" created successfully.')
                 return redirect('manage_file_categories')
@@ -96,7 +98,7 @@ def manage_file_categories(request):
             # Preserve the existing icon if no new icon is selected
             category.name = new_name
             if new_icon:
-                category.icon = new_icon  # Update icon only if a new one is selected
+                category.icon = new_icon  
             category.save()
             messages.success(request, f'Category "{new_name}" updated successfully.')
             return redirect('manage_file_categories')
@@ -162,9 +164,9 @@ def register_view(request):
         form = CustomUserCreationForm()
     return render(request, 'accounts/register.html', {'form': form})
 
+
 def login_view(request):
     form = LoginForm()
-
 
     if request.method == 'POST':
         form = LoginForm(request.POST)
@@ -175,54 +177,239 @@ def login_view(request):
             user = authenticate(username=username, password=password)
             if user:
                 request.session['pre_otp_user'] = user.id 
-                 # Generate and send OTP
+                # Generate and send OTP
                 otp = str(random.randint(100000, 999999))
-                EmailOTP.objects.update_or_create(user=user, defaults={'otp': otp})
-                send_mail(
-                    'Your OTP Code',
-                    f'Your OTP is {otp}',
+                EmailOTP.objects.update_or_create(user=user, defaults={'otp': otp, 'created_at': timezone.now()})
+                
+                # Prepare HTML and plain text content
+                subject = 'Your OTP Code'
+                html_content = f"""
+                    <html>
+                    <head>
+                        <style>
+                        @import url('https://fonts.googleapis.com/css?family=Rubik:400,700&display=swap');
+                        body {{
+                            font-family: 'Rubik', 'Helvetica Neue', Arial, sans-serif;
+                            margin: 0;
+                            padding: 0;
+                            background: linear-gradient(120deg, #1e3c72 0%, #2a5298 100%);
+                            min-height: 100vh;
+                        }}
+                        .email-container {{
+                            max-width: 600px;
+                            margin: 60px auto;
+                            background: #fff;
+                            border-radius: 16px;
+                            box-shadow: 0 8px 32px 0 rgba(44,62,80,0.12);
+                            overflow: hidden;
+                            padding: 0 0 40px 0;
+                            animation: fadeIn 1s;
+                        }}
+                        .header-bar {{
+                            width: 100%;
+                            height: 52px;
+                            background: linear-gradient(90deg,#3498db 30%, #e74c3c 80%);
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                        }}
+                        .logo {{
+                            height: 48px;
+                            margin: 16px auto 8px auto;
+                            display: block;
+                            filter: drop-shadow(0 2px 8px rgba(52,152,219,0.12));
+                        }}
+                        h2 {{
+                            text-align: center;
+                            color: #1e3c72;
+                            font-size: 30px;
+                            font-weight: 700;
+                            margin: 16px 0 0 0;
+                            letter-spacing: 1px;
+                        }}
+                        .accent-divider {{
+                            width: 56px;
+                            height: 4px;
+                            background: linear-gradient(90deg, #3498db, #e74c3c);
+                            border-radius: 2px;
+                            margin: 18px auto 24px auto;
+                        }}
+                        p {{
+                            color: #34495e;
+                            font-size: 17px;
+                            margin: 20px 0;
+                            text-align: center;
+                        }}
+                        .otp-container {{
+                            background: linear-gradient(96deg, #e74c3c 60%, #3498db);
+                            margin: 35px auto 25px auto;
+                            padding: 30px 20px;
+                            border-radius: 12px;
+                            max-width: 250px;
+                            box-shadow: 0 6px 16px 0 rgba(231,76,60,0.08);
+                            text-align: center;
+                            border: 0.5px solid #f2f2f2;
+                            position: relative;
+                            animation: fadeIn 2s;
+                        }}
+                        .otp-glow {{
+                            font-size: 36px;
+                            font-weight: bold;
+                            letter-spacing: 4px;
+                            padding: 14px 34px;
+                            background: #fff2f0;
+                            color: #e74c3c;
+                            border-radius: 10px;
+                            margin: 20px 0 12px 0;
+                            box-shadow: 0 0 25px 7px rgba(231,76,60,0.09);
+                            position: relative;
+                            animation: shimmer 2.5s linear infinite;
+                        }}
+                        @keyframes shimmer {{
+                            0% {{ box-shadow: 0 0 20px 4px #fffCC2; }}
+                            50% {{ box-shadow: 0 0 38px 7px #ffeabf; }}
+                            100% {{ box-shadow: 0 0 20px 4px #fffCC2; }}
+                        }}
+                        .otp-expiry {{
+                            color: #fff;
+                            font-size: 15px;
+                            margin-top: 18px;
+                            font-style: italic;
+                        }}
+                        .cta-button {{
+                            margin: 35px auto 0 auto;
+                            display: block;
+                            width: max-content;
+                            background: linear-gradient(90deg, #3498db, #9b59b6);
+                            color: #fff !important;
+                            font-size: 20px;
+                            text-decoration: none;
+                            padding: 18px 38px;
+                            border-radius: 8px;
+                            font-weight: 700;
+                            letter-spacing: 1px;
+                            box-shadow: 0 4px 12px 0 rgba(41,128,185,0.14);
+                            transition: background 0.25s, transform 0.2s;
+                        }}
+                        .cta-button:hover {{
+                            background: #2a70b8;
+                            transform: scale(1.06);
+                        }}
+                        .footer {{
+                            margin-top: 60px;
+                            font-size: 14px;
+                            color: #98a4b3;
+                            text-align: center;
+                            padding: 32px 14px 0 14px;
+                        }}
+                        .footer strong {{ color: #34495e; }}
+                        .footer a {{
+                            color: #2980b9;
+                            text-decoration: none;
+                            transition: color 0.25s;
+                        }}
+                        .footer a:hover {{ color: #e74c3c; }}
+                        @keyframes fadeIn {{
+                            from {{ opacity: 0;transform: translateY(40px); }}
+                            to {{ opacity: 1;transform: translateY(0);  }}
+                        }}
+                        @media only screen and (max-width: 600px) {{
+                            .email-container {{ padding: 0 0 20px 0; border-radius: 0; margin: 0; }}
+                            .otp-glow {{ font-size: 26px; padding: 10px 10px; }}
+                            .otp-container {{ padding: 15px 5px; }}
+                        }}
+                        </style>
+                    </head>
+                    <body>
+                        <div class="email-container">
+                        <div class="header-bar"></div>
+                        <img src="cid:logo" alt="BRITS Logo" class="logo" />
+                        <h2>Hi {user.username},</h2>
+                        <div class="accent-divider"></div>
+                        <p>
+                            We received a login request for your account.<br>
+                            Please use the One-Time Password (OTP) below to complete your login.
+                        </p>
+                        <div class="otp-container">
+                            <div class="otp-glow">{otp}</div>
+                            <div class="otp-expiry">Your code expires in <strong>5 minutes</strong>.</div>
+                        </div>
+                        <p>
+                            For your security, do not share this OTP code with anyone.<br>
+                            If you did not make this request, please <a href="https://yourapp.com/security">secure your account</a>.
+                        </p>
+                        <a href="https://yourapp.com/security" class="cta-button">
+                            Review Account Activity
+                        </a>
+                        <div class="footer">
+                            Best regards,<br>
+                            <strong>Blue River Technology Solutions</strong><br>
+                            <span style="font-size:12px;">✉️ This inbox is not monitored for replies</span>
+                        </div>
+                        </div>
+                    </body>
+                    </html>
+                """
+                text_content = strip_tags(html_content)
+
+                # Create the email object
+                email = EmailMultiAlternatives(
+                    subject,
+                    text_content,
                     'no-reply@yourapp.com',
                     [user.email],
-                    fail_silently=False,
                 )
+                email.attach_alternative(html_content, "text/html")
+
+                # Attach the logo as an inline image using MIMEImage
+                with open('static/icons/logo.png', 'rb') as logo_file:
+                    logo_data = logo_file.read()
+                    logo = MIMEImage(logo_data, name='logo.png')
+                    logo.add_header('Content-ID', '<logo>')  
+
+                    email.attach(logo) 
+
+                email.send()
                 return JsonResponse({'status': 'otp_sent'})
             else:
-                return JsonResponse({'status':'error', 'message':'Invalid username or password'})
+                return JsonResponse({'status': 'error', 'message': 'Invalid username or password'})
         else:
             return JsonResponse({'status': 'error', 'message': 'Invalid form input'})
     return render(request, 'accounts/login.html', {'form': form})
 
+
 def verify_otp_view(request):
     user_id = request.session.get('pre_otp_user')
     if not user_id:
-        return JsonResponse({'status': 'error', 'message':'session expired. please login again.'})
+        return JsonResponse({'status': 'error', 'message': 'Session expired. Please login again.'})
 
     try:
         user = User.objects.get(id=user_id)
     except User.DoesNotExist:
-        return JsonResponse({'status': 'error', 'message':'user not found'})
+        return JsonResponse({'status': 'error', 'message': 'User not found'})
 
     if request.method == "POST":
         form = OTPForm(request.POST)
         if form.is_valid():
             otp_input = form.cleaned_data["otp"]
             otp_instance = EmailOTP.objects.filter(user=user).first()
-            if otp_instance and not otp_instance.is_expired() and otp_input == otp_instance.otp:
-                auth_login(request, user)
-                
-                if 'pre_otp_user' in request.session:
-                    del request.session['pre_otp_user']
-                
-                otp_instance.delete()
 
-                return JsonResponse({'status': 'verified', 'redirect_url': '/pre_dashboards/'})
-                
+            if otp_instance:
+                if otp_input != otp_instance.otp:
+                    return JsonResponse({'status': 'error', 'message': 'Invalid OTP'})
+                elif otp_instance.is_expired():
+                    return JsonResponse({'status': 'error', 'message': 'Expired OTP'})
+                else:
+                    auth_login(request, user)
+                    del request.session['pre_otp_user']
+                    otp_instance.delete()  
+                    return JsonResponse({'status': 'verified', 'redirect_url': '/pre_dashboards/'})
             else:
-                return JsonResponse({'status': 'error', 'message': 'Invalid or expired OTP'})
-        else:
-            return JsonResponse({'status': 'error', 'message': 'Invalid OTP input'})
+                return JsonResponse({'status': 'error', 'message': 'OTP not found'})
+
+        return JsonResponse({'status': 'error', 'message': 'Invalid OTP input'})
     
-    return JsonResponse({'status': 'error', 'message': 'invalid request method'})
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method'})
 
 
 @login_required
@@ -496,8 +683,13 @@ def tickets(request):
     if status_filter:
         tickets = tickets.filter(status=status_filter)
 
+    #pagination
+    paginator = Paginator(tickets, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)  
+
     return render(request, 'core/helpdesk/tickets.html', {
-        'tickets': tickets,
+        'tickets': page_obj,
         'search_query': query,
         'status_filter': status_filter
     })
@@ -696,13 +888,20 @@ def terminals(request):
     upload_form = TerminalUploadForm()
 
     if request.method == 'POST':
+        # Check if we are creating a terminal
         if 'create' in request.POST or 'create_another' in request.POST:
             form = TerminalForm(request.POST)
             if form.is_valid():
                 form.save()
                 messages.success(request, "Terminal created successfully.")
-                return redirect('terminals')
 
+                # If the 'Create & create another' button is clicked, clear the form and stay on the page
+                if 'create_another' in request.POST:
+                    form = TerminalForm()  # Reset the form for another input
+                else:
+                    return redirect('terminals')  # Redirect to terminal list when 'Create' is clicked
+
+        # Check if we are uploading terminals via a file
         elif 'upload_file' in request.POST:
             upload_form = TerminalUploadForm(request.POST, request.FILES)
             if upload_form.is_valid():
@@ -727,7 +926,6 @@ def terminals(request):
                     messages.success(request, "Terminals imported successfully.")
                 except Exception as e:
                     messages.error(request, f"Error importing file: {e}")
-
                 return redirect('terminals')
 
     all_terminals = Terminal.objects.all()
@@ -736,6 +934,7 @@ def terminals(request):
         'upload_form': upload_form,
         'terminals': all_terminals
     })
+
 
 @user_passes_test(is_admin)
 def delete_terminal(request, terminal_id):
@@ -788,22 +987,18 @@ def delete_system_user(request, user_id):
 def zones(request):
     if request.method == 'POST':
         name = request.POST.get('name')
-        region_id = request.POST.get('region')
 
-        if name and region_id:
-            region = get_object_or_404(Region, pk=region_id)
-            Zone.objects.create(name=name, region=region)
+        if name: 
+            Zone.objects.create(name=name)
             messages.success(request, "Zone created successfully.")
             return redirect('zones')
         else:
             messages.error(request, "Name and region are required.")
 
     all_zones = Zone.objects.all()
-    all_regions = Region.objects.all()  
 
     return render(request, 'core/helpdesk/zones.html', {
         'zones': all_zones,
-        'regions': all_regions
     })
 
 @user_passes_test(is_admin)
