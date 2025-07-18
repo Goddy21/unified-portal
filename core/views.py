@@ -11,10 +11,10 @@ import os
 from collections import Counter
 from django.contrib.auth.models import User, Group
 from django.utils.decorators import method_decorator
-from .forms import UserUpdateForm, ProfileUpdateForm, TerminalForm,TerminalUploadForm, VersionControlForm, FileUploadForm, CustomUserCreationForm, LoginForm, OTPForm
+from .forms import UserUpdateForm, ProfileUpdateForm, TerminalForm,TerminalUploadForm, VersionControlForm, FileUploadForm, CustomUserCreationForm, LoginForm, OTPForm,TicketEditForm,TicketComment, TicketCommentForm, TicketForm
 from django.views import View
 import csv
-from .models import Customer, Region, Terminal, Unit, SystemUser, Zone, ProblemCategory, VersionControl, Report, Ticket, Profile, EmailOTP
+from .models import Customer, Region, Terminal, Unit, SystemUser, Zone, ProblemCategory, VersionControl, Report, Ticket, Profile, EmailOTP,TicketComment
 from django.core.mail import send_mail, EmailMultiAlternatives, EmailMessage
 from django.utils.html import strip_tags
 from django.contrib import messages
@@ -214,7 +214,7 @@ def login_view(request):
                             justify-content: center;
                         }}
                         .logo {{
-                            height: 48px;
+                            height: 100%;
                             margin: 16px auto 8px auto;
                             display: block;
                             filter: drop-shadow(0 2px 8px rgba(52,152,219,0.12));
@@ -715,17 +715,55 @@ def create_ticket(request):
 
 def ticket_detail(request, ticket_id):
     ticket = get_object_or_404(Ticket, id=ticket_id)
-    
-    # Check if the user has permission to resolve the ticket
-    can_resolve = request.user.has_perm('can_resolve_ticket')
-    
+    comments = ticket.comments.order_by('-created_at')
+    form = TicketEditForm(instance=ticket)  
+    comment_form = TicketCommentForm()
+
+    if request.method == 'POST':
+        if 'add_comment' in request.POST:
+            comment_form = TicketCommentForm(request.POST)
+            if comment_form.is_valid():
+                comment = comment_form.save(commit=False)
+                comment.ticket = ticket
+                comment.created_by = request.user
+                comment.save()
+                return redirect('ticket_detail', ticket_id=ticket.id)
+        else:
+            form = TicketEditForm(request.POST, instance=ticket)
+            if form.is_valid():
+                form.save()
+                return redirect('ticket_detail', ticket_id=ticket.id)
+
     context = {
         'ticket': ticket,
-        'is_admin': is_admin(request.user),
-        'is_editor': is_editor(request.user),
-        'can_resolve': can_resolve,  
+        'form': form,
+        'comments': comments,
+        'comment_form': comment_form,
+        'is_admin': request.user.is_superuser,  # whatever logic you're using
+        'is_editor': request.user.groups.filter(name='Editor').exists(),
+        'can_resolve': request.user.groups.filter(name='Resolver').exists(),
+
     }
+
+    #return render(request, 'core/helpdesk/ticket_detail.html', context)
+
+    # Check if the user has permission to resolve the ticket
+    can_resolve = request.user.has_perm('can_resolve_ticket')
+
+    #form = None #addinf form to context
     
+     # Allow editing only for admins or editors
+    if is_admin(request.user) or is_editor(request.user):
+        if request.method == 'POST':
+            form = TicketForm(request.POST, instance=ticket)
+            if form.is_valid():
+                form.save()
+                return redirect('ticket_detail', ticket_id=ticket.id)
+        else:
+            form = TicketForm(instance=ticket)
+
+            
+
     # Admin and editor can always resolve the ticket
     if is_admin(request.user) or is_editor(request.user):
         return render(request, 'core/helpdesk/ticket_detail.html', context)
@@ -738,6 +776,41 @@ def ticket_detail(request, ticket_id):
             return render(request, 'core/helpdesk/permission_denied.html')
     
     return render(request, 'core/helpdesk/permission_denied.html')
+
+
+@login_required
+def edit_comment(request, comment_id):
+    comment = get_object_or_404(TicketComment, id=comment_id)
+
+    if request.user != comment.created_by and not request.user.is_superuser:
+        messages.error(request, "You don't have permission to edit this comment.")
+        return redirect('ticket_detail', ticket_id=comment.ticket.id)
+
+    if request.method == 'POST':
+        form = TicketCommentForm(request.POST, instance=comment)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Comment updated successfully.")
+            return redirect('ticket_detail', ticket_id=comment.ticket.id)
+    else:
+        form = TicketCommentForm(instance=comment)
+
+    return render(request, 'edit_comment.html', {'form': form, 'comment': comment})
+
+
+@login_required
+def delete_comment(request, comment_id):
+    comment = get_object_or_404(TicketComment, id=comment_id)
+
+    if request.user != comment.created_by and not request.user.is_superuser:
+        messages.error(request, "You don't have permission to delete this comment.")
+        return redirect('ticket_detail', ticket_id=comment.ticket.id)
+
+    if request.method == 'POST':
+        ticket_id = comment.ticket.id
+        comment.delete()
+        messages.success(request, "Comment deleted.")
+        return redirect('ticket_detail', ticket_id=ticket_id)
 
 
 
