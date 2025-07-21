@@ -177,7 +177,6 @@ def login_view(request):
             user = authenticate(username=username, password=password)
             if user:
                 request.session['pre_otp_user'] = user.id 
-                # Generate and send OTP
                 otp = str(random.randint(100000, 999999))
                 EmailOTP.objects.update_or_create(user=user, defaults={'otp': otp, 'created_at': timezone.now()})
                 
@@ -442,7 +441,6 @@ def pre_dashboards(request):
 #@user_passes_test(is_viewer)
 def user_list_view(request):
     users = User.objects.all()
-    # Add pagination: Show 10 users per page
     paginator = Paginator(users, 10)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
@@ -518,7 +516,7 @@ def file_list_view(request, category_name=None):
         files = files.order_by('-upload_date')
     else:
         files = files.order_by('title')
-         # PAGINATION START
+        
     paginator = Paginator(files, 10) 
     page = request.GET.get('page')
     try:
@@ -527,7 +525,7 @@ def file_list_view(request, category_name=None):
         paginated_files = paginator.page(1)
     except EmptyPage:
         paginated_files = paginator.page(paginator.num_pages)
-    # PAGINATION END
+    
     categories = FileCategory.objects.all()  
 
     return render(request, 'core/file_management/file_list.html', {
@@ -558,12 +556,11 @@ def preview_file(request, file_id):
     if not can_user_access_file(request.user, file):
         raise PermissionDenied("You do not have access to this file.")
 
-    # Get the guessed content type (e.g., image/jpeg, application/pdf)
     mime_type, _ = guess_type(file.file.name)
     if mime_type in ['application/pdf', 'image/jpeg', 'image/png', 'image/gif']:
         return FileResponse(file.file.open('rb'), content_type=mime_type)
     
-    # If unsupported, render fallback page
+    
     return render(request, 'core/file_management/unsupported_preview.html', {'file': file})
 
 @login_required
@@ -634,12 +631,10 @@ class SettingsView(View):
         })
 
 
-# Tickets
+# Ticketing Views
 def ticketing_dashboard(request):
-    # Status summary
     status_counts = Ticket.objects.values('status').annotate(count=Count('id'))
 
-    # Priority summary
     priority_counts = Ticket.objects.values('priority').annotate(count=Count('id'))
 
     # Monthly ticket trends
