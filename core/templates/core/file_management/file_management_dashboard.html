@@ -89,6 +89,7 @@
         <h2 class="section-title">Recently Uploaded</h2>
         <div class="recent-files-list">
         {% for file in recent_files %}
+        {% if file.uploaded_by == request.user or request.user.is_superuser%}
             <div class="recent-file-card">
             <i class="fas fa-file-alt file-icon"></i>
             <div class="file-info">
@@ -96,6 +97,7 @@
                 <small>{{ file.upload_date|date:"M d, Y H:i" }}</small><br>
                 <a href="{{ file.file.url }}" download>⬇ Download</a>
             </div>
+        {% endif %}
             </div>
         {% empty %}
             <p>No recent files found.</p>

@@ -1,5 +1,5 @@
 from django.shortcuts import render, get_list_or_404, redirect
-from .models import File
+from .models import File, FileAccessLog
 from django.http import FileResponse, JsonResponse
 from .forms import FileUploadForm, ProblemCategoryForm, TicketForm
 from django.contrib.auth.decorators import login_required, permission_required, user_passes_test
@@ -30,21 +30,23 @@ from django import forms
 import random
 from django.core.exceptions import PermissionDenied
 from core.utils import can_user_access_file
-from .utils import is_admin  
+from .utils import is_director  
 import json
 import pandas as pd
 from email.mime.image import MIMEImage
 
+from core import models
+
 def in_group(user, group_name):
     return user.is_authenticated and (user.is_superuser or user.groups.filter(name=group_name).exists())
-def is_admin(user):
-    return in_group(user, 'Admin')
-def is_editor(user):
-    return in_group(user, 'Editor')
-def is_viewer(user):
-    return in_group(user, 'Viewer')
+def is_director(user):
+    return in_group(user, 'Director')
+def is_manager(user):
+    return in_group(user, 'Manager')
+def is_staff(user):
+    return in_group(user, 'Staff')
 
-@user_passes_test(is_admin)
+@user_passes_test(is_director)
 def admin_dashboard(request):
     if request.method == 'POST':
         action = request.POST.get('action')
@@ -74,7 +76,7 @@ def admin_dashboard(request):
     }
     return render(request, 'accounts/admin_dashboard.html', context)
 
-@user_passes_test(is_admin)
+@user_passes_test(is_director)
 def manage_file_categories(request):
     categories = FileCategory.objects.all()
 
@@ -115,7 +117,7 @@ def manage_file_categories(request):
     })
 
 
-@user_passes_test(is_admin)
+@user_passes_test(is_director)
 def create_user(request):
     if request.method == 'POST':
         username = request.POST.get('username')
@@ -400,7 +402,8 @@ def verify_otp_view(request):
                     return JsonResponse({'status': 'error', 'message': 'Expired OTP'})
                 else:
                     auth_login(request, user)
-                    del request.session['pre_otp_user']
+                    if 'pre_otp_user' in request.session:
+                        del request.session['pre_otp_user']
                     otp_instance.delete()  
                     return JsonResponse({'status': 'verified', 'redirect_url': '/pre_dashboards/'})
             else:
@@ -412,16 +415,11 @@ def verify_otp_view(request):
 
 
 @login_required
-def view_files(request):
-    if not request.user.has_perm('core.view_file'):
-        raise PermissionDenied('You do not have permission to view this file!')
-    files = File.objects.all()
-    return render(request, 'file_list.html', {'files': files})
-
-@login_required
 def edit_file(request, file_id):
-    if not request.user.has_perm('core.change_file'):
-        raise PermissionDenied("You do not have permission to edit this file")
+    #if not request.user.has_perm('core.change_file'):
+        #raise PermissionDenied("You do not have permission to edit this file")
+    if file.access_level == 'confidential' and file.uploaded_by != request.user and not request.user.is_superuser:
+        raise PermissionDenied("This confidential file can only be edited by its uploader.")
     file = get_object_or_404(File, pk=file_id)
 
     if request.method == 'POST':
@@ -446,12 +444,12 @@ def user_list_view(request):
     page_obj = paginator.get_page(page_number)
     return render(request, 'core/file_management/user_list.html', {'page_obj': page_obj})
 
-@user_passes_test(is_viewer)
+@user_passes_test(is_staff)
 def user_detail(request, user_id):
     user = get_object_or_404(User, id=user_id)
     return render(request, 'core/file_management/user_detail.html', {'user': user})
 
-@user_passes_test(is_editor)
+@user_passes_test(is_staff)
 def edit_user(request, user_id):
     user = get_object_or_404(User, id=user_id)
     if request.method == 'POST':
@@ -470,14 +468,18 @@ def delete_user(request, user_id):
     messages.success(request, 'User deleted successfully!')
     return redirect('user_list')
 
+@login_required
 def file_management_dashboard(request):
+    # Get all files that are not deleted
     files = File.objects.filter(is_deleted=False)
     
+    # Count file extensions
     ext_counter = Counter()
     for f in files:
-        ext = os.path.splitext(f.file.name)[1].lower()
+        ext = os.path.splitext(f.file.name)[1].lower()  # Get file extension
         ext_counter[ext] += 1
 
+    # File types data with counts
     file_types = [
         {"type": "PDF Documents", "ext": ".pdf", "icon": "pdf", "count": ext_counter.get(".pdf", 0)},
         {"type": "Word Documents", "ext": ".docx", "icon": "docx", "count": ext_counter.get(".docx", 0)},
@@ -489,35 +491,61 @@ def file_management_dashboard(request):
         )},
     ]
 
+    # Count files by category (excluding deleted ones)
     categories = FileCategory.objects.annotate(
         file_count=Count('file', filter=Q(file__is_deleted=False))
     )    
 
+    user = request.user
+    # Get recent files, ordered by upload date
     recent_files = File.objects.filter(is_deleted=False).order_by('-upload_date')[:5]
+    
+    # Check visibility based on access level
+    visible_files = []
     for file in recent_files:
-        file.extension = os.path.splitext(file.file.name)[1]
+        if file.access_level == 'public' or user.is_superuser:
+            file.extension = os.path.splitext(file.file.name)[1] 
+            visible_files.append(file)
+        elif file.access_level == 'restricted' and file.authorized_users.filter(id=user.id).exists() or user.is_superuser:
+            file.extension = os.path.splitext(file.file.name)[1]
+            visible_files.append(file)
+        elif file.access_level == 'confidential' and (file.uploaded_by == user or user.is_superuser):
+            file.extension = os.path.splitext(file.file.name)[1]
+            visible_files.append(file)
 
+    # Return the render with visible files
     return render(request, 'core/file_management/dashboard.html', {
         'categories': categories,
-        'recent_files': recent_files,
+        'recent_files': visible_files,  
         'file_types': file_types,
         'user_name': request.user.username  
     })
 
-#@user_passes_test(is_viewer)
+@login_required
 def file_list_view(request, category_name=None):
+    user = request.user
     files = File.objects.filter(is_deleted=False)
 
+    visible_files = []
+
+    # Iterate over each file to check access rights
+    for file in files:
+        if file.can_user_access(user):
+            visible_files.append(file)
+
+    # Filter by category if provided
     if category_name:
-        files = files.filter(category__name__iexact=category_name)
-        
+        visible_files = [file for file in visible_files if file.category.name.lower() == category_name.lower()]
+
+    # Sort files
     sort_option = request.GET.get('sort')
     if sort_option == 'recent':
-        files = files.order_by('-upload_date')
+        visible_files.sort(key=lambda f: f.upload_date, reverse=True)
     else:
-        files = files.order_by('title')
-        
-    paginator = Paginator(files, 10) 
+        visible_files.sort(key=lambda f: f.title)
+
+    # Paginate files
+    paginator = Paginator(visible_files, 10)
     page = request.GET.get('page')
     try:
         paginated_files = paginator.page(page)
@@ -525,14 +553,16 @@ def file_list_view(request, category_name=None):
         paginated_files = paginator.page(1)
     except EmptyPage:
         paginated_files = paginator.page(paginator.num_pages)
-    
-    categories = FileCategory.objects.all()  
+
+    # Fetch categories for the filter dropdown
+    categories = FileCategory.objects.all()
 
     return render(request, 'core/file_management/file_list.html', {
         'files': paginated_files,
         'categories': categories,
         'active_category': category_name,
     })
+
 
 def search(request):
     query = request.GET.get('q', '')
@@ -550,17 +580,32 @@ def search(request):
 
 #@user_passes_test(is_viewer)
 #@permission_required('core.view_file', raise_exception=True)
+
+@login_required
 def preview_file(request, file_id):
     file = get_object_or_404(File, id=file_id, is_deleted=False)
-    
-    if not can_user_access_file(request.user, file):
-        raise PermissionDenied("You do not have access to this file.")
 
+    # Access control
+    if file.access_level == 'public':
+        pass  
+    elif file.access_level == 'restricted':
+        if not file.can_user_access(request.user):
+            raise PermissionDenied("Access denied.")
+    elif file.access_level == 'confidential':
+        if request.user != file.uploaded_by and not request.user.is_superuser:
+            raise PermissionDenied("Access denied for confidential file.")
+    else:
+        raise PermissionDenied("Unknown access level.")
+
+    # Log access regardless of type
+    FileAccessLog.objects.create(file=file, accessed_by=request.user)
+
+    # Serve file if it's previewable
     mime_type, _ = guess_type(file.file.name)
     if mime_type in ['application/pdf', 'image/jpeg', 'image/png', 'image/gif']:
         return FileResponse(file.file.open('rb'), content_type=mime_type)
-    
-    
+
+    # Unsupported type
     return render(request, 'core/file_management/unsupported_preview.html', {'file': file})
 
 @login_required
@@ -592,7 +637,7 @@ def upload_file_view(request):
     
     return render(request, 'core/file_management/upload_file.html', {'form': form})
 
-@user_passes_test(is_viewer)
+#@user_passes_test(is_staff)
 def profile_view(request):
     context = {
         'user': request.user,
@@ -748,7 +793,7 @@ def ticket_detail(request, ticket_id):
     #form = None #addinf form to context
     
      # Allow editing only for admins or editors
-    if is_admin(request.user) or is_editor(request.user):
+    if is_director(request.user) or is_manager(request.user):
         if request.method == 'POST':
             form = TicketForm(request.POST, instance=ticket)
             if form.is_valid():
@@ -760,11 +805,11 @@ def ticket_detail(request, ticket_id):
             
 
     # Admin and editor can always resolve the ticket
-    if is_admin(request.user) or is_editor(request.user):
+    if is_director(request.user) or is_manager(request.user):
         return render(request, 'core/helpdesk/ticket_detail.html', context)
     
     # Viewer can only view the ticket if it is resolved
-    elif is_viewer(request.user):
+    elif is_staff(request.user):
         if ticket.status == 'resolved':
             return render(request, 'core/helpdesk/ticket_detail.html', context)
         else:
@@ -814,7 +859,7 @@ def resolve_ticket_view(request, ticket_id):
     ticket = get_object_or_404(Ticket, id=ticket_id)
 
     # Check if the user is authorized to resolve the ticket
-    if is_admin(request.user) or is_editor(request.user):
+    if is_director(request.user) or is_manager(request.user):
         # Admins and Editors can resolve tickets
         if ticket.status != 'resolved':
             ticket.status = 'resolved'
@@ -841,7 +886,7 @@ def resolve_ticket_view(request, ticket_id):
     return render(request, 'core/helpdesk/permission_denied.html')
 
 
-@user_passes_test(is_admin)
+@user_passes_test(is_director)
 def delete_ticket(request, ticket_id):
     ticket = get_object_or_404(Ticket, id=ticket_id)
     ticket.delete()
@@ -865,7 +910,7 @@ def problem_category(request):
         'search_query': query,
     })
 
-@user_passes_test(is_admin)
+@user_passes_test(is_director)
 def create_problem_category(request):
     if request.method == 'POST':
         form = ProblemCategoryForm(request.POST)
@@ -881,7 +926,7 @@ def create_problem_category(request):
 
     return render(request, 'core/helpdesk/create_problem_category.html', {'form': form})
 
-@user_passes_test(is_admin)
+@user_passes_test(is_director)
 def edit_problem_category(request, category_id):
     category = get_object_or_404(ProblemCategory, pk=category_id)
     if request.method == 'POST':
@@ -894,7 +939,7 @@ def edit_problem_category(request, category_id):
 
     return render(request, 'core/helpdesk/edit_problem_category.html', {'form': form})
 
-@user_passes_test(is_admin)
+@user_passes_test(is_director)
 def delete_problem_category(request, category_id):
     category = get_object_or_404(ProblemCategory, id=category_id)
     category.delete()
@@ -922,13 +967,13 @@ def customers(request):
 
     # Pagination setup
     all_customers = Customer.objects.exclude(name__exact="").exclude(name__isnull=True)
-    paginator = Paginator(all_customers, 10)  # Show 10 customers per page
+    paginator = Paginator(all_customers, 10)  
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
     return render(request, "core/helpdesk/customers.html", {"customers": page_obj})
 
-@user_passes_test(is_admin)
+@user_passes_test(is_director)
 def create_customer(request):
     if request.method == "POST":
         name = request.POST.get("name", "").strip()
@@ -941,7 +986,7 @@ def create_customer(request):
 
     return render(request, "core/helpdesk/create_customer.html")
 
-@user_passes_test(is_admin)
+@user_passes_test(is_director)
 def delete_customer(request, id):
     customer = get_object_or_404(Customer, id=id)
     customer.delete()
@@ -965,7 +1010,7 @@ def regions(request):
 
     return render(request, 'core/helpdesk/regions.html', {'regions': page_obj})
 
-@user_passes_test(is_admin)
+@user_passes_test(is_director)
 def delete_region(request, region_id):
     region = get_object_or_404(Region, id=region_id)
     region.delete()
@@ -1036,7 +1081,7 @@ def terminals(request):
 
 
 
-@user_passes_test(is_admin)
+@user_passes_test(is_director)
 def delete_terminal(request, terminal_id):
     terminal = get_object_or_404(Terminal, id=terminal_id)
     terminal.delete()
@@ -1059,7 +1104,7 @@ def units(request):
 
     return render(request, 'core/helpdesk/units.html', {'page_obj': page_obj})
 
-@user_passes_test(is_admin)
+@user_passes_test(is_director)
 def delete_unit(request, unit_id):
     unit = get_object_or_404(Unit, id=unit_id)
     unit.delete()
@@ -1083,7 +1128,7 @@ def system_users(request):
     page_obj = paginator.get_page(page_number)
     return render(request, 'core/helpdesk/users.html', {'page_obj': page_obj})
 
-@user_passes_test(is_admin)
+@user_passes_test(is_director)
 def delete_system_user(request, user_id):
     user = get_object_or_404(User, id=user_id)
     if request.user == user:
@@ -1115,7 +1160,7 @@ def zones(request):
         'page_obj': page_obj,
     })
 
-@user_passes_test(is_admin)
+@user_passes_test(is_director)
 def delete_zone(request, zone_id):
     zone = get_object_or_404(Zone, id=zone_id)
     zone.delete()

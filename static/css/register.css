@@ -29,6 +29,8 @@ body {
 }
 .register-form label {
   font-weight: 600;
+  display: block;
+  margin-bottom: 0.25rem;
 }
 .register-form input {
   width: 100%;
@@ -37,7 +39,16 @@ body {
   border-radius: 6px;
   margin-bottom: 1rem;
   background-color: #f9f9f9;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  font-size: 1rem;
 }
+.register-form input:focus {
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.1);
+  outline: none;
+  background: #f0f7ff;
+}
+
 .btn-register {
   width: 100%;
   padding: 12px;
@@ -47,10 +58,13 @@ body {
   border: none;
   border-radius: 6px;
   cursor: pointer;
-  transition: background 0.3s ease;
+  transition: background 0.3s ease, box-shadow 0.2s;
+  box-shadow: 0 2px 12px rgba(0,123,255,0.06);
 }
-.btn-register:hover {
+.btn-register:hover,
+.btn-register:focus {
   background-color: #0056b3;
+  box-shadow: 0 4px 24px rgba(0,123,255,0.16);
 }
 .login-link {
   text-align: center;
@@ -60,7 +74,18 @@ body {
 .login-link a {
   color: #007bff;
   text-decoration: none;
+  transition: text-decoration 0.2s;
 }
-.login-link a:hover {
+.login-link a:hover,
+.login-link a:focus {
   text-decoration: underline;
+}
+.logo-container {
+  text-align: center;
+  margin-bottom: 1.2rem;
+}
+
+.register-logo {
+  width: 200px;
+  height: auto;
 }

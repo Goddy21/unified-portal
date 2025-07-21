@@ -22,15 +22,21 @@
 
   <h3 class="section-subtitle">{% if active_category %}{{ active_category }}{% else %}All Files{% endif %}</h3>
 
-  <div class="file-grid-header">
+  <div class="file-grid-header animate-fadein">
     <span>NAME</span>
     <span>SIZE</span>
     <span>CLASSIFICATION</span>
     <span>PREVIEW</span>
     <span>DOWNLOAD</span>
+    <span class="delete-header">
+      <svg width="18" height="18" viewBox="0 0 20 20" fill="none" style="vertical-align:-3px;">
+        <path d="M7 9V15M10 9V15M13 9V15M4 6H16M8 6V4C8 3.46957 8.21071 2.96086 8.58579 2.58579C8.96086 2.21071 9.46957 2 10 2C10.5304 2 11.0391 2.21071 11.4142 2.58579C11.7893 2.96086 12 3.46957 12 4V6M19 6V18C19 18.5304 18.7893 19.0391 18.4142 19.4142C18.0391 19.7893 17.5304 20 17 20H3C2.46957 20 1.96086 19.7893 1.58579 19.4142C1.21071 19.0391 1 18.5304 1 18V6H19Z" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      DELETE
+    </span>
   </div>
 
-  <div class="file-grid">
+  <div class="file-grid animate-fadein">
     {% for file in files %}
       <div class="file-row">
         <div class="file-name">
@@ -59,13 +65,25 @@
           </div>
         </div>
         <div>{{ file.file.size|filesizeformat }}</div>
-        <div><span class="tag {{ file.access_level }}">{{ file.access_level|title }}</span></div>
+        <div><span class="tag {% if file.access_level == 'confidential' %}private{% else %}{{ file.access_level }}{% endif %}">{{ file.access_level|title }}</span></div>
         <div>
           <a href="{% url 'preview_file' file.id %}" class="btn preview-link" target="_blank">Preview</a>
         </div>
         <div>
           <a href="{{ file.file.url }}" class="btn download-link" download>Download</a>
         </div>
+        {% if file.uploaded_by == request.user or request.user.is_superuser%}
+        <div>
+          <form method="post" action="{% url 'delete_file' file.id %}" onsubmit="return confirm('Are you sure you want to delete this file?');">
+            {% csrf_token %}
+            <button type="submit" class="btn delete-link">Delete</button>
+          </form>
+        </div>
+        {% else %}
+        <div>
+          <span style="color: #999; font-size: 0.8rem;">Not allowed</span>
+        </div>
+        {% endif %}
       </div>
     {% empty %}
       <div class="file-row empty">No files available.</div>

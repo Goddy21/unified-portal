@@ -1,18 +1,18 @@
 # core/utils.py
-def is_admin(user):
-    return user.is_superuser or user.groups.filter(name='Admin').exists()
+def is_director(user):
+    return user.is_superuser or user.groups.filter(name='Director').exists()
 
-def is_editor(user):
-    return user.groups.filter(name='Editor').exists()
+def is_manager(user):
+    return user.groups.filter(name='Manager').exists()
 
-def is_viewer(user):
-    return user.groups.filter(name='Viewer').exists()
+def is_staff(user):
+    return user.groups.filter(name='Staff').exists()
 
-def can_user_access_file(user, file):
-    if file.access_level == 'admin' and not is_admin(user):
-        return False
-    elif file.access_level == 'editor' and not (is_admin(user) or is_editor(user)):
-        return False
-    elif file.access_level == 'viewer':
+def can_user_access_file(self, user):
+    if self.access_level == 'public':
         return True
-    return True
+    if self.access_level == 'restricted':
+        return user.has_perm('core.view_file')
+    if self.access_level == 'confidential':
+        return self.uploaded_by == user or user.is_superuser
+    return False

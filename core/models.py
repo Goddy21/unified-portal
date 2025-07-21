@@ -24,9 +24,9 @@ class FileCategory(models.Model):
         return self.name
     
 ACCESS_LEVEL_CHOICES = [
-    ('admin', 'Admin'),
-    ('editor', 'Editor'),
-    ('viewer', 'Viewer'),
+    ('confidential', 'Confidential'),
+    ('restricted', 'Restricted'),
+    ('public', 'Public'),
 ]
 
 class File(models.Model):
@@ -37,8 +37,18 @@ class File(models.Model):
     uploaded_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     upload_date = models.DateTimeField(auto_now_add=True)
     is_deleted = models.BooleanField(default=False)
-    access_level = models.CharField(max_length=20, choices=ACCESS_LEVEL_CHOICES)
+    authorized_users = models.ManyToManyField(User, blank=True, related_name='authorized_files')
+    access_level = models.CharField(max_length=20, choices=ACCESS_LEVEL_CHOICES, default='restricted')
 
+    def can_user_access(self, user):
+        if self.access_level == 'public':
+            return True
+        if self.access_level == 'restricted':
+            return user in self.authorized_users.all() or user.has_perm('core.view_file')
+        if self.access_level == 'confidential':
+            return self.uploaded_by == user or user.is_superuser
+        return False
+    
     def __str__(self):
         return self.title
 

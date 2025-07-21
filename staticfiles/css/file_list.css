@@ -67,7 +67,7 @@ body {
 .file-grid-header,
 .file-row {
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
+  grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr;
   gap: 1rem;
   align-items: center;
   padding: 0.75rem 1rem;
@@ -130,6 +130,15 @@ body {
 .file-description {
   font-size: 0.85rem;
   color: #6c757d;
+}
+.tag.confidential {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+.tag.restricted {
+  background-color: #fff3cd;
+  color: #856404;
 }
 
 /* ===== Buttons ===== */

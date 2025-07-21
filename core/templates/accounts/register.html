@@ -16,7 +16,7 @@
       </div>
       <h2><i class="fas fa-user-plus"></i> Create Account</h2>
 
-      <form method="POST" class="register-form">
+      <form method="POST" class="register-form" autocomplete="off">
         {% csrf_token %}
         <div class="form-group">
           <label for="first_name">First Name</label>
