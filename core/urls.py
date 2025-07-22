@@ -102,5 +102,6 @@ urlpatterns = [
 
     # Reports
     path('reports/general/', views.reports, name='reports'),
+    path('statistics/', views.statistics_view, name='statistics'),
     path('reports/version-controls/', views.version_controls, name='version_controls'),
 ]+ static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

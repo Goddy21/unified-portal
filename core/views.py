@@ -1,6 +1,6 @@
 from django.shortcuts import render, get_list_or_404, redirect
 from .models import File, FileAccessLog
-from django.http import FileResponse, JsonResponse
+from django.http import FileResponse, JsonResponse, HttpResponse
 from .forms import FileUploadForm, ProblemCategoryForm, TicketForm
 from django.contrib.auth.decorators import login_required, permission_required, user_passes_test
 from django.db.models import Count, Q
@@ -35,7 +35,7 @@ import json
 import pandas as pd
 from email.mime.image import MIMEImage
 from datetime import datetime, timedelta
-
+from io import BytesIO
 from core import models
 
 def in_group(user, group_name):
@@ -778,6 +778,67 @@ def ticketing_dashboard(request):
 
     return render(request, 'core/helpdesk/ticketing_dashboard.html', context)
 
+def statistics_view(request):
+    # Example: Replace with real query data
+    today = timezone.now()
+    days = [today - timedelta(days=i) for i in range(7)]  # Example of last 7 days
+
+    # Query data for tickets per day, weekdays, etc.
+    tickets_per_day = [Ticket.objects.filter(created_at__date=day.date()).count() for day in days]
+    tickets_per_weekday = [Ticket.objects.filter(created_at__week_day=i+1).count() for i in range(7)]  
+    hours = [f"{i}-{i+1}" for i in range(24)]
+    tickets_per_hour = [Ticket.objects.filter(created_at__hour=i).count() for i in range(24)]
+    
+    # Monthly data
+    months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+    tickets_per_month = [Ticket.objects.filter(created_at__month=i+1).count() for i in range(12)]
+    
+    # Yearly data
+    years = [2020, 2021]  # Example years, adjust as needed
+    tickets_per_year = [Ticket.objects.filter(created_at__year=year).count() for year in years]
+
+    # Fetch terminals, customers, and regions and convert to list of dicts
+    terminals = Terminal.objects.all().values('id', 'cdm_name', 'customer__name', 'region__name')
+    customers = Customer.objects.all().values('id', 'name')
+    regions = Region.objects.all().values('id', 'name')
+
+    # Pack data for the frontend
+    data = {
+        'days': [day.strftime('%Y-%m-%d') for day in days],
+        'ticketsPerDay': tickets_per_day,
+        'weekdays': ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+        'ticketsPerWeekday': tickets_per_weekday,
+        'hours': hours,
+        'ticketsPerHour': tickets_per_hour,
+        'months': months,
+        'ticketsPerMonth': tickets_per_month,
+        'years': years,
+        'ticketsPerYear': tickets_per_year,
+        'terminals': list(terminals),  # Convert queryset to list of dictionaries
+        'customers': list(customers),  # Convert queryset to list of dictionaries
+        'regions': list(regions),  # Convert queryset to list of dictionaries
+    }
+
+
+    # Pass the serialized data to the template
+    context = {
+        'data': json.dumps(data)  # Serialize the data into JSON
+    }
+    
+    return render(request, 'core/helpdesk/statistics.html', context)
+
+def export_report(request):
+    # Logic for exporting data as Excel
+    data = ...  # Aggregate data based on filters
+    df = pd.DataFrame(data)
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        df.to_excel(writer, index=False, sheet_name='Tickets Statistics')
+    output.seek(0)
+
+    response = HttpResponse(output.read(), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = 'attachment; filename="ticket_statistics_report.xlsx"'
+    return response
 def tickets(request):
     query = request.GET.get('search', '')
     status_filter = request.GET.get('status', '') 
