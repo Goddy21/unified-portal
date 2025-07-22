@@ -1,5 +1,4 @@
 window.addEventListener('DOMContentLoaded', () => {
-(() => {
   // === User Profile Dropdown Toggle ===
   const userProfile = document.getElementById('userProfile');
   if (userProfile) {
@@ -66,8 +65,13 @@ window.addEventListener('DOMContentLoaded', () => {
   // === Chart Animation and Styling Config ===
   const animationOptions = {
     animation: {
-      duration: 1000,
-      easing: 'easeOutQuart'
+      duration: 1600, 
+      easing: 'easeInOutQuad', 
+      onComplete: function () {
+        // Animation complete callback (from the first config)
+        console.log('Chart animation completed!');
+        // You can add additional effects here when animation is complete
+      }
     },
     responsive: true,
     plugins: {
@@ -77,19 +81,22 @@ window.addEventListener('DOMContentLoaded', () => {
           boxWidth: 15,
           padding: 20,
           font: {
-            size: 12
-          }
-        }
+            size: 14, 
+          },
+        },
       },
       tooltip: {
         enabled: true,
         backgroundColor: '#333',
-        titleFont: { size: 13 },
+        titleFont: { size: 14 }, 
         bodyFont: { size: 12 },
-        padding: 10
-      }
-    }
+        padding: 10,
+        caretPadding: 12,
+      },
+    },
   };
+
+
 
   // === Initialize Charts ===
   // Helper function to safely destroy existing chart
@@ -198,10 +205,35 @@ window.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // === Region-wise Ticket Volume ===
+  const regionChart = document.getElementById('regionChart');
+  if (regionChart) {
+    destroyExistingChart('regionChart');  // Destroy any existing chart instance
+
+    const regionLabels = REGION_DATA.map(item => item.region || 'Unnamed');  // Update as per your model field
+    const regionCounts = REGION_DATA.map(item => item.count);
+
+    new Chart(regionChart, {
+      type: 'bar',
+      data: {
+        labels: regionLabels,
+        datasets: [{
+          label: 'Tickets',
+          data: regionCounts,
+          backgroundColor: '#007bff', 
+          borderRadius: 5,
+          barThickness: 35
+        }]
+      },
+      options: animationOptions
+    });
+  }
+
   const priorityChart = document.getElementById('priorityChart');
   if (priorityChart) {
     destroyExistingChart('priorityChart');
 
+    console.log(PRIORITY_DATA);
     const priorityLabels = PRIORITY_DATA.map(item => item.priority.replace(/\b\w/g, l => l.toUpperCase()));
     const priorityCounts = PRIORITY_DATA.map(item => item.count);
     new Chart(priorityChart, {
@@ -238,6 +270,112 @@ window.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  const timeTrendChart = document.getElementById('timeTrendChart');
+  if (timeTrendChart) {
+    destroyExistingChart('timeTrendChart');
+
+    new Chart(timeTrendChart, {
+      type: 'line',
+      data: {
+        labels: ['Day', 'Week', 'Month', 'Year'],
+        datasets: [{
+          label: 'Ticket Volume',
+          data: [TIME_DATA.day, TIME_DATA.week, TIME_DATA.month, TIME_DATA.year],
+          borderColor: '#17a2b8',
+          backgroundColor: 'rgba(23, 162, 184, 0.1)',
+          fill: true,
+          tension: 0.4,
+          pointBackgroundColor: '#17a2b8'
+        }]
+      },
+      options: animationOptions
+    });
+  }
+
+  const categoryChart = document.getElementById('categoryChart');
+  if (categoryChart) {
+    destroyExistingChart('categoryChart');
+
+    new Chart(categoryChart, {
+      type: 'bar',
+      data: {
+        labels: CATEGORY_DATA.map(c => c.category),
+        datasets: [{
+          label: 'Tickets',
+          data: CATEGORY_DATA.map(c => c.count),
+          backgroundColor: '#6f42c1',
+          borderRadius: 4,
+          barThickness: 30
+        }]
+      },
+      options: animationOptions
+    });
+  }
+
+  const categoryTimeChart = document.getElementById('categoryTimeChart');
+  if (categoryTimeChart) {
+    destroyExistingChart('categoryTimeChart');
+    
+    const categoryLabels = CATEGORY_TIME_DATA.map(item => item.category);
+    const categoryCounts = CATEGORY_TIME_DATA.map(item => item.daily_count);
+
+    new Chart(categoryTimeChart, {
+      type: 'bar',
+      data: {
+        labels: categoryLabels,
+        datasets: [{
+          label: 'Tickets by Category',
+          data: categoryCounts,
+          backgroundColor: '#6f42c1',
+          borderRadius: 4,
+          barThickness: 30
+        }]
+      },
+      options: animationOptions
+    });
+  }
+
+
+  const overviewLabels = OVERVIEW_DATA.map(item => item.label);
+  const overviewCounts = OVERVIEW_DATA.map(item => item.count);
+  if (overviewChart){
+    destroyExistingChart('overviewChart');
+  new Chart(overviewChart, {
+    type: 'bar',
+    data: {
+      labels: overviewLabels,
+      datasets: [{
+        label: 'Ticket Counts',
+        data: overviewCounts,
+        backgroundColor: ['#007bff', '#ffc107', '#28a745', '#dc3545'],
+        borderRadius: 5,
+        barThickness: 40
+      }]
+    },
+    options: animationOptions
+  });
+}
+
+  const customerChart = document.getElementById('customerChart');
+  if (customerChart) {
+    destroyExistingChart('customerChart');
+
+    new Chart(customerChart, {
+      type: 'bar',
+      data: {
+        labels: CUSTOMER_DATA.map(c => c.customer),
+        datasets: [{
+          label: 'Tickets',
+          data: CUSTOMER_DATA.map(c => c.count),
+          backgroundColor: '#fd7e14',
+          borderRadius: 4,
+          barThickness: 30
+        }]
+      },
+      options: animationOptions
+    });
+  }
+
+
   console.log("ticketing_dashboard.js executed successfully. Chart.js available:", typeof Chart !== "undefined");
-})();
 });

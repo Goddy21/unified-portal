@@ -11,25 +11,43 @@
 {% endblock %}
 
 <div class="dashboard-grid">
-  <!-- Ticket Report Card -->
+  <!-- Overview Section -->
   <div class="card">
     <div class="card-header">
-      <h3 class="card-title">Ticket Report</h3>
+      <h3 class="card-title">Overview by Time Period</h3>
       <div class="card-menu"><i class="fas fa-ellipsis-h"></i></div>
     </div>
-    <canvas id="ticketReportChart" class="chart-placeholder bar-chart"></canvas>
+    <canvas id="overviewChart" class="chart-placeholder line-chart"></canvas>
   </div>
 
-  <!-- Monthly Ticket Trends -->
+  <!-- Tickets by Category per Time Period -->
   <div class="card">
     <div class="card-header">
-      <h3 class="card-title">Monthly Ticket Trends</h3>
+      <h3 class="card-title">Category Trends (Daily/Weekly/Monthly/Yearly)</h3>
       <div class="card-menu"><i class="fas fa-ellipsis-h"></i></div>
     </div>
-    <canvas id="monthlyTrendChart" class="chart-placeholder line-chart"></canvas>
+    <canvas id="categoryTimeChart" class="chart-placeholder bar-chart"></canvas>
   </div>
 
-  <!-- Tickets per Terminal -->
+  <!-- Customer-wise Ticket Volume -->
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">Tickets per Customer</h3>
+      <div class="card-menu"><i class="fas fa-ellipsis-h"></i></div>
+    </div>
+    <canvas id="customerChart" class="chart-placeholder horizontal-bar-chart"></canvas>
+  </div>
+
+  <!--Ticket card per region-->
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">Tickets per Region</h3>
+      <div class="card-menu"><i class="fas fa-ellipsis-h"></i></div>
+    </div>
+    <canvas id="regionChart" class="chart-placeholder bar-chart"></canvas>
+  </div>
+
+  <!--Ticket card per terminal-->
   <div class="card">
     <div class="card-header">
       <h3 class="card-title">Tickets per Terminal</h3>
@@ -38,6 +56,7 @@
     <canvas id="terminalChart" class="chart-placeholder bar-chart"></canvas>
   </div>
 
+  <!-- Existing Cards (Preserved) -->
   <!-- Ticket Priority Pie -->
   <div class="card">
     <div class="card-header">
@@ -71,22 +90,78 @@
       </div>
     </div>
   </div>
+  <!-- Daily Tickets Card -->
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">Daily Tickets</h3>
+    </div>
+    <div class="card-body">
+      <h2 id="dailyCount">0</h2>
+    </div>
+  </div>
+
+  <!-- Weekly Tickets Card -->
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">Weekly Tickets</h3>
+    </div>
+    <div class="card-body">
+      <h2 id="weeklyCount">0</h2>
+    </div>
+  </div>
+
+  <!-- Monthly Tickets Card -->
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">Monthly Tickets</h3>
+    </div>
+    <div class="card-body">
+      <h2 id="monthlyCount">0</h2>
+    </div>
+  </div>
+
+  <!-- Yearly Tickets Card -->
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">Yearly Tickets</h3>
+    </div>
+    <div class="card-body">
+      <h2 id="yearlyCount">0</h2>
+    </div>
+  </div>
 </div>
+
 {% endblock %}
 
 {% block extra_js %}
-  <script>
-    const STATUS_DATA = {{ status_data|safe }};
-    const PRIORITY_DATA = {{ priority_data|safe }};
-    const MONTHLY_DATA = {{ monthly_data|safe }};
-    const TERMINAL_DATA = {{ terminal_data|safe }};
-  </script>
+<script>
+  const STATUS_DATA = {{ status_data|default:'[]'|safe }};
+  const PRIORITY_DATA = {{ priority_data|default:'[]'|safe }};
+  const REGION_DATA = {{ region_data|default:"[]"|safe }};
+  const MONTHLY_DATA = {{ monthly_data|default:'[]'|safe }};
+  const TERMINAL_DATA = {{ terminal_data|default:"[]"|safe }};
+  const OVERVIEW_DATA = {{ overview_data|default:'[]'|safe }};
+  const CATEGORY_TIME_DATA = {{ category_time_data|default:'[]'|safe }};
+  const CUSTOMER_DATA = {{ customer_data|default:'[]'|safe }};
+  const TIME_DATA = {{ time_data|default:'{}'|safe }};
 
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
 
-  <script src="{% static 'js/ticketing_dashboard.js' %}"></script>
+  document.getElementById("dailyCount").textContent = TIME_DATA.day;
+  document.getElementById("weeklyCount").textContent = TIME_DATA.week;
+  document.getElementById("monthlyCount").textContent = TIME_DATA.month;
+  document.getElementById("yearlyCount").textContent = TIME_DATA.year;
+  console.log(STATUS_DATA);
+  console.log("Priority data:",PRIORITY_DATA);
+  console.log(MONTHLY_DATA);
+  console.log(TERMINAL_DATA);
+  console.log(CUSTOMER_DATA);
+  console.log(TIME_DATA);
+  console.log("Daily Tickets Count: ", TIME_DATA.day);
+  console.log("Weekly Tickets Count: ", TIME_DATA.week);
+
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
+<script src="{% static 'js/ticketing_dashboard.js' %}"></script>
 {% endblock %}
-
-
-

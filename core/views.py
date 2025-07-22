@@ -34,6 +34,7 @@ from .utils import is_director
 import json
 import pandas as pd
 from email.mime.image import MIMEImage
+from datetime import datetime, timedelta
 
 from core import models
 
@@ -678,11 +679,38 @@ class SettingsView(View):
 
 # Ticketing Views
 def ticketing_dashboard(request):
-    status_counts = Ticket.objects.values('status').annotate(count=Count('id'))
+    now = timezone.localtime(timezone.now())
+    print(f"Now (timezone aware): {now}")
 
+    # Define period starts
+    day_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    print(f"Day Start: {day_start}")
+    week_start = day_start - timedelta(days=day_start.weekday())
+    print(f"Week Start: {week_start}")
+    month_start = day_start.replace(day=1)
+    print(f"Month Start: {month_start}")
+    year_start = day_start.replace(month=1, day=1)
+    print(f"Year Start: {year_start}")
+
+    # Time-based ticket counts
+    time_data = {
+        'day': Ticket.objects.filter(created_at__gte=day_start).count(),
+        'week': Ticket.objects.filter(created_at__gte=week_start).count(),
+        'month': Ticket.objects.filter(created_at__gte=month_start).count(),
+        'year': Ticket.objects.filter(created_at__gte=year_start).count(),
+    }
+
+    # Add logging to inspect counts
+    print(f"Day Count: {time_data['day']}")
+    print(f"Week Count: {time_data['week']}")
+    print(f"Month Count: {time_data['month']}")
+    print(f"Year Count: {time_data['year']}")
+
+    # Aggregated counts
+    status_counts = Ticket.objects.values('status').annotate(count=Count('id'))
     priority_counts = Ticket.objects.values('priority').annotate(count=Count('id'))
 
-    # Monthly ticket trends
+    # Monthly ticket creation trends
     monthly_trends = (
         Ticket.objects
         .annotate(month=TruncMonth('created_at'))
@@ -691,7 +719,7 @@ def ticketing_dashboard(request):
         .order_by('month')
     )
 
-    # Tickets per terminal
+    # Top terminals with the most tickets
     terminal_data = (
         Ticket.objects
         .values('terminal__cdm_name')
@@ -699,18 +727,54 @@ def ticketing_dashboard(request):
         .order_by('-count')[:10]
     )
 
+    region_data = (
+        Ticket.objects
+        .values('terminal__region__name')  
+        .annotate(count=Count('id'))
+        .order_by('-count')
+    )
+
+    # Top categories
+    category_data = (
+        Ticket.objects
+        .values('problem_category__name')
+        .annotate(count=Count('id'))
+        .order_by('-count')[:10]
+    )
+
+    # Top customers
+    customer_data = (
+        Ticket.objects
+        .values('terminal__customer__name')
+        .annotate(count=Count('id'))
+        .order_by('-count')[:10]
+    )
+
+    # Overview Data: Aggregated ticket counts for different time periods
+    overview_data = [
+        {'label': 'Daily', 'count': time_data['day']},
+        {'label': 'Weekly', 'count': time_data['week']},
+        {'label': 'Monthly', 'count': time_data['month']},
+        {'label': 'Yearly', 'count': time_data['year']},
+    ]
+    category_time_data = [
+        {'category': d['problem_category__name'], 'daily_count': d['count']} 
+        for d in category_data  
+    ]
+    
+    # Prepare data for JSON serialization
     context = {
-    'status_data': json.dumps(list(status_counts)),
-    'priority_data': json.dumps(list(priority_counts)),
-    'monthly_data': json.dumps([
-        {'month': calendar.month_abbr[d['month'].month], 'count': d['count']}
-        for d in monthly_trends if d['month']
-    ]),
-    'terminal_data': json.dumps([
-        {'terminal': d['terminal__cdm_name'], 'count': d['count']}
-        for d in terminal_data
-    ]),
-}
+        'status_data': json.dumps(list(status_counts)),
+        'priority_data': json.dumps(list(priority_counts)),
+        'monthly_data': json.dumps([{'month': calendar.month_abbr[d['month'].month], 'count': d['count']} for d in monthly_trends if d['month']]),
+        'terminal_data': json.dumps([{'terminal': d['terminal__cdm_name'], 'count': d['count']} for d in terminal_data]),
+        'region_data': json.dumps([{'region': d['terminal__region__name'], 'count': d['count']} for d in region_data]), 
+        'time_data': json.dumps(time_data),
+        'category_data': json.dumps([{'category': d['problem_category__name'], 'count': d['count']} for d in category_data]),
+        'customer_data': json.dumps([{'customer': d['terminal__customer__name'], 'count': d['count']} for d in customer_data]),
+        'overview_data': json.dumps(overview_data),  
+        'category_time_data': json.dumps(category_time_data), 
+    }
 
     return render(request, 'core/helpdesk/ticketing_dashboard.html', context)
 
@@ -779,7 +843,7 @@ def ticket_detail(request, ticket_id):
         'form': form,
         'comments': comments,
         'comment_form': comment_form,
-        'is_admin': request.user.is_superuser,  # whatever logic you're using
+        'is_admin': request.user.is_superuser,  
         'is_editor': request.user.groups.filter(name='Editor').exists(),
         'can_resolve': request.user.groups.filter(name='Resolver').exists(),
 
@@ -1017,30 +1081,25 @@ def delete_region(request, region_id):
     messages.success(request, "Region deleted successfully.")
     return redirect('regions')
 
-from django.core.paginator import Paginator
-from django.shortcuts import render, redirect
-from .forms import TerminalForm, TerminalUploadForm
-from .models import Terminal
-
 def terminals(request):
     form = TerminalForm()
     upload_form = TerminalUploadForm()
 
     if request.method == 'POST':
-        # Check if we are creating a terminal
+        
         if 'create' in request.POST or 'create_another' in request.POST:
             form = TerminalForm(request.POST)
             if form.is_valid():
                 form.save()
                 messages.success(request, "Terminal created successfully.")
 
-                # If the 'Create & create another' button is clicked, clear the form and stay on the page
+                
                 if 'create_another' in request.POST:
-                    form = TerminalForm()  # Reset the form for another input
+                    form = TerminalForm()  
                 else:
-                    return redirect('terminals')  # Redirect to terminal list when 'Create' is clicked
+                    return redirect('terminals')  
 
-        # Check if we are uploading terminals via a file
+        
         elif 'upload_file' in request.POST:
             upload_form = TerminalUploadForm(request.POST, request.FILES)
             if upload_form.is_valid():
