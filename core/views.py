@@ -780,7 +780,8 @@ def ticketing_dashboard(request):
     return render(request, 'core/helpdesk/ticketing_dashboard.html', context)
 
 def statistics_view(request):
-    today = timezone.now()  # Get the current datetime in the default time zone
+    today = timezone.now()  
+    print(f"timezone.now() in view: {today} (aware: {timezone.is_aware(today)})")
     # Get the selected filter values from the request
     time_period = request.GET.get('time-period', 'today')
     customer_filter = request.GET.get('customer', 'all')
@@ -820,9 +821,13 @@ def statistics_view(request):
     # Ensure calculations are based on the filtered 'tickets' queryset
     days = [today - timedelta(days=i) for i in range(7)]  # Last 7 days
     tickets_per_day = [tickets.filter(created_at__date=day.date()).count() for day in days]
-    weekdays = [(today - timedelta(days=i)).strftime('%a') for i in range(7)]
+    #weekdays = [(today - timedelta(days=i)).strftime('%a') for i in range(7)]
+    weekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
     # Note: F('created_at__week_day') might be needed if your database treats week_day differently
-    tickets_per_weekday = [tickets.filter(created_at__week_day=(i % 7) + 1).count() for i in range(7)] # Adjusted for 1-7 (Sunday-Saturday)
+    #tickets_per_weekday = [tickets.filter(created_at__week_day=(i % 7) + 1).count() for i in range(7)] # Adjusted for 1-7 (Sunday-Saturday)
+    tickets_per_weekday = []
+    for i in range(1, 8): # Loop from 1 (Sunday) to 7 (Saturday)
+        tickets_per_weekday.append(tickets.filter(created_at__week_day=i).count())
     hours = [f"{i}-{i+1}" for i in range(24)]
     tickets_per_hour = [tickets.filter(created_at__hour=i).count() for i in range(24)]
     months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
