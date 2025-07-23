@@ -37,6 +37,7 @@ from email.mime.image import MIMEImage
 from datetime import datetime, timedelta
 from io import BytesIO
 from core import models
+import openpyxl
 
 def in_group(user, group_name):
     return user.is_authenticated and (user.is_superuser or user.groups.filter(name=group_name).exists())
@@ -779,34 +780,65 @@ def ticketing_dashboard(request):
     return render(request, 'core/helpdesk/ticketing_dashboard.html', context)
 
 def statistics_view(request):
-    # Example: Replace with real query data
-    today = timezone.now()
-    days = [today - timedelta(days=i) for i in range(7)]  # Example of last 7 days
-
-    # Query data for tickets per day, weekdays, etc.
-    tickets_per_day = [Ticket.objects.filter(created_at__date=day.date()).count() for day in days]
-    tickets_per_weekday = [Ticket.objects.filter(created_at__week_day=i+1).count() for i in range(7)]  
+    today = timezone.now()  # Get the current datetime in the default time zone
+    # Get the selected filter values from the request
+    time_period = request.GET.get('time-period', 'today')
+    customer_filter = request.GET.get('customer', 'all')
+    terminal_filter = request.GET.get('terminal', 'all')
+    region_filter = request.GET.get('region', 'all')
+    # Determine the date range for filtering based on time period
+    if time_period == 'today':
+        start_date = today.replace(hour=0, minute=0, second=0, microsecond=0)
+        end_date = today.replace(hour=23, minute=59, second=59, microsecond=999999)
+    elif time_period == 'yesterday':
+        start_date = (today - timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+        end_date = (today - timedelta(days=1)).replace(hour=23, minute=59, second=59, microsecond=999999)
+    elif time_period == 'lastweek':
+        # Correctly calculate last week's start and end dates
+        start_date = today - timedelta(days=today.weekday() + 7)
+        start_date = start_date.replace(hour=0, minute=0, second=0, microsecond=0)
+        end_date = start_date + timedelta(days=6, hours=23, minutes=59, seconds=59, microseconds=999999)
+    elif time_period == 'lastmonth':
+        start_date = (today.replace(day=1) - timedelta(days=1)).replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        end_date = today.replace(day=1) - timedelta(microseconds=1) # End of last month
+    elif time_period == 'lastyear':
+        start_date = today.replace(year=today.year - 1, month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
+        end_date = today.replace(year=today.year - 1, month=12, day=31, hour=23, minute=59, second=59, microsecond=999999)
+    else: # Default to today if an invalid time_period is provided
+        start_date = today.replace(hour=0, minute=0, second=0, microsecond=0)
+        end_date = today.replace(hour=23, minute=59, second=59, microsecond=999999)
+    # Query data with applied filters
+    tickets = Ticket.objects.all()
+    if customer_filter != 'all':
+        tickets = tickets.filter(terminal__customer__id=customer_filter)
+    if terminal_filter != 'all':
+        tickets = tickets.filter(terminal__id=terminal_filter)
+    if region_filter != 'all':
+        tickets = tickets.filter(terminal__region__id=region_filter)
+    tickets = tickets.filter(created_at__range=[start_date, end_date])
+    # Now calculate tickets per day, week, etc.
+    # Ensure calculations are based on the filtered 'tickets' queryset
+    days = [today - timedelta(days=i) for i in range(7)]  # Last 7 days
+    tickets_per_day = [tickets.filter(created_at__date=day.date()).count() for day in days]
+    weekdays = [(today - timedelta(days=i)).strftime('%a') for i in range(7)]
+    # Note: F('created_at__week_day') might be needed if your database treats week_day differently
+    tickets_per_weekday = [tickets.filter(created_at__week_day=(i % 7) + 1).count() for i in range(7)] # Adjusted for 1-7 (Sunday-Saturday)
     hours = [f"{i}-{i+1}" for i in range(24)]
-    tickets_per_hour = [Ticket.objects.filter(created_at__hour=i).count() for i in range(24)]
-    
-    # Monthly data
+    tickets_per_hour = [tickets.filter(created_at__hour=i).count() for i in range(24)]
     months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
-    tickets_per_month = [Ticket.objects.filter(created_at__month=i+1).count() for i in range(12)]
-    
-    # Yearly data
-    years = [2020, 2021]  # Example years, adjust as needed
-    tickets_per_year = [Ticket.objects.filter(created_at__year=year).count() for year in years]
-
-    # Fetch terminals, customers, and regions and convert to list of dicts
+    tickets_per_month = [tickets.filter(created_at__month=i+1).count() for i in range(12)]
+    # Collect distinct years from the filtered tickets, then sort
+    years = sorted(list(set(ticket.created_at.year for ticket in tickets.iterator()))) # Use .iterator() for large querysets
+    tickets_per_year = [tickets.filter(created_at__year=year).count() for year in years]
+    # Fetch terminals, customers, and regions
     terminals = Terminal.objects.all().values('id', 'cdm_name', 'customer__name', 'region__name')
     customers = Customer.objects.all().values('id', 'name')
     regions = Region.objects.all().values('id', 'name')
-
     # Pack data for the frontend
     data = {
         'days': [day.strftime('%Y-%m-%d') for day in days],
         'ticketsPerDay': tickets_per_day,
-        'weekdays': ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+        'weekdays': weekdays,
         'ticketsPerWeekday': tickets_per_weekday,
         'hours': hours,
         'ticketsPerHour': tickets_per_hour,
@@ -814,31 +846,49 @@ def statistics_view(request):
         'ticketsPerMonth': tickets_per_month,
         'years': years,
         'ticketsPerYear': tickets_per_year,
-        'terminals': list(terminals),  # Convert queryset to list of dictionaries
-        'customers': list(customers),  # Convert queryset to list of dictionaries
-        'regions': list(regions),  # Convert queryset to list of dictionaries
+        'terminals': list(terminals),
+        'customers': list(customers),
+        'regions': list(regions),
     }
-
-
-    # Pass the serialized data to the template
-    context = {
-        'data': json.dumps(data)  # Serialize the data into JSON
-    }
-    
-    return render(request, 'core/helpdesk/statistics.html', context)
+    # Check if the request is AJAX
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return JsonResponse(data, safe=False)
+    # For normal requests, render the HTML page
+    return render(request, 'core/helpdesk/statistics.html', {'data': json.dumps(data, ensure_ascii=False)})
 
 def export_report(request):
-    # Logic for exporting data as Excel
-    data = ...  # Aggregate data based on filters
-    df = pd.DataFrame(data)
-    output = BytesIO()
-    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-        df.to_excel(writer, index=False, sheet_name='Tickets Statistics')
-    output.seek(0)
+    # Query the data you need
+    tickets = Ticket.objects.all()
 
-    response = HttpResponse(output.read(), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-    response['Content-Disposition'] = 'attachment; filename="ticket_statistics_report.xlsx"'
+    # Create an Excel file
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Ticket Statistics"
+
+    # Add headers
+    headers = ['Ticket ID', 'Customer', 'Terminal', 'Region', 'Created At']
+    ws.append(headers)
+
+    # Add ticket data rows
+    for ticket in tickets:
+        # Correct access to customer via terminal
+        customer_name = ticket.terminal.customer.name if ticket.terminal and ticket.terminal.customer else 'No Customer'
+        
+        # Correct access to region via terminal
+        region_name = ticket.terminal.region.name if ticket.terminal and ticket.terminal.region else 'No Region'
+        
+        # Ensure created_at is timezone naive
+        created_at_naive = ticket.created_at.replace(tzinfo=None)
+
+        ws.append([ticket.id, customer_name, ticket.terminal.cdm_name, region_name, created_at_naive])
+
+    # Create a response with the Excel file
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = 'attachment; filename="ticket_statistics.xlsx"'
+    wb.save(response)
     return response
+
+
 def tickets(request):
     query = request.GET.get('search', '')
     status_filter = request.GET.get('status', '') 

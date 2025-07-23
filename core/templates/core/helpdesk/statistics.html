@@ -28,7 +28,7 @@
       <select id="customer-filter" class="form-select">
         <option value="all">All Customers</option>
         {% for customer in data.customers %}
-          <option value="{{ customer.id }}">{{ customer.name }}</option>
+          <option value="{{ customer.id }}">{{ customer.name|default:'Unnamed Customer' }}</option>
         {% empty %}
           <option value="none">No customers available</option>
         {% endfor %}
@@ -38,7 +38,7 @@
       <select id="terminal-filter" class="form-select">
         <option value="all">All Terminals</option>
         {% for terminal in data.terminals %}
-          <option value="{{ terminal.id }}">{{ terminal.cdm_name }}</option>
+          <option value="{{ terminal.id }}">{{ terminal.cdm_name }} ({{ terminal.customer__name }} - {{ terminal.region__name }})</option>
         {% empty %}
           <option value="none">No terminals available</option>
         {% endfor %}
@@ -83,7 +83,7 @@
 
   <!-- Export Button -->
   <div class="text-center">
-    <button id="export-report" class="btn btn-success">Export Report to Excel</button>
+    <button id="export-report" class="btn btn-success" onclick="window.location.href='{% url 'export_report' %}'">Export Report to Excel</button>
   </div>
 </div>
 
@@ -93,6 +93,10 @@
 <script>
   const data = JSON.parse('{{ data|escapejs }}');
   console.log("Data received:", data);
+  console.log(data.customers);  
+  console.log(data.terminals); 
+  console.log(data.regions);   
+
 </script>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>

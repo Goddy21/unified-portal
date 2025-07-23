@@ -81,7 +81,7 @@ class Terminal(models.Model):
     branch_name = models.CharField(max_length=100, default='Main Branch')
     cdm_name = models.CharField(max_length=100, default='CDM-Default')
     serial_number = models.CharField(max_length=100, unique=True, default='SN0000')
-    region = models.ForeignKey('Region', on_delete=models.SET_NULL, null=True)
+    region = models.ForeignKey('Region', on_delete=models.CASCADE, null=True)
     model = models.CharField(max_length=100, default='ModelX')
     zone = models.ForeignKey('Zone', on_delete=models.SET_NULL, null=True)
 
@@ -162,7 +162,7 @@ class Ticket(models.Model):
     title = models.CharField(max_length=255)
     brts_unit = models.ForeignKey(Unit, on_delete=models.SET_NULL, null=True)
     problem_category = models.ForeignKey(ProblemCategory, on_delete=models.SET_NULL, null=True)
-    terminal = models.ForeignKey(Terminal, on_delete=models.SET_NULL, null=True)
+    terminal = models.ForeignKey(Terminal, on_delete=models.CASCADE, null=True)
     description = models.TextField()
 
     created_by = models.ForeignKey(User, related_name='created_tickets', on_delete=models.SET_NULL, null=True)
