@@ -14,9 +14,9 @@
   <h2 class="text-center mb-4">Ticket Statistics</h2>
 
   <!-- Filter Dropdowns -->
-  <div class="row mb-3">
-    <div class="col-md-3">
-      <select id="time-period" class="form-select">
+  <div class="row mb-4">
+    <div class="col-md-3 mb-2">
+      <select id="time-period" class="form-select custom-select">
         <option value="today">Today</option>
         <option value="yesterday">Yesterday</option>
         <option value="lastweek">Last Week</option>
@@ -24,8 +24,8 @@
         <option value="lastyear">Last Year</option>
       </select>
     </div>
-    <div class="col-md-3">
-      <select id="customer-filter" class="form-select">
+    <div class="col-md-3 mb-2">
+      <select id="customer-filter" class="form-select custom-select">
         <option value="all">All Customers</option>
         {% for customer in data.customers %}
           <option value="{{ customer.id }}">{{ customer.name|default:'Unnamed Customer' }}</option>
@@ -34,8 +34,8 @@
         {% endfor %}
       </select>
     </div>
-    <div class="col-md-3">
-      <select id="terminal-filter" class="form-select">
+    <div class="col-md-3 mb-2">
+      <select id="terminal-filter" class="form-select custom-select">
         <option value="all">All Terminals</option>
         {% for terminal in data.terminals %}
           <option value="{{ terminal.id }}">{{ terminal.cdm_name }} ({{ terminal.customer__name }} - {{ terminal.region__name }})</option>
@@ -44,8 +44,8 @@
         {% endfor %}
       </select>
     </div>
-    <div class="col-md-3">
-      <select id="region-filter" class="form-select">
+    <div class="col-md-3 mb-2">
+      <select id="region-filter" class="form-select custom-select">
         <option value="all">All Regions</option>
         {% for region in data.regions %}
           <option value="{{ region.id }}">{{ region.name }}</option>
@@ -58,32 +58,73 @@
 
   <!-- Graphs -->
   <div class="row mb-5">
-    <div class="col-md-6">
-      <canvas id="ticketsPerDayChart"></canvas>
+    <div class="col-md-6 mb-4">
+      <div class="card shadow-sm">
+        <div class="card-body p-3">
+          <h5 class="card-title text-center">Tickets per Day</h5>
+          <canvas id="ticketsPerDayChart"></canvas>
+        </div>
+      </div>
     </div>
-    <div class="col-md-6">
-      <canvas id="ticketsPerWeekdayChart"></canvas>
+    <div class="col-md-6 mb-4">
+      <div class="card shadow-sm">
+        <div class="card-body p-3">
+          <h5 class="card-title text-center">Tickets per Weekday</h5>
+          <canvas id="ticketsPerWeekdayChart"></canvas>
+        </div>
+      </div>
     </div>
   </div>
 
   <div class="row mb-5">
-    <div class="col-md-6">
-      <canvas id="ticketsPerHourChart"></canvas>
+    <div class="col-md-6 mb-4">
+      <div class="card shadow-sm">
+        <div class="card-body p-3">
+          <h5 class="card-title text-center">Tickets per Hour</h5>
+          <canvas id="ticketsPerHourChart"></canvas>
+        </div>
+      </div>
     </div>
-    <div class="col-md-6">
-      <canvas id="ticketsPerMonthChart"></canvas>
+    <div class="col-md-6 mb-4">
+      <div class="card shadow-sm">
+        <div class="card-body p-3">
+          <h5 class="card-title text-center">Tickets per Month</h5>
+          <canvas id="ticketsPerMonthChart"></canvas>
+        </div>
+      </div>
     </div>
   </div>
 
   <div class="row mb-5">
-    <div class="col-md-6">
-      <canvas id="ticketsPerYearChart"></canvas>
+    <div class="col-md-6 mb-4">
+      <div class="card shadow-sm">
+        <div class="card-body p-3">
+          <h5 class="card-title text-center">Tickets per Year</h5>
+          <canvas id="ticketsPerYearChart"></canvas>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6 mb-4">
+    <div class="card shadow-sm rounded-lg">
+      <div class="card-body p-4">
+        <h5 class="card-title text-center mb-4 text-uppercase font-weight-bold text-primary">Ticket Statuses</h5>
+        <canvas id="ticketStatusChart"></canvas>
+        <div class="text-center mt-5">
+          <h4 class="text-muted mb-3">Ticket Status Breakdown</h4>
+          <div id="ticket-status-breakdown" class="status-breakdown">
+            <!-- Dynamic content will be populated here -->
+          </div>
+        </div>
+      </div>
     </div>
   </div>
+
 
   <!-- Export Button -->
-  <div class="text-center">
-    <button id="export-report" class="btn btn-success" onclick="window.location.href='{% url 'export_report' %}'">Export Report to Excel</button>
+  <div class="text-center mt-4">
+    <button id="export-report" class="btn btn-lg btn-primary px-5 py-3 rounded-pill shadow-sm" onclick="window.location.href='{% url 'export_report' %}'">
+      <i class="fas fa-download"></i> Export Report to Excel
+    </button>
   </div>
 </div>
 
@@ -96,7 +137,6 @@
   console.log(data.customers);  
   console.log(data.terminals); 
   console.log(data.regions);   
-
 </script>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
