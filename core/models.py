@@ -127,11 +127,23 @@ class VersionControl(models.Model):
     manufacturer = models.CharField(max_length=100)
     template = models.CharField(max_length=100)
     firmware = models.CharField(max_length=100)
+    xfs = models.CharField(max_length=100,  default='N/A')  
+    ejournal = models.CharField(max_length=100,  default='N/A') 
+    responsible = models.CharField(max_length=100,  default='N/A')  
+    app_version = models.CharField(max_length=100,  default='1.0.0') 
     created_at = models.DateTimeField(auto_now_add=True)
+    
 
     def __str__(self):
         return f"{self.terminal} - {self.firmware}"
-    
+class VersionComment(models.Model):
+    version = models.ForeignKey(VersionControl, related_name='comments', on_delete=models.CASCADE)
+    author = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
+    text = models.TextField()
+    created = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.text[:50]  #  
 class Report(models.Model):
     name = models.CharField(max_length=255)
     category = models.CharField(max_length=50)
@@ -164,6 +176,9 @@ class Ticket(models.Model):
     problem_category = models.ForeignKey(ProblemCategory, on_delete=models.SET_NULL, null=True)
     terminal = models.ForeignKey(Terminal, on_delete=models.CASCADE, null=True)
     description = models.TextField()
+
+    customer = models.ForeignKey(Customer, on_delete=models.SET_NULL, null=True)
+    region = models.ForeignKey(Region, on_delete=models.SET_NULL, null=True)
 
     created_by = models.ForeignKey(User, related_name='created_tickets', on_delete=models.SET_NULL, null=True)
     assigned_to = models.ForeignKey(User, related_name='assigned_tickets', on_delete=models.SET_NULL, null=True, blank=True)

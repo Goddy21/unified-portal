@@ -14,7 +14,7 @@ from django.utils.decorators import method_decorator
 from .forms import UserUpdateForm, ProfileUpdateForm, TerminalForm,TerminalUploadForm, VersionControlForm, FileUploadForm, CustomUserCreationForm, LoginForm, OTPForm,TicketEditForm,TicketComment, TicketCommentForm, TicketForm
 from django.views import View
 import csv
-from .models import Customer, Region, Terminal, Unit, SystemUser, Zone, ProblemCategory, VersionControl, Report, Ticket, Profile, EmailOTP,TicketComment
+from .models import Customer, Region, Terminal, Unit, SystemUser, Zone, ProblemCategory, VersionControl,VersionComment, Report, Ticket, Profile, EmailOTP,TicketComment
 from django.core.mail import send_mail, EmailMultiAlternatives, EmailMessage
 from django.utils.html import strip_tags
 from django.contrib import messages
@@ -38,6 +38,7 @@ from datetime import datetime, timedelta
 from io import BytesIO
 from core import models
 import openpyxl
+from openpyxl.utils import get_column_letter
 
 def in_group(user, group_name):
     return user.is_authenticated and (user.is_superuser or user.groups.filter(name=group_name).exists())
@@ -1442,22 +1443,154 @@ def reports(request):
         'reports': reports_qs
     })
 
+def reports(request):
+    tickets = Ticket.objects.all()
+
+    customer = request.GET.get('customer')
+    terminal = request.GET.get('terminal')
+    region = request.GET.get('region')
+    category = request.GET.get('category')
+
+    if customer and customer != 'All' and customer !="None":
+        tickets = tickets.filter(customer_id=customer)
+    if terminal and terminal != 'All' and terminal != "None":
+        tickets = tickets.filter(terminal_id=terminal)
+    if region and region != 'All' and region != "None":
+        tickets = tickets.filter(region_id=region)
+    if category and category != 'All' and category !="None":
+        tickets = tickets.filter(problem_category_id=category)
+
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+
+    if start_date:
+        tickets = tickets.filter(created_at__date__gte=parse_date(start_date))
+    if end_date:
+        tickets = tickets.filter(created_at__date__lte=parse_date(end_date))
+
+
+      # 👉 Check if user clicked "Download Excel"
+    if request.GET.get('download') == 'excel':
+        return export_tickets_to_excel(tickets)
+
+    context = {
+        'tickets': tickets,
+        'customers': Customer.objects.all(),
+        'terminals': Terminal.objects.all(),
+        'regions': Region.objects.all(),
+        'categories': ProblemCategory.objects.all(),
+    }
+    return render(request, 'core/helpdesk/reports.html', context)
+
+def export_tickets_to_excel(tickets):
+    workbook = openpyxl.Workbook()
+    sheet = workbook.active
+    sheet.title = "Tickets Report"
+
+    headers = [
+        'ID', 'Customer', 'Terminal',  'Region', 'Category', 'Responsible',
+        'Description', 'Created At', 'CDM name', 'Serial number'
+    ]
+    sheet.append(headers)
+
+    for ticket in tickets:
+        sheet.append([
+            ticket.id,
+            str(ticket.customer.name) if ticket.customer else "N/A",
+            str(ticket.terminal.branch_name) if ticket.terminal else "N/A",
+            str(ticket.region.name) if ticket.region else "N/A",
+            str(ticket.problem_category.name) if ticket.problem_category else "N/A",
+            str(ticket.responsible) if ticket.responsible else "N/A",
+            str(ticket.description) if ticket.description else "N/A",
+            ticket.created_at.strftime("%Y-%m-%d %H:%M:%S") if ticket.created_at else "N/A",
+            
+            ticket.terminal.cdm_name if ticket.terminal else "N/A",
+            ticket.terminal.serial_number if ticket.terminal else "N/A",
+        ])
+
+    # Adjust column widths
+    for column_cells in sheet.columns:
+        length = max(len(str(cell.value)) for cell in column_cells)
+        sheet.column_dimensions[get_column_letter(column_cells[0].column)].width = length + 2
+
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = 'attachment; filename="tickets_report.xlsx"'
+    workbook.save(response)
+    return response 
 
 def version_controls(request):
-    if request.method == 'POST':
-        form = VersionControlForm(request.POST)
-        if form.is_valid():
-            form.save()
-            if 'create_another' in request.POST:
-                return redirect('version_controls')
-            else:
-                return redirect('version_controls')
-    else:
-        form = VersionControlForm()
+    form = VersionControlForm()
 
+    if request.method == 'POST':
+        if 'create' in request.POST or 'create_another' in request.POST:
+            form = VersionControlForm(request.POST)
+            if form.is_valid():
+                form.save()
+                if 'create_another' in request.POST:
+                    form = VersionControlForm()
+                else:
+                    return redirect('version_controls')
+
+    # Initial unfiltered queryset
     versions = VersionControl.objects.all().order_by('-created_at')
 
-    return render(request, 'core/helpdesk/version_control.html', {
+    # Handle AJAX filter request
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        terminal = request.GET.get('terminal')
+        firmware = request.GET.get('firmware')
+        app_version = request.GET.get('app_version')
+
+        if terminal and terminal != 'All':
+            versions = versions.filter(terminal=terminal)
+        if firmware and firmware != 'All':
+            versions = versions.filter(firmware=firmware)
+        if app_version and app_version != 'All':
+            versions = versions.filter(app_version=app_version)
+
+        return render(request, 'core/helpdesk/partials/version_table.html', {
+            'versions': versions
+        })
+
+    context = {
         'form': form,
-        'versions': versions
+        'versions': versions,
+        'terminals': VersionControl.objects.values_list('terminal', flat=True).distinct(),
+        'firmwares': VersionControl.objects.values_list('firmware', flat=True).distinct(),
+        'app_versions': VersionControl.objects.values_list('app_version', flat=True).distinct(),
+    }
+    return render(request, 'core/helpdesk/version_control.html', context)
+
+def version_detail(request, pk):
+    version = get_object_or_404(VersionControl, pk=pk)
+    comments = version.comments.all().order_by('-created')  # Latest first
+
+    if request.method == 'POST':
+        comment_text = request.POST.get('comment')
+        if comment_text:
+            VersionComment.objects.create(version=version, text=comment_text)
+        return redirect('version_detail', pk=pk)
+
+    return render(request, 'core/helpdesk/version_detail.html', {
+        'version': version,
+        'comments': comments,
+        
     })
+
+
+def edit_version(request, pk):
+    version = get_object_or_404(VersionControl, pk=pk)
+    if request.method == 'POST':
+        form = VersionControlForm(request.POST, instance=version)
+        if form.is_valid():
+            form.save()
+            return redirect('version_detail', pk=pk)
+    else:
+        form = VersionControlForm(instance=version)
+
+    return render(request, 'core/helpdesk/edit_version.html', {'form': form, 'version': version})
+
+
+def delete_version(request, pk):
+    version = get_object_or_404(VersionControl, pk=pk)
+    version.delete()
+    return redirect('version_controls') 

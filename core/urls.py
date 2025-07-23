@@ -105,4 +105,7 @@ urlpatterns = [
     path('statistics/', views.statistics_view, name='statistics'),
     path('export-report', views.export_report, name='export_report'),
     path('reports/version-controls/', views.version_controls, name='version_controls'),
+    path('versions/<int:pk>/', views.version_detail, name='version_detail'),
+    path('versions/<int:pk>/edit/', views.edit_version, name='edit_version'),
+    path('versions/<int:pk>/delete/', views.delete_version, name='delete_version'),
 ]+ static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
