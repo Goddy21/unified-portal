@@ -86,7 +86,7 @@ class Terminal(models.Model):
     zone = models.ForeignKey('Zone', on_delete=models.SET_NULL, null=True)
 
     def __str__(self):
-        return f"{self.customer.name if self.customer else 'No Customer'} - {self.cdm_name}"
+        return f"{self.customer.name if self.customer else 'No Customer'} - {self.branch_name}"
 
 
 class SystemUser(models.Model):
@@ -186,6 +186,8 @@ class Ticket(models.Model):
 
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='open')
     priority = models.CharField(max_length=10, choices=PRIORITY_CHOICES, default='medium')
+    resolved_by = models.ForeignKey(User, related_name='resolved_tickets', null=True, blank=True, on_delete=models.SET_NULL)
+    resolved_at = models.DateTimeField(null=True, blank=True)
     comment_summary = models.TextField(blank=True, null=True)
 
     created_at = models.DateTimeField(auto_now_add=True)

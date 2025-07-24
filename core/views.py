@@ -872,10 +872,10 @@ def export_report(request):
     customer_filter = request.GET.get('customer', 'all')
     terminal_filter = request.GET.get('terminal', 'all')
     region_filter = request.GET.get('region', 'all')
-    
+
     # Get the current time
-    today = timezone.now() 
-    
+    today = timezone.now()
+
     # Determine the date range for filtering based on time period
     if time_period == 'today':
         start_date = today.replace(hour=0, minute=0, second=0, microsecond=0)
@@ -896,7 +896,7 @@ def export_report(request):
     else:
         start_date = today.replace(hour=0, minute=0, second=0, microsecond=0)
         end_date = today.replace(hour=23, minute=59, second=59, microsecond=999999)
-    
+
     # Query tickets with the applied filters
     tickets = Ticket.objects.all()
 
@@ -914,20 +914,20 @@ def export_report(request):
     # Filter by region if selected
     if region_filter != 'all':
         tickets = tickets.filter(terminal__region__id=region_filter)
-    
-    # Calculate ticket statistics
+
+    # Calculate ticket statistics for per day, per weekday, etc.
     tickets_per_day = [tickets.filter(created_at__date=today - timedelta(days=i)).count() for i in range(7)]
     tickets_per_weekday = [tickets.filter(created_at__week_day=i).count() for i in range(1, 8)]  # Sunday = 1, Saturday = 7
     tickets_per_hour = [tickets.filter(created_at__hour=i).count() for i in range(24)]
     tickets_per_month = [tickets.filter(created_at__month=i+1).count() for i in range(12)]
-    years = sorted(list(set(ticket.created_at.year for ticket in tickets.iterator()))) 
+    years = sorted(list(set(ticket.created_at.year for ticket in tickets.iterator())))
     tickets_per_year = [tickets.filter(created_at__year=year).count() for year in years]
-    
+
     # Create the Excel file
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = "Ticket Statistics"
-    
+
     # Add headers to the sheet
     headers = ['Ticket ID', 'Customer', 'Terminal', 'Region', 'Created At']
     ws.append(headers)
@@ -936,10 +936,10 @@ def export_report(request):
     for ticket in tickets:
         # Correct access to customer via terminal
         customer_name = ticket.terminal.customer.name if ticket.terminal and ticket.terminal.customer else 'No Customer'
-        
+
         # Correct access to region via terminal
         region_name = ticket.terminal.region.name if ticket.terminal and ticket.terminal.region else 'No Region'
-        
+
         # Ensure created_at is timezone naive
         created_at_naive = ticket.created_at.replace(tzinfo=None)
 
@@ -975,6 +975,7 @@ def export_report(request):
     response['Content-Disposition'] = 'attachment; filename="ticket_statistics.xlsx"'
     wb.save(response)
     return response
+
 
 def tickets(request):
     query = request.GET.get('search', '')
@@ -1125,6 +1126,8 @@ def resolve_ticket_view(request, ticket_id):
         # Admins and Editors can resolve tickets
         if ticket.status != 'resolved':
             ticket.status = 'resolved'
+            ticket.resolved_by = request.user  
+            ticket.resolved_at = timezone.now()
             ticket.save()
             messages.success(request, 'Ticket resolved successfully!')
             return redirect('ticket_detail', ticket_id=ticket.id)
@@ -1136,6 +1139,8 @@ def resolve_ticket_view(request, ticket_id):
         # Custom permission check
         if ticket.status != 'resolved':
             ticket.status = 'resolved'
+            ticket.resolved_by = request.user  
+            ticket.resolved_at = timezone.now() 
             ticket.save()
             messages.success(request, 'Ticket resolved successfully!')
             return redirect('ticket_detail', ticket_id=ticket.id)
@@ -1171,6 +1176,7 @@ def problem_category(request):
         'categories': page_obj, 
         'search_query': query,
     })
+
 
 @user_passes_test(is_director)
 def create_problem_category(request):
@@ -1290,7 +1296,6 @@ def terminals(request):
             if form.is_valid():
                 form.save()
                 messages.success(request, "Terminal created successfully.")
-
                 
                 if 'create_another' in request.POST:
                     form = TerminalForm()  
@@ -1324,8 +1329,7 @@ def terminals(request):
                     messages.error(request, f"Error importing file: {e}")
                 return redirect('terminals')
 
-    # Fetch all terminals 
-    all_terminals = Terminal.objects.all()
+    all_terminals = Terminal.objects.all().order_by('id') 
     paginator = Paginator(all_terminals, 10)  
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
@@ -1335,6 +1339,7 @@ def terminals(request):
         'upload_form': upload_form,
         'terminals': page_obj  
     })
+
 
 
 
@@ -1425,40 +1430,29 @@ def delete_zone(request, zone_id):
     return redirect('zones') 
 
 def reports(request):
-    reports_qs = Report.objects.all()
-
-    category = request.GET.get('category')
-    start_date = request.GET.get('start_date')
-    end_date = request.GET.get('end_date')
-
-    if category:
-        reports_qs = reports_qs.filter(category=category)
-
-    if start_date:
-        reports_qs = reports_qs.filter(generated_at__date__gte=parse_date(start_date))
-    if end_date:
-        reports_qs = reports_qs.filter(generated_at__date__lte=parse_date(end_date))
-
-    return render(request, 'core/helpdesk/reports.html', {
-        'reports': reports_qs
-    })
-
-def reports(request):
-    tickets = Ticket.objects.all()
+    tickets = Ticket.objects.all().order_by('-created_at')  
 
     customer = request.GET.get('customer')
-    terminal = request.GET.get('terminal')
-    region = request.GET.get('region')
+    terminal = request.GET.get('terminal_name')
     category = request.GET.get('category')
 
-    if customer and customer != 'All' and customer !="None":
+    filter_by_customer = False
+    filter_by_terminal = False
+
+    if customer and customer != 'All' and customer != "None":
         tickets = tickets.filter(customer_id=customer)
-    if terminal and terminal != 'All' and terminal != "None":
-        tickets = tickets.filter(terminal_id=terminal)
-    if region and region != 'All' and region != "None":
-        tickets = tickets.filter(region_id=region)
-    if category and category != 'All' and category !="None":
+        filter_by_customer = True  
+
+    elif customer == 'All': 
+        tickets = Ticket.objects.all().order_by('-created_at')
+
+    if terminal: 
+        tickets = tickets.filter(terminal__branch_name__icontains=terminal)
+        filter_by_terminal = True  
+
+    if category and category != 'All' and category != "None":
         tickets = tickets.filter(problem_category_id=category)
+
 
     start_date = request.GET.get('start_date')
     end_date = request.GET.get('end_date')
@@ -1468,55 +1462,96 @@ def reports(request):
     if end_date:
         tickets = tickets.filter(created_at__date__lte=parse_date(end_date))
 
+    paginator = Paginator(tickets, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
 
-      # 👉 Check if user clicked "Download Excel"
     if request.GET.get('download') == 'excel':
         return export_tickets_to_excel(tickets)
+    
+    print(f"Tickets count after filtering by customer: {tickets.count()}")
+    print(f"Tickets count after filtering by terminal: {tickets.count()}")
+    print(f"Tickets count after filtering by category: {tickets.count()}")
+    print(f"Filtering by customer: {customer}")
+    print(f"Filtering by terminal: {terminal}")
+    print(f"Filtering by category: {category}")
+    print(f"Tickets with customer: {Ticket.objects.filter(customer__isnull=False).count()}")
+    tickets_without_customer = Ticket.objects.filter(customer__isnull=True)
+    print(f"Tickets without customer: {tickets_without_customer.count()}")
+
+
+
 
     context = {
+        'page_obj': page_obj,
         'tickets': tickets,
         'customers': Customer.objects.all(),
         'terminals': Terminal.objects.all(),
-        'regions': Region.objects.all(),
         'categories': ProblemCategory.objects.all(),
+        'filter_by_customer': filter_by_customer,
+        'filter_by_terminal': filter_by_terminal,
     }
     return render(request, 'core/helpdesk/reports.html', context)
 
-def export_tickets_to_excel(tickets):
-    workbook = openpyxl.Workbook()
-    sheet = workbook.active
-    sheet.title = "Tickets Report"
 
-    headers = [
-        'ID', 'Customer', 'Terminal',  'Region', 'Category', 'Responsible',
-        'Description', 'Created At', 'CDM name', 'Serial number'
-    ]
+def export_tickets_to_excel(tickets, include_terminal=False, customer_name=None, terminal_name=None, start_date=None, end_date=None):
+    import openpyxl
+    from openpyxl.utils import get_column_letter
+
+    workbook = openpyxl.Workbook()
+
+    sheet = workbook.active
+
+    sheet.title = 'Tickets'
+
+    # Headers
+    headers = []
+    if include_terminal:
+        headers.append('Terminal')
+
+    headers += ['Created At', 'Updated At', 'Problem Category', 'Status', 'Responsible', 'Description']
+
     sheet.append(headers)
 
     for ticket in tickets:
-        sheet.append([
-            ticket.id,
-            str(ticket.customer.name) if ticket.customer else "N/A",
-            str(ticket.terminal.branch_name) if ticket.terminal else "N/A",
-            str(ticket.region.name) if ticket.region else "N/A",
-            str(ticket.problem_category.name) if ticket.problem_category else "N/A",
-            str(ticket.responsible) if ticket.responsible else "N/A",
-            str(ticket.description) if ticket.description else "N/A",
-            ticket.created_at.strftime("%Y-%m-%d %H:%M:%S") if ticket.created_at else "N/A",
-            
-            ticket.terminal.cdm_name if ticket.terminal else "N/A",
-            ticket.terminal.serial_number if ticket.terminal else "N/A",
-        ])
 
-    # Adjust column widths
-    for column_cells in sheet.columns:
-        length = max(len(str(cell.value)) for cell in column_cells)
-        sheet.column_dimensions[get_column_letter(column_cells[0].column)].width = length + 2
+        row = []
+        if include_terminal:
+            row.append(ticket.terminal.branch_name)
+        row += [
+            ticket.created_at.strftime('%Y-%m-%d %H:%M'),
+            ticket.updated_at.strftime('%Y-%m-%d %H:%M'),
+            str(ticket.problem_category),
+            ticket.status,
+            str(ticket.responsible),
+            ticket.description,
+        ]
+        sheet.append(row)
+
+    # Dynamic filename
+    name_part = "report"
+    if customer_name:
+        name_part = f"{customer_name.replace(' ', '_')}_report"
+    elif terminal_name:
+        name_part = f"{terminal_name.replace(' ', '_')}_report"
+
+    date_part = ''
+    if start_date and end_date:
+        date_part = f"{start_date}_to_{end_date}"
+    elif start_date:
+        date_part = f"from_{start_date}"
+    elif end_date:
+        date_part = f"to_{end_date}"
+
+    filename = f"{name_part}_{date_part or timezone.now().strftime('%Y-%m-%d')}.xlsx"
 
     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-    response['Content-Disposition'] = 'attachment; filename="tickets_report.xlsx"'
+
+    response['Content-Disposition'] = f'attachment; filename={filename}'
+
     workbook.save(response)
-    return response 
+
+    return response
 
 def version_controls(request):
     form = VersionControlForm()

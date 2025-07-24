@@ -35,7 +35,7 @@
           <td data-label="Email">{{ user.email }}</td>
           <td data-label="Role">
             {% with user.groups.first.name as role %}
-              <span class="badge {% if role %}{{ role|lower }}{% else %}no-role{% endif %}">
+              <span class="badge {% if role == 'Director' %}director{% elif role == 'Manager' %}manager{% elif role == 'Staff' %}staff{% else %}no-role{% endif %}">
                 {{ role|default:"No Role" }}
               </span>
             {% endwith %}

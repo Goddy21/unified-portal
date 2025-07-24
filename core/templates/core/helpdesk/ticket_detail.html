@@ -16,13 +16,17 @@
       <div><strong>Status:</strong> <span class="badge badge-{{ ticket.status }}">{{ ticket.get_status_display }}</span></div>
       <div><strong>Priority:</strong> <span class="badge badge-{{ ticket.priority }}">{{ ticket.get_priority_display }}</span></div>
       <div><strong>BRTS Unit:</strong> {{ ticket.brts_unit }}</div>
+      <div><strong>Customer:</strong> {{ ticket.customer }}</div>
       <div><strong>Terminal:</strong> {{ ticket.terminal }}</div>
+      <div><strong>Region:</strong> {{ ticket.region }}</div>
       <div><strong>Comments:</strong><br><p class="comment-summary">{{ ticket.comment_summary }}</p></div>
       <div><strong>Problem Category:</strong> {{ ticket.problem_category }}</div>
       <div><strong>Description:</strong><br><p class="description">{{ ticket.description }}</p></div>
       <div><strong>Created By:</strong> {{ ticket.created_by }}</div>
       <div><strong>Created At:</strong> {{ ticket.created_at|date:"Y-m-d H:i" }}</div>
       <div><strong>Updated At:</strong> {{ ticket.updated_at|date:"Y-m-d H:i" }}</div>
+      <div><strong>Resolved By:</strong> {% if ticket.resolved_by %}{{ ticket.resolved_by.username }}{% else %}Not resolved yet{% endif %}</div>
+      <div><strong>Resolved At:</strong> {% if ticket.resolved_at %}{{ ticket.resolved_at|date:"Y-m-d H:i" }}{% else %}Not resolved yet{% endif %}</div>
     </div>
 
     <div class="mt-4">

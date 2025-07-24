@@ -1,3 +1,4 @@
+/* General Page Layout */
 .page-container {
   background: #fff;
   padding: 2rem;
@@ -53,6 +54,7 @@ h2 {
   background-color: #f1f1f1;
 }
 
+/* Badge Styling */
 .badge {
   display: inline-block;
   padding: 5px 10px;
@@ -60,26 +62,6 @@ h2 {
   border-radius: 6px;
   text-transform: capitalize;
   font-weight: 600;
-}
-
-.badge.admin {
-  background-color: #007bff;
-  color: white;
-}
-
-.badge.editor {
-  background-color: #28a745;
-  color: white;
-}
-
-.badge.viewer {
-  background-color: #6c757d;
-  color: white;
-}
-
-.badge.no-role {
-  background-color: #ccc;
-  color: #333;
 }
 
 .badge.active {
@@ -126,6 +108,7 @@ h2 {
 .actions .btn:hover {
   opacity: 0.9;
 }
+
 .pagination {
   text-align: center;
   margin-top: 20px;
@@ -149,6 +132,25 @@ h2 {
 
 .pagination a:hover {
   background-color: #f1f1f1;
+}
+.badge.director {
+  background-color: #007bff; 
+  color: white;
+}
+
+.badge.manager {
+  background-color: #28a745; 
+  color: white;
+}
+
+.badge.staff {
+  background-color: #ffc107; 
+  color: white;
+}
+
+.badge.no-role {
+  background-color: #ccc; 
+  color: #333;
 }
 
 /* Responsive layout */
