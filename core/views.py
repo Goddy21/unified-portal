@@ -834,6 +834,9 @@ def statistics_view(request):
     # Collect distinct years from the filtered tickets, then sort
     years = sorted(list(set(ticket.created_at.year for ticket in tickets.iterator()))) 
     tickets_per_year = [tickets.filter(created_at__year=year).count() for year in years]
+
+    tickets_per_terminal = tickets.values('terminal__cdm_name').annotate(ticket_count=Count('id'))
+    ticket_categories = tickets.values('problem_category').annotate(ticket_count=Count('id'))
     
     # Fetch terminals, customers, and regions
     terminals = Terminal.objects.all().values('id', 'cdm_name', 'customer__name', 'region__name')
@@ -842,6 +845,11 @@ def statistics_view(request):
     
     # Pack data for the frontend
     data = {
+        'ticketsPerTerminal': [entry['ticket_count'] for entry in tickets_per_terminal],
+        'ticketCategories': {
+            'labels': [entry['problem_category'] for entry in ticket_categories],
+            'data': [entry['ticket_count'] for entry in ticket_categories]
+        },
         'ticketStatuses': {
             'labels': status_labels,
             'data': status_counts,
@@ -1289,20 +1297,38 @@ def terminals(request):
     form = TerminalForm()
     upload_form = TerminalUploadForm()
 
+    # Check if the request method is POST
     if request.method == 'POST':
-        
+        # Check if we are creating a terminal
         if 'create' in request.POST or 'create_another' in request.POST:
             form = TerminalForm(request.POST)
             if form.is_valid():
                 form.save()
                 messages.success(request, "Terminal created successfully.")
-                
-                if 'create_another' in request.POST:
-                    form = TerminalForm()  
+
+                # Check if the request is an AJAX request by checking the 'X-Requested-With' header
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':  
+                    if 'create_another' in request.POST:
+                        return JsonResponse({
+                            "success": True,
+                            "message": "Terminal created successfully. You can create another one."
+                        })
+                    else:
+                        return JsonResponse({
+                            "success": True,
+                            "message": "Terminal created successfully."
+                        })
                 else:
+                    if 'create_another' in request.POST:
+                        form = TerminalForm()  
+                        return render(request, 'core/helpdesk/terminals.html', {
+                            'form': form,
+                            'upload_form': upload_form,
+                            'terminals': Terminal.objects.all()
+                        })
                     return redirect('terminals')  
 
-        
+        # Check if we are uploading terminals via a file
         elif 'upload_file' in request.POST:
             upload_form = TerminalUploadForm(request.POST, request.FILES)
             if upload_form.is_valid():
@@ -1313,7 +1339,7 @@ def terminals(request):
                     else:
                         df = pd.read_excel(file)
 
-                    # Ensure column names match model fields or clean them here
+                    # Process each row and create terminal objects
                     for _, row in df.iterrows():
                         Terminal.objects.create(
                             customer=Customer.objects.get(name=row['customer']),
@@ -1327,8 +1353,9 @@ def terminals(request):
                     messages.success(request, "Terminals imported successfully.")
                 except Exception as e:
                     messages.error(request, f"Error importing file: {e}")
-                return redirect('terminals')
+                return redirect('terminals')  
 
+    # GET request: Display the page with all terminals
     all_terminals = Terminal.objects.all().order_by('id') 
     paginator = Paginator(all_terminals, 10)  
     page_number = request.GET.get('page')
@@ -1337,10 +1364,8 @@ def terminals(request):
     return render(request, 'core/helpdesk/terminals.html', {
         'form': form,
         'upload_form': upload_form,
-        'terminals': page_obj  
+        'terminals': page_obj,
     })
-
-
 
 
 @user_passes_test(is_director)

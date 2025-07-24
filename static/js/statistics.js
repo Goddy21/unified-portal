@@ -5,7 +5,7 @@ $(document).ready(function() {
     console.log("Data in javascript is", data);
 
     // Declare chart instances outside of updateCharts function
-    let dayChart, weekdayChart, hourChart, monthChart, yearChart, statusChart;
+    let dayChart, weekdayChart, hourChart, monthChart, yearChart, statusChart, terminalChart, categoryChart, monthlyChart;
 
     // Initialize the chart rendering with the default data
     updateCharts(data);
@@ -34,6 +34,9 @@ $(document).ready(function() {
         const ctxMonth = document.getElementById('ticketsPerMonthChart').getContext('2d');
         const ctxYear = document.getElementById('ticketsPerYearChart').getContext('2d');
         const ctxStatus = document.getElementById('ticketStatusChart').getContext('2d');
+        const ctxTerminal = document.getElementById('ticketsPerTerminalChart').getContext('2d');
+        const ctxCategory = document.getElementById('ticketsByCategoryChart').getContext('2d');
+        const ctxMonthly = document.getElementById('monthlyTicketTrendsChart').getContext('2d');
 
         // Destroy the previous charts if they exist
         destroyChart(dayChart);
@@ -42,6 +45,9 @@ $(document).ready(function() {
         destroyChart(monthChart);
         destroyChart(yearChart);
         destroyChart(statusChart);
+        destroyChart(terminalChart);
+        destroyChart(categoryChart);
+        destroyChart(monthlyChart);
 
         // Per day chart with gradient animation
         dayChart = new Chart(ctxDay, {
@@ -208,7 +214,7 @@ $(document).ready(function() {
             }
         });
 
-       // Ticket statuses chart (Pie chart) with hover animations
+        // Ticket statuses chart (Pie chart) with hover animations
         statusChart = new Chart(ctxStatus, {
             type: 'pie',
             data: {
@@ -255,22 +261,83 @@ $(document).ready(function() {
                 }
             }
         });
- 
+
+        // Tickets per Terminal Chart
+        terminalChart = new Chart(ctxTerminal, {
+            type: 'bar',
+            data: {
+                labels: data.terminals.map(terminal => terminal.cdm_name),
+                datasets: [{
+                    label: 'Tickets per Terminal',
+                    data: data.ticketsPerTerminal, // Pass the corresponding ticket count
+                    backgroundColor: function(context) {
+                        const chartArea = context.chart.chartArea;
+                        return createGradient(ctxTerminal, chartArea, '#007bff', '#00b0ff');
+                    },
+                }]
+            },
+            options: {
+                responsive: true,
+                animation: { duration: 1000, easing: 'easeOutQuart' },
+            }
+        });
+
+        // Tickets by Category (Radar Chart)
+        categoryChart = new Chart(ctxCategory, {
+            type: 'radar',
+            data: {
+                labels: data.ticketCategories.labels,
+                datasets: [{
+                    label: 'Tickets by Category',
+                    data: data.ticketCategories.data,
+                    backgroundColor: 'rgba(0, 123, 255, 0.3)', 
+                    borderColor: '#007bff',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                scale: { ticks: { beginAtZero: true } }
+            }
+        });
+
+        // Monthly Ticket Trends (Line Chart)
+        monthlyChart = new Chart(ctxMonthly, {
+            type: 'line',
+            data: {
+                labels: data.months,
+                datasets: [{
+                    label: 'Monthly Ticket Trends',
+                    data: data.ticketsPerMonth,
+                    fill: true,
+                    backgroundColor: '#007bff',
+                    borderColor: '#0056b3',
+                    borderWidth: 2,
+                }]
+            },
+            options: {
+                responsive: true,
+                animation: { duration: 1000, easing: 'easeOutQuart' },
+                plugins: { tooltip: { backgroundColor: 'rgba(0, 123, 255, 0.8)' } }
+            }
+        });
+
     }
-    
+
     function updateTicketStatusBreakdown(labels, data) {
         const total = data.reduce((acc, value) => acc + value, 0);
         let breakdownHTML = '';
         labels.forEach((label, index) => {
-        const count = data[index];
-        const percentage = ((count / total) * 100).toFixed(2);
-        breakdownHTML += `<p><strong>${label}:</strong> ${count} tickets (${percentage}%)</p>`;
+            const count = data[index];
+            const percentage = ((count / total) * 100).toFixed(2);
+            breakdownHTML += `<p><strong>${label}:</strong> ${count} tickets (${percentage}%)</p>`;
         });
         document.getElementById('ticket-status-breakdown').innerHTML = breakdownHTML;
     }
 
     // Call the function to display the breakdown
     updateTicketStatusBreakdown(data.ticketStatuses.labels, data.ticketStatuses.data);
+    
     // Populate Dropdowns
     function populateDropdown(id, items, idKey, nameKey) {
         const dropdown = document.getElementById(id);

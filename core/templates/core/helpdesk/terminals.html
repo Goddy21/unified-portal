@@ -22,6 +22,56 @@
         <button type="submit" name="upload_file" class="btn btn-primary mt-2">Upload</button>
     </form>
 
+    <!-- Button to open the modal -->
+    <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#createTerminalModal">Create New Terminal</button>
+
+    <!-- Modal for Creating Terminal -->
+    <div class="modal fade" id="createTerminalModal" tabindex="-1" aria-labelledby="createTerminalModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="createTerminalModalLabel">Create a New Terminal</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Terminal Creation Form inside the modal -->
+                    <form method="post" action="{% url 'terminals' %}" class="terminal-form">
+                        {% csrf_token %}
+                        <div class="form-section">
+                            <div class="form-group">
+                                {{ form.customer.label_tag }}{{ form.customer }}
+                            </div>
+                            <div class="form-group">
+                                {{ form.branch_name.label_tag }}{{ form.branch_name }}
+                            </div>
+                            <div class="form-group">
+                                {{ form.cdm_name.label_tag }}{{ form.cdm_name }}
+                            </div>
+                            <div class="form-group">
+                                {{ form.serial_number.label_tag }}{{ form.serial_number }}
+                            </div>
+                            <div class="form-group">
+                                {{ form.region.label_tag }}{{ form.region }}
+                            </div>
+                            <div class="form-group">
+                                {{ form.model.label_tag }}{{ form.model }}
+                            </div>
+                            <div class="form-group">
+                                {{ form.zone.label_tag }}{{ form.zone }}
+                            </div>
+                        </div>
+
+                        <div class="form-buttons">
+                            <button type="submit" name="create" class="btn btn-danger">Create</button>
+                            <button type="submit" name="create_another" class="btn btn-secondary">Create & Create Another</button>
+                            <a href="{% url 'terminals' %}" class="btn btn-outline-light" data-bs-dismiss="modal">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Terminal Table Section -->
     <div class="table-responsive">
         <table class="terminal-table">
@@ -32,7 +82,7 @@
                     <th>Branch</th>
                     <th>CDM Name</th>
                     <th>Serial Number</th>
-                   <!-- <th>Region</th> -->
+                    <th>Region</th>
                     <th>Model</th>
                     <th>Zone</th>
                     <th>Actions</th>
@@ -40,13 +90,13 @@
             </thead>
             <tbody>
                 {% for terminal in terminals %}
-                <tr data-bs-toggle="modal" data-bs-target="#viewTicketsModal{{ terminal.id }}">
+                <tr>
                     <td>{{ forloop.counter }}</td>
                     <td>{{ terminal.customer.name }}</td>
                     <td>{{ terminal.branch_name }}</td>
                     <td>{{ terminal.cdm_name }}</td>
                     <td>{{ terminal.serial_number }}</td>
-                    <!-- <td>{{ terminal.region.name }}</td> -->
+                    <td>{{ terminal.region.name }}</td>
                     <td>{{ terminal.model }}</td>
                     <td>{{ terminal.zone.name }}</td>
                     <td>
@@ -56,32 +106,10 @@
                         </a>
                     </td>
                 </tr>
-
-                <!-- Modal for Viewing Tickets -->
-                <div class="modal fade" id="viewTicketsModal{{ terminal.id }}" tabindex="-1" aria-labelledby="viewTicketsModalLabel" aria-hidden="true">
-                    <div class="modal-dialog modal-lg">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h5 class="modal-title" id="viewTicketsModalLabel">Tickets for Terminal {{ terminal.branch_name }}</h5>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                            </div>
-                            <div class="modal-body">
-                                <!-- Ticket List for the Terminal -->
-                                <ul>
-                                    {% for ticket in terminal.ticket_set.all %}
-                                        <li>
-                                            <a href="{% url 'ticket_detail' ticket.id %}">
-                                                Ticket #{{ ticket.id }} - {{ ticket.title }} - Status: {{ ticket.get_status_display }}
-                                            </a>
-                                        </li>
-                                    {% empty %}
-                                        <li>No tickets found for this terminal.</li>
-                                    {% endfor %}
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                {% empty %}
+                <tr>
+                    <td colspan="9">No terminals added yet.</td>
+                </tr>
                 {% endfor %}
             </tbody>
         </table>
@@ -103,6 +131,45 @@
             {% endif %}
         </span>
     </div>
+
 </div>
 <script src="{% static 'js/ticketing_dashboard.js' %}"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+    const form = document.getElementById('createTerminalForm');
+    
+    if (form) {  
+        form.addEventListener('submit', function(event) {
+            event.preventDefault();  
+            const formData = new FormData(this);
+            
+            fetch("{% url 'terminals' %}", {
+                method: 'POST',
+                body: formData,
+            })
+            .then(response => response.json())  
+            .then(data => {
+                if (data.success) {
+                    alert(data.message); 
+
+                    if (data.create_another) {
+                        document.getElementById('createTerminalForm').reset();
+                    } else {
+                        // Close the modal and reload the page
+                        $('#createTerminalModal').modal('hide');
+                        location.reload();  
+                    }
+                } else {
+                    alert("Failed to create terminal. Please try again.");
+                }
+            })
+            .catch(error => {
+                console.error("Error: ", error); 
+                alert("Error: " + error);
+            });
+        });
+    }
+});
+
+</script>
 {% endblock %}

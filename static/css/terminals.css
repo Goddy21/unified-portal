@@ -10,10 +10,122 @@
 .page-container h2 {
   color: #007bff;
   margin-bottom: 1rem;
-  font-size: 2rem;
 }
 
-/* File Upload Section */
+/* Form section layout */
+.form-section {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+/* Form group styling */
+.form-group {
+  flex: 1 1 45%;
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 0.5rem;
+}
+
+/* Label styling */
+.form-group label {
+  margin-bottom: 6px;
+  color: #333;
+  font-weight: 500;
+  font-size: 0.95rem;
+}
+
+/* Input & Select styling */
+.form-group input[type="text"],
+.form-group select {
+  padding: 10px 12px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 0.95rem;
+  background-color: #fff;
+  color: #333;
+}
+
+/* Buttons container */
+.form-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+/* Button styles */
+.terminal-form .btn {
+  padding: 10px 16px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  font-size: 0.95rem;
+}
+
+.terminal-form .btn:hover {
+  background-color: #0056b3;
+}
+
+.terminal-form .btn-secondary {
+  background-color: #6c757d;
+}
+
+.terminal-form .btn-secondary:hover {
+  background-color: #5a6268;
+}
+
+.terminal-form .btn-outline-light {
+  background-color: #f8f9fa;
+  color: #333;
+  border: 1px solid #ccc;
+}
+
+.terminal-form .btn-outline-light:hover {
+  background-color: #e2e6ea;
+}
+
+/* Table styles */
+.table-responsive {
+  overflow-x: auto;
+  margin-top: 2rem;
+}
+
+.terminal-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.terminal-table th,
+.terminal-table td {
+  padding: 12px;
+  border-bottom: 1px solid #dee2e6;
+  font-size: 0.95rem;
+  text-align: left;
+}
+
+.terminal-table th {
+  background-color: #f8f9fa;
+  color: #343a40;
+}
+
+.terminal-table tbody tr:hover {
+  background-color: #f1f1f1;
+}
+.view-link {
+  color: #dc3545;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.view-link:hover {
+  text-decoration: underline;
+  color: #c82333;
+}
+/* File input styling */
 .upload-form {
     margin-bottom: 1.5rem;
 }
@@ -26,6 +138,8 @@
   color: #333;
   width: 100%;
 }
+
+/* Button styling */
 .upload-form .btn {
   padding: 10px 16px;
   background-color: #007bff;
@@ -36,92 +150,52 @@
   transition: background-color 0.3s ease;
   font-size: 0.95rem;
 }
+
 .upload-form .btn:hover {
   background-color: #0056b3;
 }
 
-/* Table Styles */
-.table-responsive {
-  overflow-x: auto;
-  margin-top: 2rem;
-}
-.terminal-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-.terminal-table th,
-.terminal-table td {
-  padding: 12px;
-  border-bottom: 1px solid #dee2e6;
-  font-size: 0.95rem;
-  text-align: left;
-}
-.terminal-table th {
-  background-color: #f8f9fa;
-  color: #343a40;
-  font-weight: 600;
-}
-.terminal-table tbody tr {
-    cursor: pointer; 
-}
-.terminal-table tbody tr:hover {
-  background-color: #f1f1f1;
-}
-.terminal-table tbody tr:active {
-    background-color: #e2e6ea; 
-}
-.view-link {
-  color: #dc3545;
-  text-decoration: none;
-  font-weight: 500;
-}
-.view-link:hover {
-  text-decoration: underline;
-  color: #c82333;
+.upload-form .btn-primary {
+  background-color: #007bff;
 }
 
-/* Modal Custom Styles */
+.upload-form .btn-primary:hover {
+  background-color: #0056b3;
+}
+/* Modal custom styles */
 .modal-dialog {
     max-width: 800px;
 }
+
 .modal-header {
     background-color: #f8f9fa;
     border-bottom: 1px solid #dee2e6;
 }
+
 .modal-title {
     font-weight: bold;
-    color: #007bff;
-}
-.modal-body {
-    padding: 2rem;
-    background-color: #f1f1f1;
-    border-radius: 8px;
-}
-.modal-body ul {
-    list-style-type: none;
-    padding-left: 0;
-}
-.modal-body ul li {
-    margin-bottom: 10px;
-}
-.modal-body ul li a {
-    color: #007bff;
-    text-decoration: none;
-}
-.modal-body ul li a:hover {
-    text-decoration: underline;
 }
 
-/* Pagination Styles */
+.modal-body {
+    padding: 2rem;
+}
+
+/* Form inside modal */
+.terminal-form {
+    margin-top: 1rem;
+}
+/* Pagination Controls */
 .pagination {
   text-align: center;
   margin-top: 20px;
 }
+
 .page-links {
   display: inline-block;
 }
+
 .page-links a {
-  color: #007bff;
+  color: var(--primary-color);
   text-decoration: none;
   padding: 8px 16px;
   border: 1px solid #ddd;
@@ -130,34 +204,42 @@
   font-size: 1em;
   transition: background-color 0.3s ease;
 }
+
 .page-links a:hover {
   background-color: #f1f1f1;
 }
+
 .current-page {
   padding: 8px 16px;
   font-size: 1em;
   color: #6c757d;
 }
 
-/* Mobile Responsive Tweaks */
+
+/* Mobile responsive tweaks */
 @media (max-width: 768px) {
   .page-container {
     padding: 1rem;
   }
+
   .form-section {
     flex-direction: column;
   }
+
   .form-group {
     flex: 1 1 100%;
   }
+
   .form-group input,
   .form-group select {
     width: 100%;
   }
+
   .form-buttons {
     flex-direction: column;
     gap: 0.75rem;
   }
+
   .terminal-form .btn {
     width: 100%;
   }
