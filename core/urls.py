@@ -91,6 +91,7 @@ urlpatterns = [
     path('master-data/terminals/', views.terminals, name='terminals'),
     path('terminals/delete/<int:terminal_id>/', views.delete_terminal, name='delete_terminal'),
     path('tickets/terminal/<int:terminal_id>/', views.fetch_tickets, name='fetch_tickets'),
+    path('get_terminal_details/<int:terminal_id>/', views.get_terminal_details, name='get_terminal_details'),
 
     path('master-data/units/', views.units, name='units'),
     path('units/delete/<int:unit_id>/', views.delete_unit, name='delete_unit'),

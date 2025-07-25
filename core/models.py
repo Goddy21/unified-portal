@@ -174,11 +174,11 @@ class Ticket(models.Model):
     title = models.CharField(max_length=255)
     brts_unit = models.ForeignKey(Unit, on_delete=models.SET_NULL, null=True)
     problem_category = models.ForeignKey(ProblemCategory, on_delete=models.SET_NULL, null=True)
-    terminal = models.ForeignKey(Terminal, on_delete=models.CASCADE, null=True)
+    terminal = models.ForeignKey(Terminal, on_delete=models.CASCADE, null=True, blank=True)
     description = models.TextField()
 
-    customer = models.ForeignKey(Customer, on_delete=models.SET_NULL, null=True)
-    region = models.ForeignKey(Region, on_delete=models.SET_NULL, null=True)
+    customer = models.ForeignKey(Customer, on_delete=models.CASCADE, null=False, blank=False)
+    region = models.ForeignKey(Region, on_delete=models.CASCADE, null=False, blank=False)
 
     created_by = models.ForeignKey(User, related_name='created_tickets', on_delete=models.SET_NULL, null=True)
     assigned_to = models.ForeignKey(User, related_name='assigned_tickets', on_delete=models.SET_NULL, null=True, blank=True)

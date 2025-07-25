@@ -1023,15 +1023,38 @@ def create_ticket(request):
     if request.method == 'POST':
         form = TicketForm(request.POST)
         if form.is_valid():
+            print(form.cleaned_data)
             ticket = form.save(commit=False)
             ticket.created_by = request.user
+            if ticket.terminal:
+                ticket.customer = ticket.terminal.customer
+                ticket.region = ticket.terminal.region
             ticket.save()
-            return redirect('create_ticket' if 'create_another' in request.POST else 'ticketing_dashboard')
+            return redirect('create_ticket' if 'create_another' in request.POST else 'tickets')
     else:
         form = TicketForm()
 
+        # Get terminal_id from the URL parameters if available
+        terminal_id = request.GET.get('terminal_id')  
+        if terminal_id:
+            form = TicketForm(terminal_id=terminal_id)  # Pass terminal_id to the form
+        else:
+            form = TicketForm()
+
     return render(request, 'core/helpdesk/create_ticket.html', {'form': form})
 
+
+def get_terminal_details(request, terminal_id):
+    try:
+        terminal = Terminal.objects.get(id=terminal_id)
+        response_data = {
+            'customer_id': terminal.customer.id if terminal.customer else None,
+            'region_id': terminal.region.id if terminal.region else None,
+        }
+        return JsonResponse(response_data)
+    except Terminal.DoesNotExist:
+        return JsonResponse({'error': 'Terminal not found'}, status=404)
+    
 def ticket_detail(request, ticket_id):
     ticket = get_object_or_404(Ticket, id=ticket_id)
     comments = ticket.comments.order_by('-created_at')
@@ -1070,7 +1093,8 @@ def ticket_detail(request, ticket_id):
     can_resolve = request.user.has_perm('can_resolve_ticket')
 
     #form = None #addinf form to context
-    
+    print(f"Customer: {ticket.customer}")  
+    print(f"Region: {ticket.region}") 
      # Allow editing only for admins or editors
     if is_director(request.user) or is_manager(request.user):
         if request.method == 'POST':
@@ -1114,7 +1138,7 @@ def edit_comment(request, comment_id):
     else:
         form = TicketCommentForm(instance=comment)
 
-    return render(request, 'edit_comment.html', {'form': form, 'comment': comment})
+    return render(request, 'core/helpdesk/edit_comment.html', {'form': form, 'comment': comment})
 
 
 @login_required
@@ -1300,7 +1324,7 @@ def delete_region(request, region_id):
     region.delete()
     messages.success(request, "Region deleted successfully.")
     return redirect('regions')
-
+"""
 def terminals(request):
     form = TerminalForm()
     upload_form = TerminalUploadForm()
@@ -1314,8 +1338,10 @@ def terminals(request):
     if request.method == 'POST':
         # Handle terminal creation
         if 'create' in request.POST or 'create_another' in request.POST:
+            print("Form submitted!") 
             form = TerminalForm(request.POST)
             if form.is_valid():
+                print("Form is valid!")
                 form.save()
                 messages.success(request, "Terminal created successfully.")
 
@@ -1328,6 +1354,84 @@ def terminals(request):
 
                 return redirect('terminals')  # Redirect to the terminal list after creation
 
+        # Handle CSV upload for terminals
+        elif 'upload_file' in request.POST:
+            upload_form = TerminalUploadForm(request.POST, request.FILES)
+            if upload_form.is_valid():
+                file = upload_form.cleaned_data['file']
+                try:
+                    if file.name.endswith('.csv'):
+                        df = pd.read_csv(file)
+                    else:
+                        df = pd.read_excel(file)
+
+                    # Process each row and create terminal objects
+                    for _, row in df.iterrows():
+                        Terminal.objects.create(
+                            customer=Customer.objects.get(name=row['customer']),
+                            branch_name=row['branch_name'],
+                            cdm_name=row['cdm_name'],
+                            serial_number=row['serial_number'],
+                            region=Region.objects.get(name=row['region']),
+                            model=row['model'],
+                            zone=Zone.objects.get(name=row['zone']),
+                        )
+                    messages.success(request, "Terminals imported successfully.")
+                except Exception as e:
+                    messages.error(request, f"Error importing file: {e}")
+                return redirect('terminals')
+
+    # GET request: Display the page with all terminals
+    all_terminals = Terminal.objects.all().order_by('id') 
+    paginator = Paginator(all_terminals, 10)  
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    # Pass the required objects to the template
+    return render(request, 'core/helpdesk/terminals.html', {
+        'form': form,
+        'upload_form': upload_form,
+        'terminals': page_obj,
+        'customers': customers,
+        'regions': regions,
+        'zones': zones
+    })
+"""
+def terminals(request):
+    form = TerminalForm()
+    upload_form = TerminalUploadForm()
+
+    # Get all the required objects to pass to the template
+    customers = Customer.objects.all()
+    regions = Region.objects.all()
+    zones = Zone.objects.all()
+
+    # Handle POST request for terminal creation or CSV upload
+    if request.method == 'POST':
+        # Handle terminal creation
+        if 'create' in request.POST or 'create_another' in request.POST:
+            print("Form submitted")
+            form = TerminalForm(request.POST)
+            if form.is_valid():
+                print("Form is valid")
+                try:
+                    form.save()
+                    messages.success(request, "Terminal created successfully.")
+
+                    # Handle the "Create & Add Another" functionality
+                    if 'create_another' in request.POST:
+                        return JsonResponse({
+                            "success": True,
+                            "message": "Terminal created successfully. You can create another one."
+                        })
+
+                    return redirect('terminals')  # Redirect to the terminal list after creation
+                except Exception as e:
+                    messages.error(request, f"Error creating terminal: {e}")
+                    print(f"Error creating terminal: {e}")
+            else:
+                print("Form is not valid")
+                print("Form errors:", form.errors) 
         # Handle CSV upload for terminals
         elif 'upload_file' in request.POST:
             upload_form = TerminalUploadForm(request.POST, request.FILES)
@@ -1675,7 +1779,7 @@ def edit_version(request, pk):
 
     return render(request, 'core/helpdesk/edit_version.html', {'form': form, 'version': version})
 
-
+@user_passes_test(is_director)
 def delete_version(request, pk):
     version = get_object_or_404(VersionControl, pk=pk)
     version.delete()

@@ -1,6 +1,6 @@
 # forms.py
 from django import forms
-from .models import File, ProblemCategory, Ticket,TicketComment
+from .models import File, ProblemCategory, Ticket,TicketComment, Customer, Region
 from django.contrib.auth.models import User
 from .models import Profile, Terminal, VersionControl
 
@@ -79,15 +79,32 @@ class TicketForm(forms.ModelForm):
             'title': forms.TextInput(attrs={'class': 'form-control'}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
             'brts_unit': forms.Select(attrs={'class': 'form-control'}),
-            'customer': forms.Select(attrs={'class':'form-control'}),
-            'region': forms.Select(attrs={'class':'form-control'}),
             'problem_category': forms.Select(attrs={'class': 'form-control'}),
             'terminal': forms.Select(attrs={'class': 'form-control'}),
             'priority': forms.Select(attrs={'class': 'form-control'}),
             'status': forms.Select(attrs={'class': 'form-control'}),
-            'responsible': forms.Select(attrs={'class': 'form-control'}),
         }
 
+    customer = forms.ModelChoiceField(queryset=Customer.objects.all(), required=True)  # Make it visible
+    region = forms.ModelChoiceField(queryset=Region.objects.all(), required=True)  # Make it visible
+
+    def __init__(self, *args, **kwargs):
+        super(TicketForm, self).__init__(*args, **kwargs)
+
+        # Automatically populate customer and region if a terminal is specified
+        if 'instance' in kwargs and kwargs['instance'] and kwargs['instance'].terminal:
+            terminal = kwargs['instance'].terminal
+            self.fields['customer'].initial = terminal.customer
+            self.fields['region'].initial = terminal.region
+        elif 'terminal_id' in kwargs:  # Handle when creating new tickets and terminal_id is passed
+            terminal_id = kwargs.get('terminal_id')
+            if terminal_id:
+                try:
+                    terminal = Terminal.objects.get(id=terminal_id)
+                    self.fields['customer'].initial = terminal.customer
+                    self.fields['region'].initial = terminal.region
+                except Terminal.DoesNotExist:
+                    pass  # Handle the case where the terminal is not found
 
 
 class ProblemCategoryForm(forms.ModelForm):
@@ -105,13 +122,19 @@ class TerminalForm(forms.ModelForm):
         fields = ['customer', 'branch_name', 'cdm_name', 'serial_number', 'region', 'model', 'zone']
         widgets = {
             'customer': forms.Select(attrs={'class': 'form-control'}),
-            'branch_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'branch_name': forms.TextInput(attrs={'class': 'form-control', 'value': 'Main Branch'}),
             'cdm_name': forms.TextInput(attrs={'class': 'form-control'}),
             'serial_number': forms.TextInput(attrs={'class': 'form-control'}),
             'region': forms.Select(attrs={'class': 'form-control'}),
             'model': forms.TextInput(attrs={'class': 'form-control'}),
             'zone': forms.Select(attrs={'class': 'form-control'}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if not self.instance.branch_name:
+            self.fields['branch_name'].required = False  
+
     
 class TerminalUploadForm(forms.Form):
     file = forms.FileField(
