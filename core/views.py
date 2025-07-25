@@ -839,7 +839,7 @@ def statistics_view(request):
     ticket_categories = tickets.values('problem_category').annotate(ticket_count=Count('id'))
     
     # Fetch terminals, customers, and regions
-    terminals = Terminal.objects.all().values('id', 'cdm_name', 'customer__name', 'region__name')
+    terminals = Terminal.objects.all().values('id', 'branch_name', 'customer__name', 'region__name')
     customers = Customer.objects.all().values('id', 'name')
     regions = Region.objects.all().values('id', 'name')
     
@@ -897,7 +897,7 @@ def export_report(request):
         end_date = start_date + timedelta(days=6, hours=23, minutes=59, seconds=59, microseconds=999999)
     elif time_period == 'lastmonth':
         start_date = (today.replace(day=1) - timedelta(days=1)).replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-        end_date = today.replace(day=1) - timedelta(microseconds=1)  # End of last month
+        end_date = today.replace(day=1) - timedelta(microseconds=1) 
     elif time_period == 'lastyear':
         start_date = today.replace(year=today.year - 1, month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
         end_date = today.replace(year=today.year - 1, month=12, day=31, hour=23, minute=59, second=59, microsecond=999999)
@@ -925,7 +925,7 @@ def export_report(request):
 
     # Calculate ticket statistics for per day, per weekday, etc.
     tickets_per_day = [tickets.filter(created_at__date=today - timedelta(days=i)).count() for i in range(7)]
-    tickets_per_weekday = [tickets.filter(created_at__week_day=i).count() for i in range(1, 8)]  # Sunday = 1, Saturday = 7
+    tickets_per_weekday = [tickets.filter(created_at__week_day=i).count() for i in range(1, 8)]  
     tickets_per_hour = [tickets.filter(created_at__hour=i).count() for i in range(24)]
     tickets_per_month = [tickets.filter(created_at__month=i+1).count() for i in range(12)]
     years = sorted(list(set(ticket.created_at.year for ticket in tickets.iterator())))
@@ -1465,7 +1465,6 @@ def reports(request):
     customer = request.GET.get('customer')
 
     terminal_name = request.GET.get("terminal_name")
-    #terminal = request.GET.get('terminal')
 
     region = request.GET.get('region')
 
@@ -1478,10 +1477,10 @@ def reports(request):
     if customer and customer != 'All' and customer !="None":
         tickets = tickets.filter(customer_id=customer)
 
-        filter_by_customer = True  # 👈 Track customer filter
-    if terminal_name: #and terminal != 'All' and terminal != "None":
+        filter_by_customer = True  
+    if terminal_name: 
         tickets = tickets.filter(terminal__branch_name__icontains=terminal_name)
-        filter_by_terminal = True  # 👈 Track terminal filter
+        filter_by_terminal = True  
 
     if region and region != 'All' and region != "None":
         tickets = tickets.filter(region_id=region)
@@ -1497,7 +1496,7 @@ def reports(request):
 
         tickets = tickets.filter(created_at__date__lte=parse_date(end_date))
 
-      # 👉 Check if user clicked "Download Excel"
+      
     if request.GET.get('download') == 'excel':
 
         customer_name = Customer.objects.get(id=customer).name if customer and customer not in ['All', 'None'] else None

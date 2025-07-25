@@ -266,7 +266,7 @@ $(document).ready(function() {
         terminalChart = new Chart(ctxTerminal, {
             type: 'bar',
             data: {
-                labels: data.terminals.map(terminal => terminal.cdm_name),
+                labels: data.terminals.map(terminal => terminal.branch_name),
                 datasets: [{
                     label: 'Tickets per Terminal',
                     data: data.ticketsPerTerminal, // Pass the corresponding ticket count
