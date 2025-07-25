@@ -1297,7 +1297,12 @@ def terminals(request):
     form = TerminalForm()
     upload_form = TerminalUploadForm()
 
-    # Check if the request method is POST
+    # Get all the required objects to pass to the template
+    customers = Customer.objects.all()
+    regions = Region.objects.all()
+    zones = Zone.objects.all()
+
+    # Handle POST request for terminal creation or CSV upload
     if request.method == 'POST':
         # Handle terminal creation
         if 'create' in request.POST or 'create_another' in request.POST:
@@ -1348,10 +1353,14 @@ def terminals(request):
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
+    # Pass the required objects to the template
     return render(request, 'core/helpdesk/terminals.html', {
         'form': form,
         'upload_form': upload_form,
         'terminals': page_obj,
+        'customers': customers,
+        'regions': regions,
+        'zones': zones
     })
 
 def fetch_tickets(request, terminal_id):
