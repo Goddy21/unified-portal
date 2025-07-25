@@ -1368,6 +1368,15 @@ def terminals(request):
     })
 
 
+def fetch_tickets(request, terminal_id):
+    tickets = Ticket.objects.filter(terminal_id=terminal_id).values('id', 'title')
+    
+    if tickets:
+        return JsonResponse({"success": True, "tickets": list(tickets)})
+    else:
+        return JsonResponse({"success": False, "message": "No tickets found."})
+
+
 @user_passes_test(is_director)
 def delete_terminal(request, terminal_id):
     terminal = get_object_or_404(Terminal, id=terminal_id)
@@ -1455,66 +1464,70 @@ def delete_zone(request, zone_id):
     return redirect('zones') 
 
 def reports(request):
-    tickets = Ticket.objects.all().order_by('-created_at')  
+
+    tickets = Ticket.objects.all()
 
     customer = request.GET.get('customer')
-    terminal = request.GET.get('terminal_name')
+
+    terminal_name = request.GET.get("terminal_name")
+    #terminal = request.GET.get('terminal')
+
+    region = request.GET.get('region')
+
     category = request.GET.get('category')
 
     filter_by_customer = False
     filter_by_terminal = False
 
-    if customer and customer != 'All' and customer != "None":
+
+    if customer and customer != 'All' and customer !="None":
         tickets = tickets.filter(customer_id=customer)
-        filter_by_customer = True  
 
-    elif customer == 'All': 
-        tickets = Ticket.objects.all().order_by('-created_at')
+        filter_by_customer = True  # 👈 Track customer filter
+    if terminal_name: #and terminal != 'All' and terminal != "None":
+        tickets = tickets.filter(terminal__branch_name__icontains=terminal_name)
+        filter_by_terminal = True  # 👈 Track terminal filter
 
-    if terminal: 
-        tickets = tickets.filter(terminal__branch_name__icontains=terminal)
-        filter_by_terminal = True  
-
-    if category and category != 'All' and category != "None":
+    if region and region != 'All' and region != "None":
+        tickets = tickets.filter(region_id=region)
+    if category and category != 'All' and category !="None":
         tickets = tickets.filter(problem_category_id=category)
-
 
     start_date = request.GET.get('start_date')
     end_date = request.GET.get('end_date')
 
     if start_date:
+
         tickets = tickets.filter(created_at__date__gte=parse_date(start_date))
-    if end_date:
+
         tickets = tickets.filter(created_at__date__lte=parse_date(end_date))
 
-    paginator = Paginator(tickets, 10)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
-
+      # 👉 Check if user clicked "Download Excel"
     if request.GET.get('download') == 'excel':
-        return export_tickets_to_excel(tickets)
-    
-    print(f"Tickets count after filtering by customer: {tickets.count()}")
-    print(f"Tickets count after filtering by terminal: {tickets.count()}")
-    print(f"Tickets count after filtering by category: {tickets.count()}")
-    print(f"Filtering by customer: {customer}")
-    print(f"Filtering by terminal: {terminal}")
-    print(f"Filtering by category: {category}")
-    print(f"Tickets with customer: {Ticket.objects.filter(customer__isnull=False).count()}")
-    tickets_without_customer = Ticket.objects.filter(customer__isnull=True)
-    print(f"Tickets without customer: {tickets_without_customer.count()}")
 
+        customer_name = Customer.objects.get(id=customer).name if customer and customer not in ['All', 'None'] else None
+        terminal_filter = terminal_name if terminal_name else None
 
-
+        return export_tickets_to_excel(
+            tickets,
+            include_terminal=filter_by_customer,
+            customer_name=customer_name,
+            terminal_name=terminal_filter,
+            start_date=start_date,
+            end_date=end_date
+        )
 
     context = {
-        'page_obj': page_obj,
         'tickets': tickets,
+
         'customers': Customer.objects.all(),
         'terminals': Terminal.objects.all(),
+        'regions': Region.objects.all(),
         'categories': ProblemCategory.objects.all(),
+
         'filter_by_customer': filter_by_customer,
         'filter_by_terminal': filter_by_terminal,
+
     }
     return render(request, 'core/helpdesk/reports.html', context)
 
@@ -1522,6 +1535,7 @@ def reports(request):
 def export_tickets_to_excel(tickets, include_terminal=False, customer_name=None, terminal_name=None, start_date=None, end_date=None):
     import openpyxl
     from openpyxl.utils import get_column_letter
+
 
     workbook = openpyxl.Workbook()
 
@@ -1538,6 +1552,9 @@ def export_tickets_to_excel(tickets, include_terminal=False, customer_name=None,
 
     sheet.append(headers)
 
+
+    # Data rows
+
     for ticket in tickets:
 
         row = []
@@ -1552,6 +1569,7 @@ def export_tickets_to_excel(tickets, include_terminal=False, customer_name=None,
             ticket.description,
         ]
         sheet.append(row)
+
 
     # Dynamic filename
     name_part = "report"
@@ -1569,6 +1587,7 @@ def export_tickets_to_excel(tickets, include_terminal=False, customer_name=None,
         date_part = f"to_{end_date}"
 
     filename = f"{name_part}_{date_part or timezone.now().strftime('%Y-%m-%d')}.xlsx"
+
 
     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
 

@@ -353,7 +353,7 @@ $(document).ready(function() {
     // Apply the initial data
     populateDropdown("customer-filter", data.customers, "id", "name");
     populateDropdown("region-filter", data.regions, "id", "name");
-    populateDropdown("terminal-filter", data.terminals, "id", "cdm_name");
+    populateDropdown("terminal-filter", data.terminals, "id", "branch_name");
 
     // Handle filter changes and update charts dynamically
     $('#time-period, #customer-filter, #terminal-filter, #region-filter').change(function() {
