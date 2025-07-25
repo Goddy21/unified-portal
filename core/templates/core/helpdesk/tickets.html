@@ -56,7 +56,7 @@
         <tbody>
           {% for ticket in tickets %}
           <tr>
-            <td>#{{ ticket.id }}</td>
+            <td>{{ ticket.id }}</td>
             <td>{{ ticket.title }}</td>
             <td>{{ ticket.created_at|date:"Y-m-d" }}</td>
             <td>{{ ticket.problem_category.name }}</td>
