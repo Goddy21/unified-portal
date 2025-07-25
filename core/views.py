@@ -1299,36 +1299,23 @@ def terminals(request):
 
     # Check if the request method is POST
     if request.method == 'POST':
-        # Check if we are creating a terminal
+        # Handle terminal creation
         if 'create' in request.POST or 'create_another' in request.POST:
             form = TerminalForm(request.POST)
             if form.is_valid():
                 form.save()
                 messages.success(request, "Terminal created successfully.")
 
-                # Check if the request is an AJAX request by checking the 'X-Requested-With' header
-                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':  
-                    if 'create_another' in request.POST:
-                        return JsonResponse({
-                            "success": True,
-                            "message": "Terminal created successfully. You can create another one."
-                        })
-                    else:
-                        return JsonResponse({
-                            "success": True,
-                            "message": "Terminal created successfully."
-                        })
-                else:
-                    if 'create_another' in request.POST:
-                        form = TerminalForm()  
-                        return render(request, 'core/helpdesk/terminals.html', {
-                            'form': form,
-                            'upload_form': upload_form,
-                            'terminals': Terminal.objects.all()
-                        })
-                    return redirect('terminals')  
+                # Handle the "Create & Add Another" functionality
+                if 'create_another' in request.POST:
+                    return JsonResponse({
+                        "success": True,
+                        "message": "Terminal created successfully. You can create another one."
+                    })
 
-        # Check if we are uploading terminals via a file
+                return redirect('terminals')  # Redirect to the terminal list after creation
+
+        # Handle CSV upload for terminals
         elif 'upload_file' in request.POST:
             upload_form = TerminalUploadForm(request.POST, request.FILES)
             if upload_form.is_valid():
@@ -1353,7 +1340,7 @@ def terminals(request):
                     messages.success(request, "Terminals imported successfully.")
                 except Exception as e:
                     messages.error(request, f"Error importing file: {e}")
-                return redirect('terminals')  
+                return redirect('terminals')
 
     # GET request: Display the page with all terminals
     all_terminals = Terminal.objects.all().order_by('id') 
@@ -1366,7 +1353,6 @@ def terminals(request):
         'upload_form': upload_form,
         'terminals': page_obj,
     })
-
 
 def fetch_tickets(request, terminal_id):
     tickets = Ticket.objects.filter(terminal_id=terminal_id).values('id', 'title')

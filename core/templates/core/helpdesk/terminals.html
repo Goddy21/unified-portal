@@ -17,6 +17,16 @@
         <i class="fas fa-plus-circle"></i> Create Terminal
     </button>
 
+    <!-- Upload CSV Form -->
+    <form method="POST" enctype="multipart/form-data" action="{% url 'terminals' %}">
+        {% csrf_token %}
+        <div class="form-group">
+            <label for="upload_file">Upload Terminals CSV</label>
+            <input type="file" name="upload_file" class="form-control" required>
+        </div>
+        <button type="submit" class="btn btn-success mt-3">Upload CSV</button>
+    </form>
+
     <!-- Terminal Table Section -->
     <div class="table-responsive">
         <table class="terminal-table">
@@ -128,7 +138,8 @@
                                 {% endfor %}
                             </select>
                         </div>
-                        <button type="submit" class="btn btn-success mt-3">Create Terminal</button>
+                        <button type="submit" name="create" class="btn btn-success mt-3">Create Terminal</button>
+                        <button type="submit" name="create_another" class="btn btn-primary mt-3">Create & Add Another</button>
                     </form>
                 </div>
             </div>
@@ -155,7 +166,7 @@
 
 <script src="{% static 'js/ticketing_dashboard.js' %}"></script>
 <script>
-        document.addEventListener("DOMContentLoaded", function () {
+    document.addEventListener("DOMContentLoaded", function () {
         // Add event listeners for each terminal row
         const rows = document.querySelectorAll('.clickable-row');
         
