@@ -1,3 +1,8 @@
+/* Global transitions for smooth effects */
+* {
+  transition: all 0.3s ease;
+}
+
 /* Page container with padding, rounded corners, and shadows */
 .page-container {
   padding: 2rem;
@@ -6,11 +11,6 @@
   max-width: 1100px;
   margin: 2rem auto;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-}
-
-.page-container h2 {
-  color: #007bff;
-  margin-bottom: 1rem;
 }
 
 /* Table section with rounded corners and hover effects */
@@ -52,6 +52,7 @@
 .modal-dialog {
   max-width: 800px;
   border-radius: 10px;
+  /* Removing animation to avoid performance issues */
 }
 
 .modal-header {
@@ -80,6 +81,7 @@
 
 .ticket-item a:hover {
   text-decoration: underline;
+  color: #0056b3;
 }
 
 /* Pagination controls */
@@ -113,6 +115,27 @@
   color: #6c757d;
 }
 
+/* Button Hover Effects */
+.btn:hover {
+  transform: scale(1.05);
+  transition: transform 0.3s ease;
+}
+
+.btn-primary:hover {
+  background-color: #0056b3;
+  border-color: #0056b3;
+}
+
+.btn-success:hover {
+  background-color: #28a745;
+  border-color: #28a745;
+}
+
+.btn-danger:hover {
+  background-color: #dc3545;
+  border-color: #dc3545;
+}
+
 /* Mobile responsiveness */
 @media (max-width: 768px) {
   .page-container {
@@ -121,9 +144,5 @@
 
   .terminal-table th, .terminal-table td {
     padding: 10px;
-  }
-
-  .terminal-table tbody tr:hover {
-    background-color: #fff;
   }
 }
