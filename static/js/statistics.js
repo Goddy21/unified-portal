@@ -1,9 +1,5 @@
 $(document).ready(function() {
 
-    console.log("Document is ready");
-
-    console.log("Data in javascript is", data);
-
     // Declare chart instances outside of updateCharts function
     let dayChart, weekdayChart, hourChart, monthChart, yearChart, statusChart, terminalChart, categoryChart, monthlyChart;
 
@@ -66,7 +62,7 @@ $(document).ready(function() {
             options: {
                 responsive: true,
                 animation: {
-                    duration: 1000, // Animate over 1 second
+                    duration: 1000, 
                     easing: 'easeOutQuart',
                 },
                 plugins: {
@@ -377,7 +373,7 @@ $(document).ready(function() {
                 if (response) {
                     try {
                         console.log("New Data:", response);
-                        updateCharts(response); // Directly use the response object
+                        updateCharts(response); 
                     } catch (error) {
                         console.error("Error while updating charts:", error);
                     }

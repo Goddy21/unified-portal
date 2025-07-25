@@ -772,7 +772,7 @@ def ticketing_dashboard(request):
     return render(request, 'core/helpdesk/ticketing_dashboard.html', context)
 
 def statistics_view(request):
-    today = timezone.now()  
+    today = timezone.now()
     print(f"timezone.now() in view: {today} (aware: {timezone.is_aware(today)})")
    
     # Get the selected filter values from the request
@@ -789,7 +789,6 @@ def statistics_view(request):
         start_date = (today - timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
         end_date = (today - timedelta(days=1)).replace(hour=23, minute=59, second=59, microsecond=999999)
     elif time_period == 'lastweek':
-        # Correctly calculate last week's start and end dates
         start_date = today - timedelta(days=today.weekday() + 7)
         start_date = start_date.replace(hour=0, minute=0, second=0, microsecond=0)
         end_date = start_date + timedelta(days=6, hours=23, minutes=59, seconds=59, microseconds=999999)
@@ -799,35 +798,43 @@ def statistics_view(request):
     elif time_period == 'lastyear':
         start_date = today.replace(year=today.year - 1, month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
         end_date = today.replace(year=today.year - 1, month=12, day=31, hour=23, minute=59, second=59, microsecond=999999)
+    elif time_period == 'all_time':
+        # All time: no date filtering
+        start_date = None
+        end_date = None
     else:
         start_date = today.replace(hour=0, minute=0, second=0, microsecond=0)
         end_date = today.replace(hour=23, minute=59, second=59, microsecond=999999)
-    
+
     # Query data with applied filters
     tickets = Ticket.objects.all()
+
     if customer_filter != 'all':
         tickets = tickets.filter(terminal__customer__id=customer_filter)
     if terminal_filter != 'all':
         tickets = tickets.filter(terminal__id=terminal_filter)
     if region_filter != 'all':
         tickets = tickets.filter(terminal__region__id=region_filter)
-    tickets = tickets.filter(created_at__range=[start_date, end_date])
     
+    # Apply the date range filter only if not "all_time"
+    if time_period != 'all_time':
+        tickets = tickets.filter(created_at__range=[start_date, end_date])
+
     # Calculate ticket statuses (you can customize these status names)
     ticket_statuses = tickets.values('status').annotate(status_count=Count('status'))
     status_labels = [status['status'] for status in ticket_statuses]
     status_counts = [status['status_count'] for status in ticket_statuses]
     
-
+    # Data aggregation for different timeframes
     days = [today - timedelta(days=i) for i in range(7)]  # Last 7 days
     tickets_per_day = [tickets.filter(created_at__date=day.date()).count() for day in days]
     
     weekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
-    tickets_per_weekday = []
-    for i in range(1, 8): 
-        tickets_per_weekday.append(tickets.filter(created_at__week_day=i).count())
+    tickets_per_weekday = [tickets.filter(created_at__week_day=i).count() for i in range(1, 8)] 
+    
     hours = [f"{i}-{i+1}" for i in range(24)]
     tickets_per_hour = [tickets.filter(created_at__hour=i).count() for i in range(24)]
+    
     months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
     tickets_per_month = [tickets.filter(created_at__month=i+1).count() for i in range(12)]
    
@@ -868,10 +875,11 @@ def statistics_view(request):
         'customers': list(customers),
         'regions': list(regions),
     }
+    
     # Check if the request is AJAX
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         return JsonResponse(data, safe=False)
-    # For normal requests, render the HTML page
+    
     return render(request, 'core/helpdesk/statistics.html', {'data': json.dumps(data, ensure_ascii=False)})
 
 def export_report(request):
@@ -1624,9 +1632,14 @@ def version_controls(request):
             'versions': versions
         })
 
+    paginator = Paginator(versions, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
     context = {
         'form': form,
         'versions': versions,
+        'page_obj':page_obj,
         'terminals': VersionControl.objects.values_list('terminal', flat=True).distinct(),
         'firmwares': VersionControl.objects.values_list('firmware', flat=True).distinct(),
         'app_versions': VersionControl.objects.values_list('app_version', flat=True).distinct(),
