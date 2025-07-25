@@ -11,10 +11,12 @@
   flex-wrap: wrap;
   gap: 1rem;
   margin-bottom: 1.5rem;
+  align-items: flex-start;
 }
 
 .report-filters select,
 .report-filters input {
+  min-width: 200px;
   padding: 10px;
   border: 1px solid #ccc;
   border-radius: 6px;
@@ -65,7 +67,10 @@
 .btn-sm:hover {
   background-color: #218838;
 }
-
+.scrolling-placeholder {
+  width: 250px; 
+  box-sizing: border-box;
+}
 @media (max-width: 768px) {
   .report-filters {
     flex-direction: column;

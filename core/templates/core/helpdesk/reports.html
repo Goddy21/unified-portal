@@ -42,6 +42,9 @@
       <div class="column">
         <input type="text" name="terminal_name" class="form-control scrolling-placeholder" placeholder="Search Terminal by Branch Name" value="{{ request.GET.terminal_name }}">
       </div>
+      <div class="filter-action">
+        <button type="submit" class="btn btn-primary">Filter</button>
+      </div>
       <div class="column">
         <select name="category" class="form-control">
           <option value="All">All Categories</option>
@@ -55,10 +58,6 @@
     <div class="date-filters">
       <input type="text" id="start_date" name="start_date" class="date-picker" value="{{ request.GET.start_date }}" placeholder="Start Date" />
       <input type="text" id="end_date" name="end_date" class="date-picker" value="{{ request.GET.end_date }}" placeholder="End Date" />
-    </div>
-
-    <div class="filter-action">
-      <button type="submit" class="btn btn-primary">Filter</button>
     </div>
 
   </form>
