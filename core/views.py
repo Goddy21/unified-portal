@@ -842,7 +842,7 @@ def statistics_view(request):
     years = sorted(list(set(ticket.created_at.year for ticket in tickets.iterator()))) 
     tickets_per_year = [tickets.filter(created_at__year=year).count() for year in years]
 
-    tickets_per_terminal = tickets.values('terminal__cdm_name').annotate(ticket_count=Count('id'))
+    tickets_per_terminal = tickets.values('terminal__branch_name').annotate(ticket_count=Count('id'))
     print("Tickets Per Terminal:", tickets_per_terminal)  
 
     ticket_categories = tickets.values('problem_category').annotate(ticket_count=Count('id'))
@@ -854,7 +854,13 @@ def statistics_view(request):
     
     # Pack data for the frontend
     data = {
-        'ticketsPerTerminal': [entry['ticket_count'] for entry in tickets_per_terminal],
+        'ticketsPerTerminal': [
+            {
+                'branch_name': entry['terminal__branch_name'],
+                'count': entry['ticket_count']
+            }
+            for entry in tickets_per_terminal
+        ],
         'ticketCategories': {
             'labels': [entry['problem_category'] for entry in ticket_categories],
             'data': [entry['ticket_count'] for entry in ticket_categories]
