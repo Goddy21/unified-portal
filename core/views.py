@@ -39,6 +39,7 @@ from io import BytesIO
 from core import models
 import openpyxl
 from openpyxl.utils import get_column_letter
+from openpyxl.styles import Alignment
 
 def in_group(user, group_name):
     return user.is_authenticated and (user.is_superuser or user.groups.filter(name=group_name).exists())
@@ -1580,7 +1581,7 @@ def delete_zone(request, zone_id):
 
 def reports(request):
 
-    tickets = Ticket.objects.all()
+    tickets = Ticket.objects.prefetch_related('comments').all()
 
     customer = request.GET.get('customer')
 
@@ -1662,7 +1663,7 @@ def export_tickets_to_excel(tickets, include_terminal=False, customer_name=None,
     if include_terminal:
         headers.append('Terminal')
 
-    headers += ['Created At', 'Updated At', 'Problem Category', 'Status', 'Responsible', 'Description']
+    headers += ['Created At', 'Updated At', 'Problem Category', 'Status', 'Responsible', 'Description', 'Comments']
 
     sheet.append(headers)
 
@@ -1670,7 +1671,10 @@ def export_tickets_to_excel(tickets, include_terminal=False, customer_name=None,
     # Data rows
 
     for ticket in tickets:
-
+        comments_text = "\n".join([
+            f"{comment.created_by.username if comment.created_by else 'Unknown'} ({comment.created_at.strftime('%Y-%m-%d')}): {comment.content}"
+            for comment in ticket.comments.all()
+        ])
         row = []
         if include_terminal:
             row.append(ticket.terminal.branch_name)
@@ -1681,10 +1685,15 @@ def export_tickets_to_excel(tickets, include_terminal=False, customer_name=None,
             ticket.status,
             str(ticket.responsible),
             ticket.description,
+            comments_text,
         ]
         sheet.append(row)
 
-
+    comment_col_index = len(headers)  
+    for row in sheet.iter_rows(min_row=2, min_col=comment_col_index, max_col=comment_col_index):
+        for cell in row:
+            cell.alignment = Alignment(wrap_text=True)
+            
     # Dynamic filename
     name_part = "report"
     if customer_name:

@@ -262,10 +262,12 @@ $(document).ready(function() {
         terminalChart = new Chart(ctxTerminal, {
             type: 'bar',
             data: {
-                labels: data.terminals.map(terminal => terminal.branch_name),
+                //labels: data.terminals.map(terminal => terminal.branch_name),
+                labels: data.ticketsPerTerminal.map(entry => entry.branch_name),
                 datasets: [{
                     label: 'Tickets per Terminal',
-                    data: data.ticketsPerTerminal, // Pass the corresponding ticket count
+                   // data: data.ticketsPerTerminal,
+                   data: data.ticketsPerTerminal.map(entry => entry.count),
                     backgroundColor: function(context) {
                         const chartArea = context.chart.chartArea;
                         return createGradient(ctxTerminal, chartArea, '#007bff', '#00b0ff');
