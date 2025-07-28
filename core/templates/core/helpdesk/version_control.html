@@ -56,8 +56,8 @@
   <label>Terminal:
     <select id="terminal-filter" class="form-select">
       <option value="All">All</option>
-      {% for t in terminals %}
-        <option value="{{ t }}">{{ t }}</option>
+      {% for terminal in terminals  %}
+        <option value="{{ terminal.terminal__id }}">{{ terminal.terminal__branch_name }}</option>
       {% endfor %}
     </select>
   </label>

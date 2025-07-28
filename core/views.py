@@ -843,6 +843,8 @@ def statistics_view(request):
     tickets_per_year = [tickets.filter(created_at__year=year).count() for year in years]
 
     tickets_per_terminal = tickets.values('terminal__cdm_name').annotate(ticket_count=Count('id'))
+    print("Tickets Per Terminal:", tickets_per_terminal)  
+
     ticket_categories = tickets.values('problem_category').annotate(ticket_count=Count('id'))
     
     # Fetch terminals, customers, and regions
@@ -1740,11 +1742,14 @@ def version_controls(request):
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
+    # Get terminals with their branch_name and id only
+    terminals = VersionControl.objects.select_related('terminal').values('terminal__branch_name', 'terminal__id').distinct()
+
     context = {
         'form': form,
         'versions': versions,
         'page_obj':page_obj,
-        'terminals': VersionControl.objects.values_list('terminal', flat=True).distinct(),
+        'terminals': terminals,
         'firmwares': VersionControl.objects.values_list('firmware', flat=True).distinct(),
         'app_versions': VersionControl.objects.values_list('app_version', flat=True).distinct(),
     }
