@@ -41,7 +41,7 @@
           </ul>
         {% endif %}
 
-        {% for category in categories %}
+        {% for category in page_obj %}
         <tr>
           <td>{{ forloop.counter }}</td>
           <td>{{ category.name }}</td>
@@ -65,16 +65,20 @@
     <span class="page-links">
       {% if categories.has_previous %}
         <a href="?page=1&search={{ search_query }}">First</a>
-        <a href="?page={{ categories.previous_page_number }}&search={{ search_query }}">Previous</a>
+        <a href="?page={{ page_obj.previous_page_number }}&search={{ search_query }}">Previous</a>
       {% endif %}
 
       <span class="current-page">Page {{ categories.number }} of {{ categories.paginator.num_pages }}</span>
 
       {% if categories.has_next %}
-        <a href="?page={{ categories.next_page_number }}&search={{ search_query }}">Next</a>
-        <a href="?page={{ categories.paginator.num_pages }}&search={{ search_query }}">Last</a>
+        <a href="?page={{ page_obj.next_page_number }}&search={{ search_query }}">Next</a>
+        <a href="?page={{ page_obj.paginator.num_pages }}&search={{ search_query }}">Last</a>
       {% endif %}
     </span>
+    <!-- Debug -->
+<p>{{ page_obj.number }}</p>
+<p>{{ page_obj.paginator.num_pages }}</p>
+
   </div>
 </div>
 {% endblock %}

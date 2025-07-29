@@ -1222,7 +1222,7 @@ def problem_category(request):
     page_obj = paginator.get_page(page_number)
     
     return render(request, 'core/helpdesk/problem_category.html', {
-        'categories': page_obj, 
+        'page_obj': page_obj, 
         'search_query': query,
     })
 
@@ -1283,7 +1283,7 @@ def customers(request):
         messages.success(request, "Customers uploaded successfully!")
 
     # Pagination setup
-    all_customers = Customer.objects.exclude(name__exact="").exclude(name__isnull=True)
+    all_customers = Customer.objects.exclude(name__exact="").exclude(name__isnull=True).order_by('id')
     paginator = Paginator(all_customers, 10)  
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
@@ -1318,7 +1318,7 @@ def regions(request):
             return redirect('regions')
 
     # Fetch all regions
-    all_regions = Region.objects.all()
+    all_regions = Region.objects.all().order_by('id')
 
     # Pagination setup
     paginator = Paginator(all_regions, 10)  
@@ -1508,7 +1508,7 @@ def units(request):
             Unit.objects.create(name=name, description=description)
         return redirect('units')
 
-    all_units = Unit.objects.all()
+    all_units = Unit.objects.all().order_by('id')
     
     paginator = Paginator(all_units, 10)
     page_number = request.GET.get('page')
@@ -1533,7 +1533,7 @@ def system_users(request):
             SystemUser.objects.create(username=username, email=email, role=role)
         return redirect('system_users')
 
-    all_users = User.objects.all()
+    all_users = User.objects.all().order_by('id')
     # Add pagination: Show 10 users per page
     paginator = Paginator(all_users, 10)
     page_number = request.GET.get('page')
@@ -1561,7 +1561,7 @@ def zones(request):
         else:
             messages.error(request, "Name is required.")
 
-    all_zones = Zone.objects.all()
+    all_zones = Zone.objects.all().order_by('id')
 
     # Add pagination: Show 10 zones per page
     paginator = Paginator(all_zones, 10)
