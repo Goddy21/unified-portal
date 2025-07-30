@@ -123,6 +123,7 @@
             <th>Status</th>
             <th>Resolved At</th>
             <th>Resolved By</th>
+            <th>Resolution</th>
             <th>Responsible</th>
             <th>Description</th>
             <th>Comments</th> 
@@ -158,6 +159,7 @@
                 Not Assigned
               {% endif %}
             </td>
+            <td>{{ ticket.resolution|default:"—" }}</td>
             <td>{{ ticket.responsible }}</td>
             <td>{{ ticket.description|truncatewords:10 }}</td>
             <td>

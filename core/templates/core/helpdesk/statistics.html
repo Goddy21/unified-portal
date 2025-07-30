@@ -14,48 +14,50 @@
   <h2 class="text-center mb-4">Ticket Statistics</h2>
 
   <!-- Filter Dropdowns -->
-  <div class="row mb-4">
-    <div class="col-md-3 mb-2">
-      <select id="time-period" class="form-select custom-select">
-        <option value="today">Today</option>
-        <option value="yesterday">Yesterday</option>
-        <option value="lastweek">Last Week</option>
-        <option value="lastmonth">Last Month</option>
-        <option value="lastyear">Last Year</option>
-        <option value="all_time" selected>All Time</option>
+  <form method="get" class="row mb-4">
+    <div class="row mb-4">
+      <div class="col-md-3 mb-2">
+        <select id="time-period" class="form-select custom-select" name="time-period">
+        <option value="all_time" {% if time_period == "all_time" %}selected{% endif %}>All Time</option>
+        <option value="today" {% if time_period == "today" %}selected{% endif %}>Today</option>
+        <option value="yesterday" {% if time_period == "yesterday" %}selected{% endif %}>Yesterday</option>
+        <option value="lastweek" {% if time_period == "lastweek" %}selected{% endif %}>Last Week</option>
+        <option value="lastmonth" {% if time_period == "lastmonth" %}selected{% endif %}>Last Month</option>
+        <option value="lastyear" {% if time_period == "lastyear" %}selected{% endif %}>Last Year</option>
       </select>
+      </div>
+      <div class="col-md-3 mb-2">
+        <select id="customer-filter" class="form-select custom-select" name="customer">
+          <option value="all" {% if selected_customer == "all" %}selected{% endif %}>All Customers</option>
+          {% for customer in customers %}
+            <option value="{{ customer.id }}" {% if selected_customer == customer.id|stringformat:"s" %}selected{% endif %}>
+              {{ customer.name|default:"Unnamed Customer" }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3 mb-2">
+        <select id="terminal-filter" class="form-select custom-select" name="terminal">
+          <option value="all" {% if selected_terminal == "all" %}selected{% endif %}>All Terminals</option>
+          {% for terminal in terminals %}
+            <option value="{{ terminal.id }}" {% if selected_terminal == terminal.id|stringformat:"s" %}selected{% endif %}>
+              {{ terminal.branch_name }} ({{ terminal.customer__name }} - {{ terminal.region__name }})
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3 mb-2">
+        <select id="region-filter" class="form-select custom-select" name="region">
+          <option value="all" {% if selected_region == "all" %}selected{% endif %}>All Regions</option>
+          {% for region in regions %}
+            <option value="{{ region.id }}" {% if selected_region == region.id|stringformat:"s" %}selected{% endif %}>
+              {{ region.name }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
     </div>
-    <div class="col-md-3 mb-2">
-      <select id="customer-filter" class="form-select custom-select">
-        <option value="all">All Customers</option>
-        {% for customer in data.customers %}
-          <option value="{{ customer.id }}">{{ customer.name|default:'Unnamed Customer' }}</option>
-        {% empty %}
-          <option value="none">No customers available</option>
-        {% endfor %}
-      </select>
-    </div>
-    <div class="col-md-3 mb-2">
-      <select id="terminal-filter" class="form-select custom-select">
-        <option value="all">All Terminals</option>
-        {% for terminal in data.terminals %}
-          <option value="{{ terminal.id }}">{{ terminal.cdm_name }} ({{ terminal.customer__name }} - {{ terminal.region__name }})</option>
-        {% empty %}
-          <option value="none">No terminals available</option>
-        {% endfor %}
-      </select>
-    </div>
-    <div class="col-md-3 mb-2">
-      <select id="region-filter" class="form-select custom-select">
-        <option value="all">All Regions</option>
-        {% for region in data.regions %}
-          <option value="{{ region.id }}">{{ region.name }}</option>
-        {% empty %}
-          <option value="none">No regions available</option>
-        {% endfor %}
-      </select>
-    </div>
-  </div>
+  </form>
 
   <!-- Graphs -->
   <div class="row mb-5">
@@ -172,7 +174,8 @@
 <script src="{% static 'js/statistics.js' %}"></script>
 
 <script>
-  const data = JSON.parse('{{ data|escapejs }}');
+  const data = JSON.parse('{{ data_json|escapejs }}');
+
   console.log("Data received:", data);
   console.log(data.customers);  
   console.log(data.terminals); 

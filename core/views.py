@@ -775,7 +775,7 @@ def statistics_view(request):
     print(f"timezone.now() in view: {today} (aware: {timezone.is_aware(today)})")
    
     # Get the selected filter values from the request
-    time_period = request.GET.get('time-period', 'today')
+    time_period = request.GET.get('time-period', "all_time")
     customer_filter = request.GET.get('customer', 'all')
     terminal_filter = request.GET.get('terminal', 'all')
     region_filter = request.GET.get('region', 'all')
@@ -847,10 +847,28 @@ def statistics_view(request):
     ticket_categories = tickets.values('problem_category').annotate(ticket_count=Count('id'))
     
     # Fetch terminals, customers, and regions
-    terminals = Terminal.objects.all().values('id', 'branch_name', 'customer__name', 'region__name')
-    customers = Customer.objects.all().values('id', 'name')
-    regions = Region.objects.all().values('id', 'name')
+    #terminals = Terminal.objects.all().values('id', 'branch_name', 'customer__name', 'region__name')
+    #terminals = Terminal.objects.select_related('customer', 'region').all()
+    #customers = Customer.objects.all().values('id', 'name')
+    #regions = Region.objects.all().values('id', 'name')
     
+    # Fetch terminals, customers, and regions
+    #terminals = Terminal.objects.select_related('customer', 'region').all()
+    terminals_qs = Terminal.objects.select_related('customer', 'region').all()
+    terminals = [
+        {
+            'id': terminal.id,
+            'branch_name': terminal.branch_name,
+            'customer__name': terminal.customer.name if terminal.customer else 'N/A',
+            'region__name': terminal.region.name if terminal.region else 'N/A',
+        }
+        for terminal in terminals_qs
+    ]
+
+    customers = list(Customer.objects.values('id', 'name'))
+    regions = list(Region.objects.values('id', 'name'))
+
+
     # Pack data for the frontend
     data = {
         'ticketsPerTerminal': [
@@ -878,16 +896,25 @@ def statistics_view(request):
         'ticketsPerMonth': tickets_per_month,
         'years': years,
         'ticketsPerYear': tickets_per_year,
-        'terminals': list(terminals),
-        'customers': list(customers),
-        'regions': list(regions),
+        'terminals': terminals,
+        'customers': customers,
+        'regions': regions,
     }
     
     # Check if the request is AJAX
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         return JsonResponse(data, safe=False)
     
-    return render(request, 'core/helpdesk/statistics.html', {'data': json.dumps(data, ensure_ascii=False)})
+    return render(request, 'core/helpdesk/statistics.html', {
+        'customers': customers,
+        'terminals': terminals,
+        'regions': regions,
+        "time_period": time_period,
+        'selected_customer': customer_filter,
+        'selected_terminal': terminal_filter,
+        'selected_region': region_filter,
+        'data_json': json.dumps(data, ensure_ascii=False),
+    })
 
 def export_report(request):
     # Get the selected filter values from the request
@@ -1615,18 +1642,27 @@ def reports(request):
             end_date=end_date
         )
 
-    context = {
-        'tickets': tickets,
+    paginator = Paginator(tickets, 10)  # or however many per page
+    page = request.GET.get('page')
 
+    try:
+        tickets_page = paginator.page(page)
+    except PageNotAnInteger:
+        tickets_page = paginator.page(1)
+    except EmptyPage:
+        tickets_page = paginator.page(paginator.num_pages)
+
+    context = {
+        'tickets': tickets_page,  
+        'page_obj': tickets_page,  
         'customers': Customer.objects.all(),
         'terminals': Terminal.objects.all(),
         'regions': Region.objects.all(),
         'categories': ProblemCategory.objects.all(),
-
         'filter_by_customer': filter_by_customer,
         'filter_by_terminal': filter_by_terminal,
-
     }
+
     return render(request, 'core/helpdesk/reports.html', context)
 
 
@@ -1646,7 +1682,7 @@ def export_tickets_to_excel(tickets, include_terminal=False, customer_name=None,
     if include_terminal:
         headers.append('Terminal')
 
-    headers += ['Created At', 'Updated At', 'Problem Category', 'Status', 'Responsible', 'Description', 'Comments']
+    headers += ['Created At', 'Updated At', 'Problem Category', 'Status', 'Responsible', 'Description', 'Comments','Resolution']
 
     sheet.append(headers)
 
@@ -1669,6 +1705,7 @@ def export_tickets_to_excel(tickets, include_terminal=False, customer_name=None,
             str(ticket.responsible),
             ticket.description,
             comments_text,
+            ticket.resolution or "",
         ]
         sheet.append(row)
 
