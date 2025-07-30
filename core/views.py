@@ -716,7 +716,7 @@ def ticketing_dashboard(request):
     # Top terminals with the most tickets
     terminal_data = (
         Ticket.objects
-        .values('terminal__cdm_name')
+        .values('terminal__branch_name')
         .annotate(count=Count('id'))
         .order_by('-count')[:10]
     )
@@ -767,7 +767,7 @@ def ticketing_dashboard(request):
         'status_data': json.dumps(list(status_counts)),
         'priority_data': json.dumps(list(priority_counts)),
         'monthly_data': json.dumps([{'month': calendar.month_abbr[d['month'].month], 'count': d['count']} for d in monthly_trends if d['month']]),
-        'terminal_data': json.dumps([{'terminal': d['terminal__cdm_name'], 'count': d['count']} for d in terminal_data]),
+        'terminal_data': json.dumps([{'terminal': d['terminal__branch_name'], 'count': d['count']} for d in terminal_data]),
         'region_data': json.dumps([{'region': d['terminal__region__name'], 'count': d['count']} for d in region_data]), 
         'time_data': json.dumps(time_data),
         'category_data': json.dumps([{'category': d['problem_category__name'], 'count': d['count']} for d in category_data]),
@@ -855,13 +855,6 @@ def statistics_view(request):
     ticket_categories = tickets.values('problem_category').annotate(ticket_count=Count('id'))
     
     # Fetch terminals, customers, and regions
-    #terminals = Terminal.objects.all().values('id', 'branch_name', 'customer__name', 'region__name')
-    #terminals = Terminal.objects.select_related('customer', 'region').all()
-    #customers = Customer.objects.all().values('id', 'name')
-    #regions = Region.objects.all().values('id', 'name')
-    
-    # Fetch terminals, customers, and regions
-    #terminals = Terminal.objects.select_related('customer', 'region').all()
     terminals_qs = Terminal.objects.select_related('customer', 'region').all()
     terminals = [
         {
@@ -1375,10 +1368,7 @@ def terminals(request):
 
                     # Handle the "Create & Add Another" functionality
                     if 'create_another' in request.POST:
-                        return JsonResponse({
-                            "success": True,
-                            "message": "Terminal created successfully. You can create another one."
-                        })
+                        return redirect('terminals')
 
                     return redirect('terminals')  # Redirect to the terminal list after creation
                 except Exception as e:
@@ -1429,6 +1419,7 @@ def terminals(request):
         'regions': regions,
         'zones': zones
     })
+
 
 @require_POST
 def edit_terminal(request, terminal_id):
