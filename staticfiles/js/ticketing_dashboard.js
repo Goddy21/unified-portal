@@ -62,6 +62,7 @@ window.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+
   // === Chart Animation and Styling Config ===
   const animationOptions = {
     animation: {
@@ -76,6 +77,7 @@ window.addEventListener('DOMContentLoaded', () => {
     responsive: true,
     plugins: {
       legend: {
+        display: true,
         position: 'bottom',
         labels: {
           boxWidth: 15,
@@ -375,7 +377,6 @@ window.addEventListener('DOMContentLoaded', () => {
       options: animationOptions
     });
   }
-
 
   console.log("ticketing_dashboard.js executed successfully. Chart.js available:", typeof Chart !== "undefined");
 });

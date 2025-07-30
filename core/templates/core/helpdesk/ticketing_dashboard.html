@@ -1,115 +1,95 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Ticketing Dashboard{% endblock %}
-
-{% block content %}
+{% block title %}🎫 Ticketing Dashboard{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-<link rel="stylesheet" href="{% static 'css/ticketing_dashboard.css' %}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="{% static 'css/ticketing_dashboard.css' %}">
 {% endblock %}
 
-<div class="dashboard-grid">
+{% block content %}
+<div class="dashboard-wrapper">
 
-  <!-- KPI Summary Row -->
-  <div class="kpi-row">
-    <div class="card kpi-card">
-      <div class="kpi-content">
-        <h3 class="card-title">Daily</h3>
-        <h2 id="dailyCount">0</h2>
-      </div>
-    </div>
-    <div class="card kpi-card">
-      <div class="kpi-content">
-        <h3 class="card-title">Weekly</h3>
-        <h2 id="weeklyCount">0</h2>
-      </div>
-    </div>
-    <div class="card kpi-card">
-      <div class="kpi-content">
-        <h3 class="card-title">Monthly</h3>
-        <h2 id="monthlyCount">0</h2>
-      </div>
-    </div>
-    <div class="card kpi-card">
-      <div class="kpi-content">
-        <h3 class="card-title">Yearly</h3>
-        <h2 id="yearlyCount">0</h2>
-      </div>
-    </div>
-  </div>
+  <!-- Header -->
+  <header class="dashboard-header">
+    <h1><i class="fas fa-tachometer-alt"></i> Ticketing Dashboard</h1>
+  </header>
 
-  <!-- SECTION 2: High-Level Trends -->
-  <div class="card wide-card">
-    <div class="card-header">
-      <h3 class="card-title">Ticket Trends Overview</h3>
-      <div class="card-menu"><i class="fas fa-ellipsis-h"></i></div>
-    </div>
-    <canvas id="overviewChart" class="chart-placeholder line-chart"></canvas>
-  </div>
+  <!-- KPI Stats -->
+  <section class="kpi-section">
+    {% for label, id, icon in kpi_data %}
+      <div class="kpi-card gradient-{{ forloop.counter }}">
+        <div class="icon"><i class="fas {{ icon }} fa-2x"></i></div>
+        <div class="details">
+          <h3>{{ label }}</h3>
+          <p id="{{ id }}">0</p>
+        </div>
+      </div>
+    {% endfor %}
+  </section>
 
-  <div class="card wide-card">
-    <div class="card-header">
-      <h3 class="card-title">Problem Category Trends Over Time</h3>
-      <div class="card-menu"><i class="fas fa-ellipsis-h"></i></div>
-    </div>
-    <canvas id="categoryTimeChart" class="chart-placeholder bar-chart"></canvas>
-  </div>
+  <!-- Charts Grid -->
+  <section class="charts-grid">
 
-  <!-- SECTION 3: Distribution Breakdown -->
-  <h3 class="section-title">Distribution Breakdown</h3>
-  <div class="distribution-row">
-    <div class="card">
-      <div class="card-header"><h3 class="card-title">Tickets by Priority</h3></div>
-      <div class="pie-chart-container">
-        <canvas id="priorityChart" class="chart-placeholder pie-chart"></canvas>
-        <div class="legend">
-          <div class="legend-item"><span class="legend-color-box" style="background:#007bff;"></span> High</div>
-          <div class="legend-item"><span class="legend-color-box" style="background:#ffc107;"></span> Medium</div>
-          <div class="legend-item"><span class="legend-color-box" style="background:#28a745;"></span> Low</div>
-          <div class="legend-item"><span class="legend-color-box" style="background:#dc3545;"></span> Urgent</div>
+    <!-- Ticket Trends Overview -->
+    <div class="chart-card full-width">
+      <div class="card-header">
+        <h2>📈 Ticket Trends Overview</h2>
+        <i class="fas fa-ellipsis-h menu-btn"></i>
+      </div>
+      <canvas id="overviewChart" class="tall-chart"></canvas>
+    </div>
+
+    <!-- Problem Category Trends (Full Row) -->
+    <div class="chart-card full-width">
+      <div class="card-header">
+        <h2>📊 Problem Category Trends</h2>
+        <i class="fas fa-ellipsis-h menu-btn"></i>
+      </div>
+      <canvas id="categoryTimeChart" class="tall-chart"></canvas>
+    </div>
+
+    <!-- Distribution Breakdown (2 in 1) -->
+    <div class="chart-card full-width">
+      <div class="card-header">
+        <h2>🎯 Distribution Breakdown</h2>
+      </div>
+      <div class="distribution-flex">
+        <div>
+          <h3>By Priority</h3>
+          <canvas id="priorityChart"></canvas>
+        </div>
+        <div>
+          <h3>By Status</h3>
+          <canvas id="statusChart"></canvas>
         </div>
       </div>
     </div>
 
-    <div class="card">
-      <div class="card-header"><h3 class="card-title">Tickets by Status</h3></div>
-      <div class="pie-chart-container">
-        <canvas id="statusChart" class="chart-placeholder pie-chart"></canvas>
-        <div class="legend">
-          <div class="legend-item"><span class="legend-color-box" style="background:#28a745;"></span> Open</div>
-          <div class="legend-item"><span class="legend-color-box" style="background:#ffc107;"></span> Pending</div>
-          <div class="legend-item"><span class="legend-color-box" style="background:#007bff;"></span> In Progress</div>
-          <div class="legend-item"><span class="legend-color-box" style="background:#6c757d;"></span> Closed</div>
-        </div>
+    <!-- Tickets by Region -->
+    <div class="chart-card">
+      <div class="card-header"><h2>🌍 Tickets by Region</h2></div>
+      <canvas id="regionChart"></canvas>
+    </div>
+
+    <!-- Tickets by Terminal (Full Row) -->
+    <div class="chart-card full-width">
+      <div class="card-header">
+        <h2>🏢 Tickets by Terminal</h2>
+        <i class="fas fa-chart-bar menu-btn"></i>
       </div>
+      <canvas id="terminalChart" class="tall-chart"></canvas>
     </div>
-  </div>
 
-  <!-- SECTION 4: Regional & Terminal Insights -->
-  <h3 class="section-title">Regional & Terminal Insights</h3>
-  <div class="card">
-    <div class="card-header"><h3 class="card-title">Tickets by Region</h3></div>
-    <canvas id="regionChart" class="chart-placeholder bar-chart"></canvas>
-  </div>
-
-  <div class="card full-width-card terminal-card">
-    <div class="card-header">
-      <h3 class="card-title">Tickets by Terminal</h3>
-      <div class="card-menu"><i class="fas fa-chart-bar"></i></div>
+    <!-- Tickets by Customer (Full Row) -->
+    <div class="chart-card full-width">
+      <div class="card-header"><h2>👤 Tickets by Customer</h2></div>
+      <canvas id="customerChart" class="tall-chart"></canvas>
     </div>
-    <canvas id="terminalChart" class="chart-placeholder bar-chart"></canvas>
-  </div>
 
-  <!-- SECTION 5: Customer Insights -->
-  <div class="card wide-card">
-    <div class="card-header"><h3 class="card-title">Tickets by Customer</h3></div>
-    <canvas id="customerChart" class="chart-placeholder horizontal-bar-chart"></canvas>
-  </div>
-
+  </section>
 </div>
-
 {% endblock %}
 
 {% block extra_js %}
@@ -128,13 +108,6 @@
   document.getElementById("weeklyCount").textContent = TIME_DATA.week;
   document.getElementById("monthlyCount").textContent = TIME_DATA.month;
   document.getElementById("yearlyCount").textContent = TIME_DATA.year;
-
-  console.log("STATUS_DATA:", STATUS_DATA);
-  console.log("Priority data:", PRIORITY_DATA);
-  console.log("Monthly data:", MONTHLY_DATA);
-  console.log("Terminal data:", TERMINAL_DATA);
-  console.log("Customer data:", CUSTOMER_DATA);
-  console.log("Time data:", TIME_DATA);
 </script>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>

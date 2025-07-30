@@ -755,9 +755,15 @@ def ticketing_dashboard(request):
         {'category': d['problem_category__name'], 'daily_count': d['count']} 
         for d in category_data  
     ]
-    
+    kpi_data = [
+        ("Daily", "dailyCount", "fa-sun"),
+        ("Weekly", "weeklyCount", "fa-calendar-week"),
+        ("Monthly", "monthlyCount", "fa-calendar-alt"),
+        ("Yearly", "yearlyCount", "fa-calendar"),
+    ]
     # Prepare data for JSON serialization
     context = {
+        "kpi_data": kpi_data,
         'status_data': json.dumps(list(status_counts)),
         'priority_data': json.dumps(list(priority_counts)),
         'monthly_data': json.dumps([{'month': calendar.month_abbr[d['month'].month], 'count': d['count']} for d in monthly_trends if d['month']]),
