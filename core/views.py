@@ -40,6 +40,8 @@ from core import models
 import openpyxl
 from openpyxl.utils import get_column_letter
 from openpyxl.styles import Alignment
+from django.views.decorators.http import require_POST
+
 
 def in_group(user, group_name):
     return user.is_authenticated and (user.is_superuser or user.groups.filter(name=group_name).exists())
@@ -1343,79 +1345,7 @@ def delete_region(request, region_id):
     region.delete()
     messages.success(request, "Region deleted successfully.")
     return redirect('regions')
-"""
-def terminals(request):
-    form = TerminalForm()
-    upload_form = TerminalUploadForm()
 
-    # Get all the required objects to pass to the template
-    customers = Customer.objects.all()
-    regions = Region.objects.all()
-    zones = Zone.objects.all()
-
-    # Handle POST request for terminal creation or CSV upload
-    if request.method == 'POST':
-        # Handle terminal creation
-        if 'create' in request.POST or 'create_another' in request.POST:
-            print("Form submitted!") 
-            form = TerminalForm(request.POST)
-            if form.is_valid():
-                print("Form is valid!")
-                form.save()
-                messages.success(request, "Terminal created successfully.")
-
-                # Handle the "Create & Add Another" functionality
-                if 'create_another' in request.POST:
-                    return JsonResponse({
-                        "success": True,
-                        "message": "Terminal created successfully. You can create another one."
-                    })
-
-                return redirect('terminals')  # Redirect to the terminal list after creation
-
-        # Handle CSV upload for terminals
-        elif 'upload_file' in request.POST:
-            upload_form = TerminalUploadForm(request.POST, request.FILES)
-            if upload_form.is_valid():
-                file = upload_form.cleaned_data['file']
-                try:
-                    if file.name.endswith('.csv'):
-                        df = pd.read_csv(file)
-                    else:
-                        df = pd.read_excel(file)
-
-                    # Process each row and create terminal objects
-                    for _, row in df.iterrows():
-                        Terminal.objects.create(
-                            customer=Customer.objects.get(name=row['customer']),
-                            branch_name=row['branch_name'],
-                            cdm_name=row['cdm_name'],
-                            serial_number=row['serial_number'],
-                            region=Region.objects.get(name=row['region']),
-                            model=row['model'],
-                            zone=Zone.objects.get(name=row['zone']),
-                        )
-                    messages.success(request, "Terminals imported successfully.")
-                except Exception as e:
-                    messages.error(request, f"Error importing file: {e}")
-                return redirect('terminals')
-
-    # GET request: Display the page with all terminals
-    all_terminals = Terminal.objects.all().order_by('id') 
-    paginator = Paginator(all_terminals, 10)  
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
-
-    # Pass the required objects to the template
-    return render(request, 'core/helpdesk/terminals.html', {
-        'form': form,
-        'upload_form': upload_form,
-        'terminals': page_obj,
-        'customers': customers,
-        'regions': regions,
-        'zones': zones
-    })
-"""
 def terminals(request):
     form = TerminalForm()
     upload_form = TerminalUploadForm()
@@ -1493,6 +1423,25 @@ def terminals(request):
         'regions': regions,
         'zones': zones
     })
+
+@require_POST
+def edit_terminal(request, terminal_id):
+    terminal = get_object_or_404(Terminal, id=terminal_id)
+    terminal.customer_id = request.POST.get('customer')
+    terminal.branch_name = request.POST.get('branch_name')
+    terminal.cdm_name = request.POST.get('cdm_name')
+    terminal.serial_number = request.POST.get('serial_number')
+    terminal.region_id = request.POST.get('region')
+    terminal.model = request.POST.get('model')
+    terminal.zone_id = request.POST.get('zone')
+    
+    try:
+        terminal.save()
+        messages.success(request, "Terminal updated successfully.")
+    except Exception as e:
+        messages.error(request, f"Error updating terminal: {e}")
+    
+    return redirect('terminals')
 
 def fetch_tickets(request, terminal_id):
     tickets = Ticket.objects.filter(terminal_id=terminal_id).values('id', 'title')

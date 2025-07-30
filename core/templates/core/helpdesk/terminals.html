@@ -55,6 +55,9 @@
                     <td>{{ terminal.model }}</td>
                     <td>{{ terminal.zone.name }}</td>
                     <td>
+                    <button class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#editTerminalModal{{ terminal.id }}">
+                        <i class="fas fa-edit"></i> Edit
+                    </button>
                     <button class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#removeTerminalModal{{ terminal.id }}">
                         <i class="fas fa-trash"></i> Remove
                     </button>
@@ -151,6 +154,7 @@
             </div>
         </div>
     </div>
+
     <!-- Remove Terminal Confirmation Modal -->
     {% for terminal in terminals %}
     <div class="modal fade" id="removeTerminalModal{{ terminal.id }}" tabindex="-1" aria-labelledby="removeTerminalModalLabel{{ terminal.id }}" aria-hidden="true">
@@ -174,6 +178,69 @@
         </div>
     </div>
     {% endfor %}
+
+    {% for terminal in terminals %}
+    <div class="modal fade" id="editTerminalModal{{ terminal.id }}" tabindex="-1" aria-labelledby="editTerminalModalLabel{{ terminal.id }}" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+        <div class="modal-header">
+            <h5 class="modal-title" id="editTerminalModalLabel{{ terminal.id }}">Edit Terminal: {{ terminal.cdm_name }}</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+            <form method="POST" action="{% url 'edit_terminal' terminal.id %}">
+            {% csrf_token %}
+            <div class="form-group">
+                <label for="customer{{ terminal.id }}">Customer</label>
+                <select id="customer{{ terminal.id }}" name="customer" class="form-control" required>
+                {% for customer in customers %}
+                <option value="{{ customer.id }}" {% if terminal.customer.id == customer.id %}selected{% endif %}>{{ customer.name }}</option>
+                {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="branch_name{{ terminal.id }}">Branch</label>
+                <input type="text" id="branch_name{{ terminal.id }}" name="branch_name" class="form-control" value="{{ terminal.branch_name }}" required>
+            </div>
+            <div class="form-group">
+                <label for="cdm_name{{ terminal.id }}">CDM Name</label>
+                <input type="text" id="cdm_name{{ terminal.id }}" name="cdm_name" class="form-control" value="{{ terminal.cdm_name }}" required>
+            </div>
+            <div class="form-group">
+                <label for="serial_number{{ terminal.id }}">Serial Number</label>
+                <input type="text" id="serial_number{{ terminal.id }}" name="serial_number" class="form-control" value="{{ terminal.serial_number }}" required>
+            </div>
+            <div class="form-group">
+                <label for="region{{ terminal.id }}">Region</label>
+                <select id="region{{ terminal.id }}" name="region" class="form-control" required>
+                {% for region in regions %}
+                <option value="{{ region.id }}" {% if terminal.region.id == region.id %}selected{% endif %}>{{ region.name }}</option>
+                {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="model{{ terminal.id }}">Model</label>
+                <input type="text" id="model{{ terminal.id }}" name="model" class="form-control" value="{{ terminal.model }}" required>
+            </div>
+            <div class="form-group">
+                <label for="zone{{ terminal.id }}">Zone</label>
+                <select id="zone{{ terminal.id }}" name="zone" class="form-control" required>
+                {% for zone in zones %}
+                <option value="{{ zone.id }}" {% if terminal.zone.id == zone.id %}selected{% endif %}>{{ zone.name }}</option>
+                {% endfor %}
+                </select>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save Changes</button>
+            </div>
+            </form>
+        </div>
+        </div>
+    </div>
+    </div>
+    {% endfor %}
+
 
     <!-- Pagination Controls -->
     <div class="pagination">
