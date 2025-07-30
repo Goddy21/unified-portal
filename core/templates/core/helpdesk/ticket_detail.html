@@ -105,7 +105,54 @@
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
-          {{ form.as_p }}
+          {% load widget_tweaks %}
+          
+          <div class="form-group mb-3">
+            <label for="{{ form.status.id_for_label }}">Status</label>
+            {{ form.status }}
+            {% if form.status.errors %}
+              <div class="text-danger">{{ form.status.errors }}</div>
+            {% endif %}
+          </div>
+
+          <div class="form-group mb-3">
+            <label for="{{ form.priority.id_for_label }}">Priority</label>
+            {{ form.priority }}
+            {% if form.priority.errors %}
+              <div class="text-danger">{{ form.priority.errors }}</div>
+            {% endif %}
+          </div>
+
+          <div class="form-group mb-3">
+            <label for="{{ form.problem_category.id_for_label }}">Problem Category</label>
+            {{ form.problem_category }}
+            {% if form.problem_category.errors %}
+              <div class="text-danger">{{ form.problem_category.errors }}</div>
+            {% endif %}
+          </div>
+
+          <div class="form-group mb-3">
+            <label for="{{ form.comment_summary.id_for_label }}">Comment Summary</label>
+            {{ form.comment_summary|add_class:"form-control" }}
+            {% if form.comment_summary.errors %}
+              <div class="text-danger">{{ form.comment_summary.errors }}</div>
+            {% endif %}
+          </div>
+
+          <div class="form-group mb-3">
+            <label for="{{ form.description.id_for_label }}">Description</label>
+            {{ form.description|add_class:"form-control" }}
+            {% if form.description.errors %}
+              <div class="text-danger">{{ form.description.errors }}</div>
+            {% endif %}
+          </div>
+          <div class="form-group mb-3">
+            <label for="{{ form.resolution.id_for_label }}">Resolution</label>
+            {{ form.resolution|add_class:"form-control" }}
+            {% if form.resolution.errors %}
+              <div class="text-danger">{{ form.resolution.errors }}</div>
+            {% endif %}
+          </div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -116,6 +163,7 @@
   </div>
 </div>
 {% endif %}
+
 <!-- Modal: Resolve Ticket with Resolution -->
 <div class="modal fade" id="resolveTicketModal" tabindex="-1" aria-labelledby="resolveTicketModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-lg modal-dialog-centered">

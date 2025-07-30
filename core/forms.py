@@ -168,11 +168,12 @@ class TicketCommentForm(forms.ModelForm):
 class TicketEditForm(forms.ModelForm):
     class Meta:
         model = Ticket
-        fields = ['status', 'priority', 'comment_summary', 'problem_category', 'description']
+        fields = ['status', 'priority', 'comment_summary', 'problem_category', 'description','resolution']
         widgets = {
             'status': forms.Select(attrs={'class': 'form-control'}),
             'priority': forms.Select(attrs={'class': 'form-control'}),
             'comment_summary': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
             'problem_category': forms.Select(attrs={'class': 'form-control'}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
+            'resolution': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
         }
