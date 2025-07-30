@@ -1,3 +1,5 @@
+const chartInstances = {};
+
 window.addEventListener('DOMContentLoaded', () => {
   // === User Profile Dropdown Toggle ===
   const userProfile = document.getElementById('userProfile');
@@ -106,6 +108,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const chartInstance = Chart.getChart(canvasId);
     if (chartInstance) {
       chartInstance.destroy();
+      delete chartInstances[canvasId];
     }
   }
 
@@ -116,7 +119,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     const statusLabels = STATUS_DATA.map(item => item.status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()));
     const statusCounts = STATUS_DATA.map(item => item.count);
-    new Chart(ticketReportChart, {
+    chartInstances[ticketReportChart.id] = new Chart(ticketReportChart, {
       type: 'bar',
       data: {
         labels: statusLabels,
@@ -150,7 +153,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     const monthlyLabels = MONTHLY_DATA.map(item => item.month);
     const monthlyCounts = MONTHLY_DATA.map(item => item.count);
-    new Chart(monthlyTrendChart, {
+    chartInstances[monthlyTrendChart.id] = new Chart(monthlyTrendChart, {
       type: 'line',
       data: {
         labels: monthlyLabels,
@@ -181,7 +184,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     const terminalLabels = TERMINAL_DATA.map(item => item.terminal || 'Unnamed');
     const terminalCounts = TERMINAL_DATA.map(item => item.count);
-    new Chart(terminalChart, {
+    chartInstances[terminalChart.id] = new Chart(terminalChart, {
       type: 'bar',
       data: {
         labels: terminalLabels,
@@ -215,7 +218,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const regionLabels = REGION_DATA.map(item => item.region || 'Unnamed');  // Update as per your model field
     const regionCounts = REGION_DATA.map(item => item.count);
 
-    new Chart(regionChart, {
+    chartInstances[regionChart.id] = new Chart(regionChart, {
       type: 'bar',
       data: {
         labels: regionLabels,
@@ -232,51 +235,110 @@ window.addEventListener('DOMContentLoaded', () => {
   }
 
   const priorityChart = document.getElementById('priorityChart');
-  if (priorityChart) {
-    destroyExistingChart('priorityChart');
+if (priorityChart) {
+  destroyExistingChart('priorityChart');
 
-    console.log(PRIORITY_DATA);
-    const priorityLabels = PRIORITY_DATA.map(item => item.priority.replace(/\b\w/g, l => l.toUpperCase()));
-    const priorityCounts = PRIORITY_DATA.map(item => item.count);
-    new Chart(priorityChart, {
-      type: 'pie',
-      data: {
-        labels: priorityLabels,
-        datasets: [{
-          data: priorityCounts,
-          backgroundColor: ['#007bff', '#ffc107', '#28a745', '#dc3545'],
-          borderWidth: 1
-        }]
-      },
-      options: animationOptions
-    });
-  }
+  const priorityLabels = PRIORITY_DATA.map(item => item.priority.replace(/\b\w/g, l => l.toUpperCase()));
+  const priorityCounts = PRIORITY_DATA.map(item => item.count);
 
-  const statusChart = document.getElementById('statusChart');
-  if (statusChart) {
-    destroyExistingChart('statusChart'); 
-    
-    const statusLabels = STATUS_DATA.map(item => item.status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()));
-    const statusCounts = STATUS_DATA.map(item => item.count);
-    new Chart(statusChart, {
-      type: 'pie',
-      data: {
-        labels: statusLabels,
-        datasets: [{
-          data: statusCounts,
-          backgroundColor: ['#28a745', '#ffc107', '#007bff', '#6c757d'],
-          borderWidth: 1
-        }]
-      },
-      options: animationOptions
-    });
-  }
+  chartInstances[priorityChart.id] = new Chart(priorityChart, {
+    type: 'doughnut',
+    data: {
+      labels: priorityLabels,
+      datasets: [{
+        data: priorityCounts,
+        backgroundColor: ['#007bff', '#ffc107', '#28a745', '#dc3545'],
+        borderWidth: 2,
+        borderColor: '#fff',
+        hoverOffset: 12,
+      }]
+    },
+    options: {
+      ...animationOptions,
+      cutout: '60%',
+      plugins: {
+        ...animationOptions.plugins,
+        datalabels: {
+          color: '#fff',
+          font: { weight: 'bold', size: 12 },
+          formatter: (value, context) => {
+            const total = context.chart._metasets[0].total;
+            return ((value / total) * 100).toFixed(1) + '%';
+          }
+        },
+        tooltip: {
+          callbacks: {
+            label: function (context) {
+              const label = context.label || '';
+              const value = context.parsed;
+              const total = context.chart._metasets[context.datasetIndex].total;
+              const percent = ((value / total) * 100).toFixed(1);
+              return `${label}: ${value} (${percent}%)`;
+            }
+          }
+        }
+      }
+    },
+    plugins: [ChartDataLabels]
+  });
+}
+
+
+ const statusChart = document.getElementById('statusChart');
+if (statusChart) {
+  destroyExistingChart('statusChart');
+
+  const statusLabels = STATUS_DATA.map(item => item.status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()));
+  const statusCounts = STATUS_DATA.map(item => item.count);
+
+  chartInstances[statusChart.id] = new Chart(statusChart, {
+    type: 'doughnut',
+    data: {
+      labels: statusLabels,
+      datasets: [{
+        data: statusCounts,
+        backgroundColor: ['#28a745', '#ffc107', '#007bff', '#6c757d'],
+        borderWidth: 2,
+        borderColor: '#fff',
+        hoverOffset: 12,
+      }]
+    },
+    options: {
+      ...animationOptions,
+      cutout: '60%',
+      plugins: {
+        ...animationOptions.plugins,
+        datalabels: {
+          color: '#fff',
+          font: { weight: 'bold', size: 12 },
+          formatter: (value, context) => {
+            const total = context.chart._metasets[0].total;
+            return ((value / total) * 100).toFixed(1) + '%';
+          }
+        },
+        tooltip: {
+          callbacks: {
+            label: function (context) {
+              const label = context.label || '';
+              const value = context.parsed;
+              const total = context.chart._metasets[context.datasetIndex].total;
+              const percent = ((value / total) * 100).toFixed(1);
+              return `${label}: ${value} (${percent}%)`;
+            }
+          }
+        }
+      }
+    },
+    plugins: [ChartDataLabels]
+  });
+}
+
 
   const timeTrendChart = document.getElementById('timeTrendChart');
   if (timeTrendChart) {
     destroyExistingChart('timeTrendChart');
 
-    new Chart(timeTrendChart, {
+    chartInstances[timeTrendChart.id] = new Chart(timeTrendChart, {
       type: 'line',
       data: {
         labels: ['Day', 'Week', 'Month', 'Year'],
@@ -294,25 +356,6 @@ window.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  const categoryChart = document.getElementById('categoryChart');
-  if (categoryChart) {
-    destroyExistingChart('categoryChart');
-
-    new Chart(categoryChart, {
-      type: 'bar',
-      data: {
-        labels: CATEGORY_DATA.map(c => c.category),
-        datasets: [{
-          label: 'Tickets',
-          data: CATEGORY_DATA.map(c => c.count),
-          backgroundColor: '#6f42c1',
-          borderRadius: 4,
-          barThickness: 30
-        }]
-      },
-      options: animationOptions
-    });
-  }
 
   const categoryTimeChart = document.getElementById('categoryTimeChart');
   if (categoryTimeChart) {
@@ -321,7 +364,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const categoryLabels = CATEGORY_TIME_DATA.map(item => item.category);
     const categoryCounts = CATEGORY_TIME_DATA.map(item => item.daily_count);
 
-    new Chart(categoryTimeChart, {
+    chartInstances[categoryTimeChart.id] = new Chart(categoryTimeChart, {
       type: 'bar',
       data: {
         labels: categoryLabels,
@@ -338,11 +381,12 @@ window.addEventListener('DOMContentLoaded', () => {
   }
 
 
+  const overviewChart = document.getElementById('overviewChart');
   const overviewLabels = OVERVIEW_DATA.map(item => item.label);
   const overviewCounts = OVERVIEW_DATA.map(item => item.count);
   if (overviewChart){
     destroyExistingChart('overviewChart');
-  new Chart(overviewChart, {
+  chartInstances[overviewChart.id] = new Chart(overviewChart, {
     type: 'bar',
     data: {
       labels: overviewLabels,
@@ -362,7 +406,7 @@ window.addEventListener('DOMContentLoaded', () => {
   if (customerChart) {
     destroyExistingChart('customerChart');
 
-    new Chart(customerChart, {
+    chartInstances[customerChart.id] = new Chart(customerChart, {
       type: 'bar',
       data: {
         labels: CUSTOMER_DATA.map(c => c.customer),

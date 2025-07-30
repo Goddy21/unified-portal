@@ -41,7 +41,7 @@
       <canvas id="overviewChart" class="tall-chart"></canvas>
     </div>
 
-    <!-- Problem Category Trends (Full Row) -->
+    <!-- Problem Category Trends -->
     <div class="chart-card full-width">
       <div class="card-header">
         <h2>📊 Problem Category Trends</h2>
@@ -50,7 +50,25 @@
       <canvas id="categoryTimeChart" class="tall-chart"></canvas>
     </div>
 
-    <!-- Distribution Breakdown (2 in 1) -->
+    <!-- Ticket Report by Status -->
+    <div class="chart-card">
+      <div class="card-header"><h2>📋 Ticket Report by Status</h2></div>
+      <canvas id="ticketReportChart"></canvas>
+    </div>
+
+    <!-- Monthly Trends -->
+    <div class="chart-card">
+      <div class="card-header"><h2>📅 Monthly Trends</h2></div>
+      <canvas id="monthlyTrendChart"></canvas>
+    </div>
+
+    <!-- Time-based Trends -->
+    <div class="chart-card">
+      <div class="card-header"><h2>⏱ Time-Based Trends</h2></div>
+      <canvas id="timeTrendChart"></canvas>
+    </div>
+
+    <!-- Distribution Breakdown -->
     <div class="chart-card full-width">
       <div class="card-header">
         <h2>🎯 Distribution Breakdown</h2>
@@ -58,22 +76,24 @@
       <div class="distribution-flex">
         <div>
           <h3>By Priority</h3>
-          <canvas id="priorityChart"></canvas>
+          <canvas id="priorityChart" class="tall-chart"></canvas>
         </div>
         <div>
           <h3>By Status</h3>
-          <canvas id="statusChart"></canvas>
+          <canvas id="statusChart" class="tall-chart"></canvas>
         </div>
       </div>
     </div>
 
+
     <!-- Tickets by Region -->
-    <div class="chart-card">
+    <div class="chart-card full-width">
       <div class="card-header"><h2>🌍 Tickets by Region</h2></div>
-      <canvas id="regionChart"></canvas>
+      <canvas id="regionChart" class="tall-chart"></canvas>
     </div>
 
-    <!-- Tickets by Terminal (Full Row) -->
+
+    <!-- Tickets by Terminal -->
     <div class="chart-card full-width">
       <div class="card-header">
         <h2>🏢 Tickets by Terminal</h2>
@@ -82,7 +102,7 @@
       <canvas id="terminalChart" class="tall-chart"></canvas>
     </div>
 
-    <!-- Tickets by Customer (Full Row) -->
+    <!-- Tickets by Customer -->
     <div class="chart-card full-width">
       <div class="card-header"><h2>👤 Tickets by Customer</h2></div>
       <canvas id="customerChart" class="tall-chart"></canvas>
@@ -103,6 +123,7 @@
   const CATEGORY_TIME_DATA = {{ category_time_data|default:'[]'|safe }};
   const CUSTOMER_DATA = {{ customer_data|default:'[]'|safe }};
   const TIME_DATA = {{ time_data|default:'{}'|safe }};
+  const CATEGORY_DATA = {{ category_data|default:'[]'|safe }};
 
   document.getElementById("dailyCount").textContent = TIME_DATA.day;
   document.getElementById("weeklyCount").textContent = TIME_DATA.week;
