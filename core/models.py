@@ -171,7 +171,7 @@ class Ticket(models.Model):
         ('urgent', 'Urgent'),
     ]
 
-    title = models.CharField(max_length=255)
+    title = models.CharField(max_length=255, null=True)
     brts_unit = models.ForeignKey(Unit, on_delete=models.SET_NULL, null=True)
     problem_category = models.ForeignKey(ProblemCategory, on_delete=models.SET_NULL, null=True)
     terminal = models.ForeignKey(Terminal, on_delete=models.CASCADE, null=True, blank=True)
@@ -186,6 +186,7 @@ class Ticket(models.Model):
 
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='open')
     priority = models.CharField(max_length=10, choices=PRIORITY_CHOICES, default='medium')
+    resolution = models.TextField(null=True, blank=True)
     resolved_by = models.ForeignKey(User, related_name='resolved_tickets', null=True, blank=True, on_delete=models.SET_NULL)
     resolved_at = models.DateTimeField(null=True, blank=True)
     comment_summary = models.TextField(blank=True, null=True)

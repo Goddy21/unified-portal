@@ -27,21 +27,25 @@
       <div><strong>Updated At:</strong> {{ ticket.updated_at|date:"Y-m-d H:i" }}</div>
       <div><strong>Resolved By:</strong> {% if ticket.resolved_by %}{{ ticket.resolved_by.username }}{% else %}Not resolved yet{% endif %}</div>
       <div><strong>Resolved At:</strong> {% if ticket.resolved_at %}{{ ticket.resolved_at|date:"Y-m-d H:i" }}{% else %}Not resolved yet{% endif %}</div>
+      {% if ticket.resolution %}
+        <div><strong>Resolution Statement:</strong><br><p class="description">{{ ticket.resolution }}</p></div>
+      {% endif %}
     </div>
 
     <div class="mt-4">
       {% if is_admin or is_editor %}
         <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editTicketModal">✏️ Edit Ticket</button>
 
-        <form method="post" action="{% url 'resolve_ticket' ticket.id %}" class="d-inline-block ms-2">
-          {% csrf_token %}
-          <button type="submit" class="btn btn-success">✅ Resolve Ticket</button>
-        </form>
+          <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#resolveTicketModal">
+            ✅ Resolve Ticket
+          </button>
+
       {% elif can_resolve %}
-        <form method="post" action="{% url 'resolve_ticket' ticket.id %}">
-          {% csrf_token %}
-          <button type="submit" class="btn btn-success">✅ Resolve Ticket</button>
-        </form>
+       
+          <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#resolveTicketModal">
+            ✅ Resolve Ticket
+          </button>
+       
       {% else %}
         <span class="badge badge-success">✔️ Resolved</span>
       {% endif %}
@@ -93,8 +97,9 @@
 <div class="modal fade" id="editTicketModal" tabindex="-1" aria-labelledby="editTicketModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-lg modal-dialog-centered">
     <div class="modal-content">
-      <form method="post">
+      <form method="post" action="">
         {% csrf_token %}
+        <input type="hidden" name="edit_ticket" value="1">
         <div class="modal-header">
           <h5 class="modal-title" id="editTicketModalLabel">Edit Ticket #{{ ticket.id }}</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -111,4 +116,28 @@
   </div>
 </div>
 {% endif %}
+<!-- Modal: Resolve Ticket with Resolution -->
+<div class="modal fade" id="resolveTicketModal" tabindex="-1" aria-labelledby="resolveTicketModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <form method="post" action="{% url 'resolve_ticket' ticket.id %}">
+        {% csrf_token %}
+        <div class="modal-header">
+          <h5 class="modal-title" id="resolveTicketModalLabel">Resolve Ticket #{{ ticket.id }}</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="resolution">Resolution Statement</label>
+            <textarea class="form-control" name="resolution" id="resolution" rows="5" placeholder="Describe how the issue was resolved..." required></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" name="resolve_ticket" class="btn btn-success">✅ Submit Resolution</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
 {% endblock %}

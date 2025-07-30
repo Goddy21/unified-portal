@@ -582,8 +582,6 @@ def search(request):
     }
     return render(request, 'core/file_management/search_result.html', context)
 
-#@user_passes_test(is_viewer)
-#@permission_required('core.view_file', raise_exception=True)
 
 @login_required
 def preview_file(request, file_id):
@@ -1067,7 +1065,7 @@ def get_terminal_details(request, terminal_id):
 def ticket_detail(request, ticket_id):
     ticket = get_object_or_404(Ticket, id=ticket_id)
     comments = ticket.comments.order_by('-created_at')
-    form = TicketEditForm(instance=ticket)  
+    form = TicketEditForm(instance=ticket)
     comment_form = TicketCommentForm()
 
     if request.method == 'POST':
@@ -1079,54 +1077,37 @@ def ticket_detail(request, ticket_id):
                 comment.created_by = request.user
                 comment.save()
                 return redirect('ticket_detail', ticket_id=ticket.id)
-        else:
+
+        elif 'edit_ticket' in request.POST:
             form = TicketEditForm(request.POST, instance=ticket)
             if form.is_valid():
                 form.save()
                 return redirect('ticket_detail', ticket_id=ticket.id)
+            else:
+                print("EDIT FORM ERRORS:", form.errors)  # 👈 debug
+
+    elif is_director(request.user) or is_manager(request.user):
+        form = TicketForm(instance=ticket)
 
     context = {
         'ticket': ticket,
         'form': form,
         'comments': comments,
         'comment_form': comment_form,
-        'is_admin': request.user.is_superuser,  
+        'is_admin': request.user.is_superuser,
         'is_editor': request.user.groups.filter(name='Editor').exists(),
         'can_resolve': request.user.groups.filter(name='Resolver').exists(),
-
     }
 
-    #return render(request, 'core/helpdesk/ticket_detail.html', context)
-
-    # Check if the user has permission to resolve the ticket
-    can_resolve = request.user.has_perm('can_resolve_ticket')
-
-    #form = None #addinf form to context
-    print(f"Customer: {ticket.customer}")  
-    print(f"Region: {ticket.region}") 
-     # Allow editing only for admins or editors
-    if is_director(request.user) or is_manager(request.user):
-        if request.method == 'POST':
-            form = TicketForm(request.POST, instance=ticket)
-            if form.is_valid():
-                form.save()
-                return redirect('ticket_detail', ticket_id=ticket.id)
-        else:
-            form = TicketForm(instance=ticket)
-
-            
-
-    # Admin and editor can always resolve the ticket
     if is_director(request.user) or is_manager(request.user):
         return render(request, 'core/helpdesk/ticket_detail.html', context)
-    
-    # Viewer can only view the ticket if it is resolved
+
     elif is_staff(request.user):
-        if ticket.status == 'resolved':
+        if ticket.status in ['resolved', 'closed']:
             return render(request, 'core/helpdesk/ticket_detail.html', context)
         else:
             return render(request, 'core/helpdesk/permission_denied.html')
-    
+
     return render(request, 'core/helpdesk/permission_denied.html')
 
 
@@ -1169,12 +1150,14 @@ def delete_comment(request, comment_id):
 @login_required
 def resolve_ticket_view(request, ticket_id):
     ticket = get_object_or_404(Ticket, id=ticket_id)
+    resolution = request.POST.get('resolution', '').strip()
 
     # Check if the user is authorized to resolve the ticket
     if is_director(request.user) or is_manager(request.user):
         # Admins and Editors can resolve tickets
         if ticket.status != 'resolved':
-            ticket.status = 'resolved'
+            ticket.resolution = resolution
+            ticket.status = 'closed'
             ticket.resolved_by = request.user  
             ticket.resolved_at = timezone.now()
             ticket.save()
@@ -1213,8 +1196,10 @@ def ticket_statuses(request):
     return render(request, 'core/helpdesk/ticket_statuses.html')
 
 def problem_category(request):
+    print(">>> problem_category view reached")
     query = request.GET.get('search', '')
     categories = ProblemCategory.objects.filter(name__icontains=query)
+    print(f"Categories found: {categories.count()}")
     
     # Pagination setup
     paginator = Paginator(categories, 10)  
@@ -1226,18 +1211,21 @@ def problem_category(request):
         'search_query': query,
     })
 
-
 @user_passes_test(is_director)
 def create_problem_category(request):
     if request.method == 'POST':
+        print("POST received:", request.POST) 
         form = ProblemCategoryForm(request.POST)
         if form.is_valid():
-            category = form.save(commit=False)
-            category.save()
+            category = form.save()
+            print("Category saved!")
 
+            # Redirect based on which button was clicked
             if 'create_another' in request.POST:
                 return redirect('create_problem_category')
             return redirect('problem_category')  
+        else:
+            print("Form errors:", form.errors)
     else:
         form = ProblemCategoryForm()
 
@@ -1262,11 +1250,6 @@ def delete_problem_category(request, category_id):
     category.delete()
     messages.success(request, "Problem category deleted successfully.")
     return redirect('problem_category')
-
-
-def list_problem_categories(request):
-    categories = ProblemCategory.objects.all()
-    return render(request, 'core/helpdesk/problem_category.html', {'categories': categories})
 
 # Master Data Views
 def customers(request):

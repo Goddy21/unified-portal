@@ -97,6 +97,99 @@
   outline: none; 
   box-shadow: 0 0 10px rgba(40, 167, 69, 0.6);  
 }
+/* Modal enhancements */
+.modal-content {
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  animation: slideFadeIn 0.4s ease;
+  border: none;
+}
+
+.modal-header {
+  background-color: #f1f5f9;
+  border-bottom: 1px solid #dee2e6;
+  padding: 20px 24px;
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
+}
+
+.modal-title {
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: #007bff;
+}
+
+.modal-body {
+  padding: 24px;
+  background-color: #fff;
+  font-size: 1rem;
+}
+
+.modal-footer {
+  padding: 16px 24px;
+  background-color: #f8f9fa;
+  border-top: 1px solid #dee2e6;
+  border-bottom-left-radius: 12px;
+  border-bottom-right-radius: 12px;
+}
+
+.modal textarea,
+.modal input[type="text"],
+.modal select {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 6px;
+  border: 1px solid #ced4da;
+  margin-bottom: 1rem;
+  font-size: 1rem;
+  transition: border-color 0.3s ease;
+}
+
+.modal textarea:focus,
+.modal input[type="text"]:focus,
+.modal select:focus {
+  border-color: #007bff;
+  outline: none;
+  box-shadow: 0 0 6px rgba(0, 123, 255, 0.3);
+}
+
+/* Modal animation */
+@keyframes slideFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Buttons inside modal */
+.modal .btn-primary {
+  background-color: #007bff;
+  border-color: #007bff;
+  padding: 10px 20px;
+  font-weight: 500;
+  border-radius: 6px;
+}
+
+.modal .btn-primary:hover {
+  background-color: #0056b3;
+}
+
+.modal .btn-secondary {
+  background-color: #6c757d;
+  border-color: #6c757d;
+  padding: 10px 20px;
+  font-weight: 500;
+  border-radius: 6px;
+}
+
+.modal .btn-secondary:hover {
+  background-color: #5a6268;
+}
+
 /* Responsive behavior */
 @media (max-width: 768px) {
   .ticket-info strong {

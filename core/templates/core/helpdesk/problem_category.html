@@ -45,7 +45,7 @@
         <tr>
           <td>{{ forloop.counter }}</td>
           <td>{{ category.name }}</td>
-          <td>{{ category.brts_unit.description }}</td>
+          <td>{{ category.brts_unit.description|default:category.brts_unit }}</td>
           <td>
             <a href="{% url 'edit_problem_category' category.id %}" class="view-link">Edit</a>
             <a href="{% url 'delete_problem_category' category.id %}" class="remove-link" onclick="return confirm('Are you sure you want to delete this category?');">Remove</a>
@@ -63,22 +63,18 @@
   <!-- Pagination Controls -->
   <div class="pagination">
     <span class="page-links">
-      {% if categories.has_previous %}
+      {% if page_obj.has_previous %}
         <a href="?page=1&search={{ search_query }}">First</a>
         <a href="?page={{ page_obj.previous_page_number }}&search={{ search_query }}">Previous</a>
       {% endif %}
 
-      <span class="current-page">Page {{ categories.number }} of {{ categories.paginator.num_pages }}</span>
+      <span class="current-page">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
 
-      {% if categories.has_next %}
+      {% if page_obj.has_next %}
         <a href="?page={{ page_obj.next_page_number }}&search={{ search_query }}">Next</a>
         <a href="?page={{ page_obj.paginator.num_pages }}&search={{ search_query }}">Last</a>
       {% endif %}
     </span>
-    <!-- Debug -->
-<p>{{ page_obj.number }}</p>
-<p>{{ page_obj.paginator.num_pages }}</p>
-
   </div>
 </div>
 {% endblock %}
