@@ -13,54 +13,63 @@
 
     <!-- Filters -->
     <form method="get" class="report-filters">
-
-    <!-- Button Row -->
-    <div class="button-row">
-      <button type="submit" name="download" value="excel" class="btn btn-success">
-        📥 Download Excel
-      </button>
-      <a href="{% url 'statistics' %}" class="btn btn-link">
-          <i class="fas fa-chart-line"></i> Statistics
-      </a>
-
-    </div>
-
-    <hr>
-
-    <!-- Filters Row -->
-    <div class="filter-row special-row">
-      <div class="column">
-        <select name="customer" class="form-control">
-          <option value="All">All Customers</option>
-          {% for customer in customers %}
-            <option value="{{ customer.id }}" {% if request.GET.customer == customer.id|stringformat:"s" %}selected{% endif %}>
-              {{ customer.name }}
-            </option>
-          {% endfor %}
-        </select>
+      <div class="form-header">
+        <h3>Filter Options</h3>
+        <div class="button-row">
+          <button type="submit" name="download" value="excel" class="btn btn-success">
+            <i class="fas fa-file-excel"></i> Download Excel
+          </button>
+          <a href="{% url 'statistics' %}" class="btn btn-info">
+            <i class="fas fa-chart-line"></i> Statistics
+          </a>
+        </div>
       </div>
-      <div class="column">
-        <input type="text" name="terminal_name" class="form-control scrolling-placeholder" placeholder="Search Terminal by Branch Name" value="{{ request.GET.terminal_name }}">
-      </div>
-      <div class="filter-action">
-        <button type="submit" class="btn btn-primary">Filter</button>
-      </div>
-      <div class="column">
-        <select name="category" class="form-control">
-          <option value="All">All Categories</option>
-          {% for category in categories %}
-          <option value="{{ category.id }}" {% if request.GET.category == category.id|stringformat:"s" %}selected{% endif %}>{{ category.name }}</option>
-          {% endfor %}
-        </select>
-      </div>
-    </div>
 
-    <div class="date-filters">
-      <input type="text" id="start_date" name="start_date" class="date-picker" value="{{ request.GET.start_date }}" placeholder="Start Date" />
-      <input type="text" id="end_date" name="end_date" class="date-picker" value="{{ request.GET.end_date }}" placeholder="End Date" />
-    </div>
+      <div class="filter-grid">
+        <div class="filter-group">
+          <label for="customer-select">Customer:</label>
+          <select id="customer-select" name="customer" class="form-control">
+            <option value="All">All Customers</option>
+            {% for customer in customers %}
+              <option value="{{ customer.id }}" {% if request.GET.customer == customer.id|stringformat:"s" %}selected{% endif %}>
+                {{ customer.name }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
 
-  </form>
+        <div class="filter-group">
+          <label for="terminal-search">Terminal Name:</label>
+          <input type="text" id="terminal-search" name="terminal_name" class="form-control" placeholder="Search Terminal by Branch Name" value="{{ request.GET.terminal_name }}">
+        </div>
+
+        <div class="filter-group">
+          <label for="category-select">Category:</label>
+          <select id="category-select" name="category" class="form-control">
+            <option value="All">All Categories</option>
+            {% for category in categories %}
+              <option value="{{ category.id }}" {% if request.GET.category == category.id|stringformat:"s" %}selected{% endif %}>{{ category.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label for="start_date_picker">Start Date:</label>
+          <input type="text" id="start_date_picker" name="start_date" class="date-picker form-control" value="{{ request.GET.start_date }}" placeholder="Select Start Date" />
+        </div>
+
+        <div class="filter-group">
+          <label for="end_date_picker">End Date:</label>
+          <input type="text" id="end_date_picker" name="end_date" class="date-picker form-control" value="{{ request.GET.end_date }}" placeholder="Select End Date" />
+        </div>
+
+        <div class="filter-action">
+          <button type="submit" class="btn btn-primary">
+            <i class="fas fa-filter"></i> Apply Filters
+          </button>
+        </div>
+      </div>
+    </form>
 
   <!-- Report Table -->
    {% if request.GET.terminal_name %}
