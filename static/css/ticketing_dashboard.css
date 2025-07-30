@@ -128,11 +128,11 @@ canvas {
   height: 280px !important;
   width: 100% !important;
   opacity: 1 !important;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  transition: all 0.3s ease-in-out;
 }
 canvas:hover {
   transform: scale(1.05);
-  box-shadow: 0 4px 20px rgba(0, 123, 255, 0.2);
+  box-shadow: 0 6px 20px rgba(23, 162, 184, 0.15);
 }
 /* Legend Styling */
 .legend {
@@ -162,11 +162,104 @@ canvas:hover {
   align-items: center;
   justify-content: space-between;
 }
-#regionChart {
-  height: 300px; 
-  width: 100%;
+
+/* KPI Row Styling */
+.kpi-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin: 2rem;
+  justify-content: space-between;
 }
+.kpi-content {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+.kpi-card h3.card-title {
+  font-size: 1rem;
+  margin: 0.2rem 0;
+  text-transform: uppercase;
+  color: #444;
+}
+.kpi-card {
+  flex: 1 1 calc(25% - 1rem);
+  text-align: center;
+  padding: 1rem;
+  background: linear-gradient(135deg, #e3efff, #f8fcff);
+  border-left: 6px solid var(--primary-color);
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 123, 255, 0.12);
+  transition: transform 0.3s ease;
+}
+.kpi-card:hover {
+  transform: translateY(-6px);
+}
+.kpi-card h2 {
+  font-size: 2.5rem;
+  font-weight: bold;
+  color: var(--primary-color);
+}
+.kpi-card .card-title {
+  font-size: 1rem;
+  color: #555;
+  margin-bottom: 0.3rem;
+}
+
+/* Full Width Card for Terminal */
+.full-width-card {
+  grid-column: 1 / -1;
+}
+
+/* Spacing improvements */
+.card {
+  margin-bottom: 1rem;
+}
+
+.dashboard-grid > .card:not(.kpi-card) {
+  margin-top: 1rem;
+}
+
+/* Optional: section titles */
+.section-title {
+  grid-column: 1 / -1;
+  font-size: 1.3rem;
+  font-weight: 600;
+  margin: 1.5rem 0 0.5rem;
+  padding-left: 2rem;
+  color: var(--text-dark);
+}
+
+.wide-card {
+  grid-column: span 2;
+}
+.distribution-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  justify-content: space-between;
+  grid-column: 1 / -1;
+}
+.distribution-row .card {
+  flex: 1 1 48%;
+}
+.terminal-card {
+  background: linear-gradient(135deg, #eaf6ff, #f8fcff);
+  border-left: 6px solid var(--accent-color);
+}
+.terminal-card .card-title {
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: var(--accent-color);
+}
+
 /* Responsive */
+@media (max-width: 1024px) {
+  .wide-card {
+    grid-column: span 1;
+  }
+}
 @media (max-width: 768px) {
   .dashboard-grid {
     padding: 1rem;
@@ -184,5 +277,8 @@ canvas:hover {
   }
   .card {
     margin: 1rem 0;
+  }
+  .distribution-row .card {
+    flex: 1 1 100%;
   }
 }

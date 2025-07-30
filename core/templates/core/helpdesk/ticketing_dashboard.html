@@ -11,124 +11,103 @@
 {% endblock %}
 
 <div class="dashboard-grid">
-  <!-- Overview Section -->
-  <div class="card">
+
+  <!-- KPI Summary Row -->
+  <div class="kpi-row">
+    <div class="card kpi-card">
+      <div class="kpi-content">
+        <h3 class="card-title">Daily</h3>
+        <h2 id="dailyCount">0</h2>
+      </div>
+    </div>
+    <div class="card kpi-card">
+      <div class="kpi-content">
+        <h3 class="card-title">Weekly</h3>
+        <h2 id="weeklyCount">0</h2>
+      </div>
+    </div>
+    <div class="card kpi-card">
+      <div class="kpi-content">
+        <h3 class="card-title">Monthly</h3>
+        <h2 id="monthlyCount">0</h2>
+      </div>
+    </div>
+    <div class="card kpi-card">
+      <div class="kpi-content">
+        <h3 class="card-title">Yearly</h3>
+        <h2 id="yearlyCount">0</h2>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 2: High-Level Trends -->
+  <div class="card wide-card">
     <div class="card-header">
-      <h3 class="card-title">Overview by Time Period</h3>
+      <h3 class="card-title">Ticket Trends Overview</h3>
       <div class="card-menu"><i class="fas fa-ellipsis-h"></i></div>
     </div>
     <canvas id="overviewChart" class="chart-placeholder line-chart"></canvas>
   </div>
 
-  <!-- Tickets by Category per Time Period -->
-  <div class="card">
+  <div class="card wide-card">
     <div class="card-header">
-      <h3 class="card-title">Category Trends (Daily/Weekly/Monthly/Yearly)</h3>
+      <h3 class="card-title">Problem Category Trends Over Time</h3>
       <div class="card-menu"><i class="fas fa-ellipsis-h"></i></div>
     </div>
     <canvas id="categoryTimeChart" class="chart-placeholder bar-chart"></canvas>
   </div>
 
-  <!-- Customer-wise Ticket Volume -->
-  <div class="card">
-    <div class="card-header">
-      <h3 class="card-title">Tickets per Customer</h3>
-      <div class="card-menu"><i class="fas fa-ellipsis-h"></i></div>
+  <!-- SECTION 3: Distribution Breakdown -->
+  <h3 class="section-title">Distribution Breakdown</h3>
+  <div class="distribution-row">
+    <div class="card">
+      <div class="card-header"><h3 class="card-title">Tickets by Priority</h3></div>
+      <div class="pie-chart-container">
+        <canvas id="priorityChart" class="chart-placeholder pie-chart"></canvas>
+        <div class="legend">
+          <div class="legend-item"><span class="legend-color-box" style="background:#007bff;"></span> High</div>
+          <div class="legend-item"><span class="legend-color-box" style="background:#ffc107;"></span> Medium</div>
+          <div class="legend-item"><span class="legend-color-box" style="background:#28a745;"></span> Low</div>
+          <div class="legend-item"><span class="legend-color-box" style="background:#dc3545;"></span> Urgent</div>
+        </div>
+      </div>
     </div>
-    <canvas id="customerChart" class="chart-placeholder horizontal-bar-chart"></canvas>
+
+    <div class="card">
+      <div class="card-header"><h3 class="card-title">Tickets by Status</h3></div>
+      <div class="pie-chart-container">
+        <canvas id="statusChart" class="chart-placeholder pie-chart"></canvas>
+        <div class="legend">
+          <div class="legend-item"><span class="legend-color-box" style="background:#28a745;"></span> Open</div>
+          <div class="legend-item"><span class="legend-color-box" style="background:#ffc107;"></span> Pending</div>
+          <div class="legend-item"><span class="legend-color-box" style="background:#007bff;"></span> In Progress</div>
+          <div class="legend-item"><span class="legend-color-box" style="background:#6c757d;"></span> Closed</div>
+        </div>
+      </div>
+    </div>
   </div>
 
-  <!--Ticket card per region-->
+  <!-- SECTION 4: Regional & Terminal Insights -->
+  <h3 class="section-title">Regional & Terminal Insights</h3>
   <div class="card">
-    <div class="card-header">
-      <h3 class="card-title">Tickets per Region</h3>
-      <div class="card-menu"><i class="fas fa-ellipsis-h"></i></div>
-    </div>
+    <div class="card-header"><h3 class="card-title">Tickets by Region</h3></div>
     <canvas id="regionChart" class="chart-placeholder bar-chart"></canvas>
   </div>
 
-  <!--Ticket card per terminal-->
-  <div class="card">
+  <div class="card full-width-card terminal-card">
     <div class="card-header">
-      <h3 class="card-title">Tickets per Terminal</h3>
-      <div class="card-menu"><i class="fas fa-ellipsis-h"></i></div>
+      <h3 class="card-title">Tickets by Terminal</h3>
+      <div class="card-menu"><i class="fas fa-chart-bar"></i></div>
     </div>
     <canvas id="terminalChart" class="chart-placeholder bar-chart"></canvas>
   </div>
 
-  <!-- Existing Cards (Preserved) -->
-  <!-- Ticket Priority Pie -->
-  <div class="card">
-    <div class="card-header">
-      <h3 class="card-title">Ticket Priority</h3>
-      <div class="card-menu"><i class="fas fa-ellipsis-h"></i></div>
-    </div>
-    <div class="chart-row">
-      <canvas id="priorityChart" class="chart-placeholder pie-chart"></canvas>
-      <div class="legend">
-        <div class="legend-item"><span class="legend-color-box" style="background:#007bff;"></span> High</div>
-        <div class="legend-item"><span class="legend-color-box" style="background:#ffc107;"></span> Medium</div>
-        <div class="legend-item"><span class="legend-color-box" style="background:#28a745;"></span> Low</div>
-        <div class="legend-item"><span class="legend-color-box" style="background:#dc3545;"></span> Urgent</div>
-      </div>
-    </div>
+  <!-- SECTION 5: Customer Insights -->
+  <div class="card wide-card">
+    <div class="card-header"><h3 class="card-title">Tickets by Customer</h3></div>
+    <canvas id="customerChart" class="chart-placeholder horizontal-bar-chart"></canvas>
   </div>
 
-  <!-- Ticket Status Pie -->
-  <div class="card">
-    <div class="card-header">
-      <h3 class="card-title">Ticket Statuses</h3>
-      <div class="card-menu"><i class="fas fa-ellipsis-h"></i></div>
-    </div>
-    <div class="chart-row">
-      <canvas id="statusChart" class="chart-placeholder pie-chart"></canvas>
-      <div class="legend">
-        <div class="legend-item"><span class="legend-color-box" style="background:#28a745;"></span> Open</div>
-        <div class="legend-item"><span class="legend-color-box" style="background:#ffc107;"></span> Pending</div>
-        <div class="legend-item"><span class="legend-color-box" style="background:#007bff;"></span> In Progress</div>
-        <div class="legend-item"><span class="legend-color-box" style="background:#6c757d;"></span> Closed</div>
-      </div>
-    </div>
-  </div>
-  <!-- Daily Tickets Card -->
-  <div class="card">
-    <div class="card-header">
-      <h3 class="card-title">Daily Tickets</h3>
-    </div>
-    <div class="card-body">
-      <h2 id="dailyCount">0</h2>
-    </div>
-  </div>
-
-  <!-- Weekly Tickets Card -->
-  <div class="card">
-    <div class="card-header">
-      <h3 class="card-title">Weekly Tickets</h3>
-    </div>
-    <div class="card-body">
-      <h2 id="weeklyCount">0</h2>
-    </div>
-  </div>
-
-  <!-- Monthly Tickets Card -->
-  <div class="card">
-    <div class="card-header">
-      <h3 class="card-title">Monthly Tickets</h3>
-    </div>
-    <div class="card-body">
-      <h2 id="monthlyCount">0</h2>
-    </div>
-  </div>
-
-  <!-- Yearly Tickets Card -->
-  <div class="card">
-    <div class="card-header">
-      <h3 class="card-title">Yearly Tickets</h3>
-    </div>
-    <div class="card-body">
-      <h2 id="yearlyCount">0</h2>
-    </div>
-  </div>
 </div>
 
 {% endblock %}
@@ -145,20 +124,17 @@
   const CUSTOMER_DATA = {{ customer_data|default:'[]'|safe }};
   const TIME_DATA = {{ time_data|default:'{}'|safe }};
 
-
   document.getElementById("dailyCount").textContent = TIME_DATA.day;
   document.getElementById("weeklyCount").textContent = TIME_DATA.week;
   document.getElementById("monthlyCount").textContent = TIME_DATA.month;
   document.getElementById("yearlyCount").textContent = TIME_DATA.year;
-  console.log(STATUS_DATA);
-  console.log("Priority data:",PRIORITY_DATA);
-  console.log(MONTHLY_DATA);
-  console.log(TERMINAL_DATA);
-  console.log(CUSTOMER_DATA);
-  console.log(TIME_DATA);
-  console.log("Daily Tickets Count: ", TIME_DATA.day);
-  console.log("Weekly Tickets Count: ", TIME_DATA.week);
 
+  console.log("STATUS_DATA:", STATUS_DATA);
+  console.log("Priority data:", PRIORITY_DATA);
+  console.log("Monthly data:", MONTHLY_DATA);
+  console.log("Terminal data:", TERMINAL_DATA);
+  console.log("Customer data:", CUSTOMER_DATA);
+  console.log("Time data:", TIME_DATA);
 </script>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
