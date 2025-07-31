@@ -32,8 +32,16 @@
   <!-- Charts Grid -->
   <section class="charts-grid">
 
+    <!-- Modal Structure -->
+    <div id="chartModal" class="modal">
+      <div class="modal-content" id="modalContent">
+        <!-- More info will be dynamically inserted here -->
+      </div>
+      <button onclick="document.getElementById('chartModal').style.display='none'">Close</button>
+    </div>
+
     <!-- Ticket Trends Overview -->
-    <div class="chart-card full-width">
+    <div class="chart-card full-width" id="ticketTrendsOverview">
       <div class="card-header">
         <h2>📈 Ticket Trends Overview</h2>
         <i class="fas fa-ellipsis-h menu-btn"></i>
@@ -42,7 +50,7 @@
     </div>
 
     <!-- Problem Category Trends -->
-    <div class="chart-card full-width">
+    <div class="chart-card full-width" id="problemCategoryTrends">
       <div class="card-header">
         <h2>📊 Problem Category Trends</h2>
         <i class="fas fa-ellipsis-h menu-btn"></i>
@@ -51,19 +59,19 @@
     </div>
 
     <!-- Ticket Report by Status -->
-    <div class="chart-card">
+    <div class="chart-card" id="ticketReportByStatus">
       <div class="card-header"><h2>📋 Ticket Report by Status</h2></div>
       <canvas id="ticketReportChart"></canvas>
     </div>
 
     <!-- Monthly Trends -->
-    <div class="chart-card">
+    <div class="chart-card" id="monthlyTrendsOverview">
       <div class="card-header"><h2>📅 Monthly Trends</h2></div>
       <canvas id="monthlyTrendChart"></canvas>
     </div>
 
     <!-- Time-based Trends -->
-    <div class="chart-card">
+    <div class="chart-card" id="timebasedOverview">
       <div class="card-header"><h2>⏱ Time-Based Trends</h2></div>
       <canvas id="timeTrendChart"></canvas>
     </div>
@@ -87,14 +95,14 @@
 
 
     <!-- Tickets by Region -->
-    <div class="chart-card full-width">
+    <div class="chart-card full-width" id="regionchartOverview">
       <div class="card-header"><h2>🌍 Tickets by Region</h2></div>
       <canvas id="regionChart" class="tall-chart"></canvas>
     </div>
 
 
     <!-- Tickets by Terminal -->
-    <div class="chart-card full-width">
+    <div class="chart-card full-width" id="terminalChartOverview">
       <div class="card-header">
         <h2>🏢 Tickets by Terminal</h2>
         <i class="fas fa-chart-bar menu-btn"></i>
@@ -103,7 +111,7 @@
     </div>
 
     <!-- Tickets by Customer -->
-    <div class="chart-card full-width">
+    <div class="chart-card full-width" id="customerChartOverview">
       <div class="card-header"><h2>👤 Tickets by Customer</h2></div>
       <canvas id="customerChart" class="tall-chart"></canvas>
     </div>

@@ -23,6 +23,94 @@ window.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  /*
+  // === Handle Clicks on Chart Cards ===
+  const ticketTrendsOverview = document.getElementById('ticketTrendsOverview');
+  const problemCategoryTrends = document.getElementById('problemCategoryTrends');
+  const ticketReportByStatus = document.getElementById('ticketReportByStatus');
+  const monthlyTrendsOverview = document.getElementById('monthlyTrendsOverview');
+  const timebasedOverview = document.getElementById('timebasedOverview');
+  const regionchartOverview = document.getElementById('regionchartOverview');
+  const terminalChartOverview = document.getElementById('terminalChartOverview');
+  const customerChartOverview = document.getElementById('customerChartOverview');
+
+  // Function to show more information in a modal
+  const showModal = (chartType, chartData) => {
+    const modal = document.getElementById('chartModal');
+    const modalContent = document.getElementById('modalContent');
+    
+    if (modal && modalContent) {
+      modal.style.display = 'block'; // Show the modal
+      modalContent.innerHTML = `
+        <h2>Details for ${chartType}</h2>
+        <pre>${JSON.stringify(chartData, null, 2)}</pre>
+      `;
+    } else {
+      console.error("Modal or Modal Content not found!");
+    }
+    // Close the modal when clicking on the overlay
+    document.getElementById('chartModal').addEventListener('click', (event) => {
+      if (event.target === document.getElementById('chartModal')) {
+        document.getElementById('chartModal').style.display = 'none';  // Hide the modal
+      }
+    });
+
+    // Close the modal when clicking on the "close" button
+    document.querySelector('button').addEventListener('click', () => {
+      document.getElementById('chartModal').style.display = 'none';
+    });
+  };
+
+  // Add click event listeners to the chart cards, passing relevant data for each
+  if (ticketTrendsOverview) {
+    ticketTrendsOverview.addEventListener('click', () => {
+      showModal('Ticket Trends Overview', OVERVIEW_DATA);
+    });
+  }
+
+  if (problemCategoryTrends) {
+    problemCategoryTrends.addEventListener('click', () => {
+      showModal('Problem Category Trends', CATEGORY_DATA);
+    });
+  }
+
+  if (ticketReportByStatus) {
+    ticketReportByStatus.addEventListener('click', () => {
+      showModal('Ticket Report by Status', STATUS_DATA);
+    });
+  }
+
+  if (monthlyTrendsOverview) {
+    monthlyTrendsOverview.addEventListener('click', () => {
+      showModal('Monthly Ticket Trends', MONTHLY_DATA);
+    });
+  }
+
+  if (timebasedOverview) {
+    timebasedOverview.addEventListener('click', () => {
+      showModal('Time-Based Ticket Trends', TIME_DATA);
+    });
+  }
+
+  if (regionchartOverview) {
+    regionchartOverview.addEventListener('click', () => {
+      showModal('Tickets by Region', REGION_DATA);
+    });
+  }
+
+  if (terminalChartOverview) {
+    terminalChartOverview.addEventListener('click', () => {
+      showModal('Tickets by Terminal', TERMINAL_DATA);
+    });
+  }
+
+  if (customerChartOverview) {
+    customerChartOverview.addEventListener('click', () => {
+      showModal('Tickets by Customer', CUSTOMER_DATA);
+    });
+  }*/
+
+
   const reportsToggle = document.getElementById('reportsToggle');
   if (reportsToggle) {
     reportsToggle.addEventListener('click', function (event) {
