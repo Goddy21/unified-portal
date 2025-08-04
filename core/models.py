@@ -64,6 +64,8 @@ class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     avatar = models.ImageField(upload_to=user_directory_path, blank=True, null=True)
     customer = models.ForeignKey('Customer', on_delete=models.CASCADE, null=True, blank=True)
+    terminal = models.ForeignKey('Terminal', on_delete=models.SET_NULL, null=True, blank=True)
+
 
     def __str__(self):
         return self.user.username

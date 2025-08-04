@@ -26,6 +26,8 @@
                 <span>Ticket Statuses</span>
             </a>
         </li>
+        
+        {% if user_group in allowed_roles or request.user.is_superuser %}
         <li>
             <a href="{% url 'problem_category' %}" class="{% if request.path == '/problem-category/' %}active{% endif %}">
                 <i class="fas fa-exclamation-triangle icon"></i>
@@ -33,7 +35,6 @@
             </a>
         </li>
 
-        {% if not request.user.groups.first.name in 'Custodian,Overseer' %}
         <!-- Master Data -->
         <li class="has-submenu {% if request.path|slice:":14" == '/master-data/' %}expanded{% endif %}">
             <a href="#">
@@ -50,7 +51,8 @@
                 <li><a href="{% url 'zones' %}"><i class="fas fa-map-marker-alt icon"></i> Zones</a></li>
             </ul>
         </li>
-        {% endif %}
+    {% endif %}
+
 
         <!-- Reports -->
         <li class="has-submenu {% if request.path|slice:":9" == '/reports/' %}expanded{% endif %}">

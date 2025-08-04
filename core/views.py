@@ -802,14 +802,6 @@ class SettingsView(View):
 
 
 # Ticketing Views
-from django.utils import timezone
-from django.db.models import Count
-from django.db.models.functions import TruncMonth
-from datetime import timedelta
-import calendar, json
-
-from .models import Ticket, Customer, Terminal, Profile
-
 def ticketing_dashboard(request):
     now = timezone.localtime(timezone.now())
     day_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
@@ -914,7 +906,30 @@ def ticketing_dashboard(request):
         ("Yearly", "yearlyCount", "fa-calendar"),
     ]
 
+    #user_group = request.user.groups.first().name if request.user.groups.exists() else None
+    user_group = None
+
+    # First check for relationships defined in Customer model
+    if Customer.objects.filter(custodian=request.user).exists():
+        user_group = "Custodian"
+    elif Customer.objects.filter(overseer=request.user).exists():
+        user_group = "Overseer"
+
+    # Then fall back to Django group membership if not already assigned
+    if not user_group:
+        if request.user.groups.filter(name="Director").exists():
+            user_group = "Director"
+        elif request.user.groups.filter(name="Manager").exists():
+            user_group = "Manager"
+        elif request.user.groups.filter(name="Staff").exists():
+            user_group = "Staff"
+        else:
+            user_group = "Customer"  # Default group
+
+    allowed_roles = ["Director", "Manager", "Staff", "Superuser"]
     context = {
+        'user_group': user_group,
+        "allowed_roles": allowed_roles,
         "kpi_data": kpi_data,
         'status_data': json.dumps(list(status_counts)),
         'priority_data': json.dumps(list(priority_counts)),
@@ -1763,46 +1778,59 @@ def delete_zone(request, zone_id):
     return redirect('zones') 
 
 def reports(request):
+    user_group = None
+
+    if Customer.objects.filter(custodian=request.user).exists():
+        user_group = "Custodian"
+    elif Customer.objects.filter(overseer=request.user).exists():
+        user_group = "Overseer"
+    elif request.user.groups.filter(name="Director").exists():
+        user_group = "Director"
+    elif request.user.groups.filter(name="Manager").exists():
+        user_group = "Manager"
+    elif request.user.groups.filter(name="Staff").exists():
+        user_group = "Staff"
 
     tickets = Ticket.objects.prefetch_related('comments').all()
 
+    # Filter for Custodian or Overseer to only see tickets of customers they're assigned to
+    if user_group in ["Custodian", "Overseer"]:
+        assigned_customers = Customer.objects.filter(
+            **{f"{user_group.lower()}": request.user}
+        )
+        tickets = tickets.filter(customer__in=assigned_customers)
+
     customer = request.GET.get('customer')
-
     terminal_name = request.GET.get("terminal_name")
-
     region = request.GET.get('region')
-
     category = request.GET.get('category')
 
     filter_by_customer = False
     filter_by_terminal = False
 
-
-    if customer and customer != 'All' and customer !="None":
+    if customer and customer != 'All' and customer != "None":
         tickets = tickets.filter(customer_id=customer)
+        filter_by_customer = True
 
-        filter_by_customer = True  
-    if terminal_name: 
+    if terminal_name:
         tickets = tickets.filter(terminal__branch_name__icontains=terminal_name)
-        filter_by_terminal = True  
+        filter_by_terminal = True
 
     if region and region != 'All' and region != "None":
         tickets = tickets.filter(region_id=region)
-    if category and category != 'All' and category !="None":
+
+    if category and category != 'All' and category != "None":
         tickets = tickets.filter(problem_category_id=category)
 
     start_date = request.GET.get('start_date')
     end_date = request.GET.get('end_date')
 
     if start_date:
-
         tickets = tickets.filter(created_at__date__gte=parse_date(start_date))
-
+    if end_date:
         tickets = tickets.filter(created_at__date__lte=parse_date(end_date))
 
-      
     if request.GET.get('download') == 'excel':
-
         customer_name = Customer.objects.get(id=customer).name if customer and customer not in ['All', 'None'] else None
         terminal_filter = terminal_name if terminal_name else None
 
@@ -1815,7 +1843,7 @@ def reports(request):
             end_date=end_date
         )
 
-    paginator = Paginator(tickets, 10)  # or however many per page
+    paginator = Paginator(tickets, 10)
     page = request.GET.get('page')
 
     try:
@@ -1826,8 +1854,8 @@ def reports(request):
         tickets_page = paginator.page(paginator.num_pages)
 
     context = {
-        'tickets': tickets_page,  
-        'page_obj': tickets_page,  
+        'tickets': tickets_page,
+        'page_obj': tickets_page,
         'customers': Customer.objects.all(),
         'terminals': Terminal.objects.all(),
         'regions': Region.objects.all(),
