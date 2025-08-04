@@ -39,6 +39,7 @@ def setup_groups_and_permissions(sender, **kwargs):
     director_group, _ = Group.objects.get_or_create(name='Director')
     manager_group, _ = Group.objects.get_or_create(name='Manager')
     staff_group, _ = Group.objects.get_or_create(name='Staff')
+    customer_group, _ = Group.objects.get_or_create(name='Customer') 
 
     # Assign permissions to groups
     director_group.permissions.set([
@@ -56,6 +57,8 @@ def setup_groups_and_permissions(sender, **kwargs):
         view_user
     ])
 
+    customer_group.permissions.set([view_file, view_user])
+
 
 @receiver(post_save, sender=User)
 def assign_permissions_based_on_group(sender, instance, created, **kwargs):
@@ -71,7 +74,6 @@ def assign_permissions_based_on_group(sender, instance, created, **kwargs):
             # Superuser automatically gets all permissions
             admin_group, _ = Group.objects.get_or_create(name='Admin')
             instance.groups.add(admin_group)
-            # Assign all available permissions
             assign_all_permissions(instance)
         else:
             # Assign specific group based on role or user type
@@ -86,6 +88,10 @@ def assign_permissions_based_on_group(sender, instance, created, **kwargs):
         if hasattr(instance, 'profile'):
             instance.profile.save()
 
+    # Ensure profile save operation (can be merged with the above signal)
+    instance.profile.save()
+
+
 def assign_all_permissions(user):
     """Assigns all permissions to the user (for superusers or Admin)"""
     permissions = Permission.objects.all()
@@ -93,7 +99,6 @@ def assign_all_permissions(user):
 
 def assign_director_permissions(user):
     """Assigns director-specific permissions to the user"""
-    # Permissions related to file management and user management
     permissions = [
         'core.view_file',
         'core.change_file',
@@ -107,7 +112,6 @@ def assign_director_permissions(user):
 
 def assign_manager_permissions(user):
     """Assigns manager-specific permissions to the user"""
-    # Permissions related to file management and user management
     permissions = [
         'core.view_file',
         'core.change_file',
@@ -119,7 +123,6 @@ def assign_manager_permissions(user):
 
 def assign_staff_permissions(user):
     """Assigns staff-specific permissions to the user"""
-    # Permissions related to file access and viewing user profiles
     permissions = [
         'core.view_file',
         'core.add_file',

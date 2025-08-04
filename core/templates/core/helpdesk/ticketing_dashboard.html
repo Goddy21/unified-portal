@@ -121,6 +121,11 @@
 {% endblock %}
 
 {% block extra_js %}
+<!-- Load Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
+
+<!-- injected variables -->
 <script>
   const STATUS_DATA = {{ status_data|default:'[]'|safe }};
   const PRIORITY_DATA = {{ priority_data|default:'[]'|safe }};
@@ -131,15 +136,16 @@
   const CATEGORY_TIME_DATA = {{ category_time_data|default:'[]'|safe }};
   const CUSTOMER_DATA = {{ customer_data|default:'[]'|safe }};
   const TIME_DATA = {{ time_data|default:'{}'|safe }};
-  const CATEGORY_DATA = {{ category_data|default:'[]'|safe }};
 
-  document.getElementById("dailyCount").textContent = TIME_DATA.day;
-  document.getElementById("weeklyCount").textContent = TIME_DATA.week;
-  document.getElementById("monthlyCount").textContent = TIME_DATA.month;
-  document.getElementById("yearlyCount").textContent = TIME_DATA.year;
+  if (TIME_DATA) {
+    document.getElementById("dailyCount").textContent = TIME_DATA.day;
+    document.getElementById("weeklyCount").textContent = TIME_DATA.week;
+    document.getElementById("monthlyCount").textContent = TIME_DATA.month;
+    document.getElementById("yearlyCount").textContent = TIME_DATA.year;
+  }
 </script>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
+<!-- dashboard JS -->
 <script src="{% static 'js/ticketing_dashboard.js' %}"></script>
+
 {% endblock %}

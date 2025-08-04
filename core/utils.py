@@ -16,3 +16,11 @@ def can_user_access_file(self, user):
     if self.access_level == 'confidential':
         return self.uploaded_by == user or user.is_superuser
     return False
+
+def can_user_access_customer_terminal(user, terminal):
+    """Check if the user can access the terminal based on their role."""
+    if terminal.is_overseer(user):
+        return True
+    elif terminal.is_custodian(user) and user == terminal.customer.custodian:
+        return True
+    return False

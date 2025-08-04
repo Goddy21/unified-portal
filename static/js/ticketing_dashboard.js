@@ -424,25 +424,31 @@ window.addEventListener('DOMContentLoaded', () => {
   }
 
 
-  const overviewLabels = OVERVIEW_DATA.map(item => item.label);
-  const overviewCounts = OVERVIEW_DATA.map(item => item.count);
-  if (overviewChart){
-    destroyExistingChart('overviewChart');
-  new Chart(overviewChart, {
-    type: 'bar',
-    data: {
-      labels: overviewLabels,
-      datasets: [{
-        label: 'Ticket Counts',
-        data: overviewCounts,
-        backgroundColor: ['#007bff', '#ffc107', '#28a745', '#dc3545'],
-        borderRadius: 5,
-        barThickness: 40
-      }]
-    },
-    options: animationOptions
-  });
-}
+  if (typeof OVERVIEW_DATA !== 'undefined') {
+
+    const overviewLabels = OVERVIEW_DATA.map(item => item.label);
+    const overviewCounts = OVERVIEW_DATA.map(item => item.count);
+
+    if (overviewChart) {
+      destroyExistingChart('overviewChart');
+    }
+
+    new Chart(overviewChart, {
+      type: 'bar',
+      data: {
+        labels: overviewLabels,
+        datasets: [{
+          label: 'Ticket Counts',
+          data: overviewCounts,
+          backgroundColor: ['#007bff', '#ffc107', '#28a745', '#dc3545'],
+          borderRadius: 5,
+          barThickness: 40
+        }]
+      },
+      options: animationOptions
+    });
+  }
+
 
   const customerChart = document.getElementById('customerChart');
   if (customerChart) {

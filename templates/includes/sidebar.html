@@ -33,6 +33,7 @@
             </a>
         </li>
 
+        {% if not request.user.groups.first.name in 'Custodian,Overseer' %}
         <!-- Master Data -->
         <li class="has-submenu {% if request.path|slice:":14" == '/master-data/' %}expanded{% endif %}">
             <a href="#">
@@ -49,6 +50,7 @@
                 <li><a href="{% url 'zones' %}"><i class="fas fa-map-marker-alt icon"></i> Zones</a></li>
             </ul>
         </li>
+        {% endif %}
 
         <!-- Reports -->
         <li class="has-submenu {% if request.path|slice:":9" == '/reports/' %}expanded{% endif %}">

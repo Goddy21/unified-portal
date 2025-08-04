@@ -25,12 +25,15 @@
         <a href="{% url 'admin_dashboard' %}" class="admin-btn animate__animated animate__zoomInDown">Go to Admin Dashboard</a>
     {% endif %}
     <main class="cards-container">
+        {% if not is_overseer_or_custodian %}
         <div class="card card-effect animate__animated animate__fadeInUp" id="fileManagementCard" tabindex="0">
             <span class="card-icon pulse">&#128447;&#65039;</span>
             <h2 class="card-title gradient-text">File Management System</h2>
             <p class="card-description">Upload, access, categorize, and share files.</p>
             <div class="card-footer">Fast and secure cloud storage</div>
         </div>
+        {% endif %}
+        
         <div class="card card-effect animate__animated animate__fadeInUp animate__delay-1s" id="ticketingSystemCard" tabindex="0">
             <span class="card-icon wobble">&#127915;</span>
             <h2 class="card-title gradient-text">Ticketing System</h2>
@@ -39,12 +42,25 @@
         </div>
     </main>
     <script>
-        const ticketingURL = "{% url 'ticketing_dashboard' %}";
-        const filemanagementURL = "{% url 'file_management_dashboard' %}";
-        // Clickable cards
-        document.getElementById("fileManagementCard").onclick = () => window.location = filemanagementURL;
-        document.getElementById("ticketingSystemCard").onclick = () => window.location = ticketingURL;
+        document.addEventListener('DOMContentLoaded', function () {
+            const ticketingCard = document.getElementById('ticketingSystemCard');
+            const fileManagementCard = document.getElementById('fileManagementCard');
+
+            const ticketingURL = "{% url 'ticketing_dashboard' %}";
+            const filemanagementURL = "{% url 'file_management_dashboard' %}";
+
+            if (ticketingCard) {
+                ticketingCard.addEventListener('click', function () {
+                    window.location.href = ticketingURL;
+                });
+            }
+
+            if (fileManagementCard) {
+                fileManagementCard.addEventListener('click', function () {
+                    window.location.href = filemanagementURL;
+                });
+            }
+        });
     </script>
-    <script src="{% static 'js/pre_dashboards.js' %}"></script>
 </body>
 </html>

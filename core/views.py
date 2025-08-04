@@ -45,42 +45,152 @@ from django.views.decorators.http import require_POST
 
 def in_group(user, group_name):
     return user.is_authenticated and (user.is_superuser or user.groups.filter(name=group_name).exists())
+    
 def is_director(user):
     return in_group(user, 'Director')
+    
 def is_manager(user):
     return in_group(user, 'Manager')
+    
 def is_staff(user):
     return in_group(user, 'Staff')
+    
+from django.contrib.auth.models import Group
+from django.shortcuts import render, get_object_or_404
+from django.contrib import messages
+from django.db.models import Q
+from .models import Ticket, Customer, Terminal, File, Profile, User
 
-@user_passes_test(is_director)
 def admin_dashboard(request):
     if request.method == 'POST':
         action = request.POST.get('action')
 
-        if action == 'update_role':
-            user_id = request.POST.get('user_id')
-            new_role = request.POST.get('new_role')
-            user = get_object_or_404(User, id=user_id)
-            user.groups.clear()
-            group, _ = Group.objects.get_or_create(name=new_role)
-            user.groups.add(group)
-            messages.success(request, f"{user.username}'s role updated to {new_role}.")
+        if action == 'assign_overseer_or_custodian':
+            customer_id = request.POST.get('customer_id')
+            overseer_id = request.POST.get('overseer_id')
+            custodian_id = request.POST.get('custodian_id')
+            terminal_id = request.POST.get('terminal_id')
 
-        elif action == 'delete_user':
-            user_id = request.POST.get('user_id')
-            user = get_object_or_404(User, id=user_id)
-            user.delete()
-            messages.success(request, f"User {user.username} has been deleted.")
+            customer = get_object_or_404(Customer, id=customer_id)
 
-    users = User.objects.exclude(id=request.user.id)
+            if overseer_id:
+                overseer = get_object_or_404(User, id=overseer_id)
+                overseer.groups.add(Group.objects.get(name='Customer'))
+                customer.overseer = overseer
+                print(f"Assigned overseer: {overseer.username}")
+
+            if custodian_id:
+                custodian = get_object_or_404(User, id=custodian_id)
+                custodian.groups.add(Group.objects.get(name='Customer'))
+                customer.custodian = custodian
+                print(f"Assigned custodian: {custodian.username}")
+
+                if terminal_id:
+                    terminal = get_object_or_404(Terminal, id=terminal_id)
+                    profile = getattr(custodian, 'profile', None)
+                    if profile:
+                        profile.terminal = terminal
+                        profile.save()
+                        print(f"Assigned terminal {terminal} to {custodian.username}")
+
+            customer.save()
+            messages.success(request, f"Manager and Custodian updated for {customer.name}.")
+            print(f"Customer saved: {customer.name}")
+
+        elif action == 'remove_role':
+            customer_id = request.POST.get('customer_id')
+            customer = get_object_or_404(Customer, id=customer_id)
+            customer.overseer = None
+            customer.custodian = None
+            customer.save()
+            messages.success(request, f"Roles removed for {customer.name}.")
+            print(f"Roles removed for: {customer.name}")
+
+    # ========================
+    # Access filtering logic
+    # ========================
+
+    tickets_qs = Ticket.objects.none()
+    files_qs = File.objects.none()
+
+    if request.user.is_superuser or request.user.groups.filter(name__in=['Director', 'Manager', 'Staff']).exists():
+        print("Admin/staff user: showing all data.")
+        tickets_qs = Ticket.objects.all()
+        files_qs = File.objects.all()
+
+    else:
+        profile = getattr(request.user, 'profile', None)
+
+        customer = Customer.objects.filter(overseer=request.user).first()
+        if customer:
+            print(f"{request.user.username} is Overseer of {customer.name}")
+            tickets_qs = Ticket.objects.filter(customer=customer)
+            files_qs = File.objects.filter(customer=customer)
+
+        elif profile and profile.terminal:
+            customer = Customer.objects.filter(custodian=request.user).first()
+            if customer:
+                print(f"{request.user.username} is Custodian for {profile.terminal} under {customer.name}")
+                tickets_qs = Ticket.objects.filter(customer=customer, terminal=profile.terminal)
+                files_qs = File.objects.filter(customer=customer, terminal=profile.terminal)
+            else:
+                print(f"{request.user.username} is a custodian but not linked to any customer.")
+        else:
+            print(f"{request.user.username} has no access to dashboard data.")
+
+    # Stats and role mapping
+    overseers = Customer.objects.filter(overseer__isnull=False).values('overseer')
+    custodians = Customer.objects.filter(custodian__isnull=False).values('custodian')
+
+    overseer_users = User.objects.filter(id__in=[u['overseer'] for u in overseers])
+    custodian_users = User.objects.filter(id__in=[u['custodian'] for u in custodians])
+    users_without_roles = User.objects.exclude(id__in=[*overseer_users.values_list('id', flat=True), *custodian_users.values_list('id', flat=True)])
 
     context = {
-        'users': users,
+        'users': User.objects.all(),
+        'customers': Customer.objects.all(),
         'total_users': User.objects.count(),
-        'total_files': File.objects.count(),
-        'open_tickets': Ticket.objects.filter(status='open').count(),
+        'total_files': files_qs.count(),
+        'open_tickets': tickets_qs.filter(status='open').count(),
+        'overseers': overseer_users,
+        'custodians': custodian_users,
+        'users_without_roles': users_without_roles,
     }
+
     return render(request, 'accounts/admin_dashboard.html', context)
+
+
+def manage_customer_roles(request):
+    # Logic for managing customer roles (manager and custodian)
+    if request.method == 'POST':
+        action = request.POST.get('action')
+
+        if action == 'assign_overseer_or_custodian':
+            customer_id = request.POST.get('customer_id')
+            overseer_id = request.POST.get('overseer_id')
+            custodian_id = request.POST.get('custodian_id')
+
+            customer = get_object_or_404(Customer, id=customer_id)
+
+            if overseer_id:
+                overseer = get_object_or_404(User, id=overseer_id)
+                customer.overseer = overseer
+            if custodian_id:
+                custodian = get_object_or_404(User, id=custodian_id)
+                customer.custodian = custodian
+
+            customer.save()
+            messages.success(request, f"Manager and Custodian updated for {customer.name}.")
+
+        elif action == 'remove_role':
+            customer_id = request.POST.get('customer_id')
+            customer = get_object_or_404(Customer, id=customer_id)
+            customer.overseer = None
+            customer.custodian = None
+            customer.save()
+            messages.success(request, f"Roles removed for {customer.name}.")
+
+    return redirect('admin_dashboard') 
 
 @user_passes_test(is_director)
 def manage_file_categories(request):
@@ -420,6 +530,7 @@ def verify_otp_view(request):
     return JsonResponse({'status': 'error', 'message': 'Invalid request method'})
 
 
+
 @login_required
 def edit_file(request, file_id):
     #if not request.user.has_perm('core.change_file'):
@@ -439,7 +550,17 @@ def edit_file(request, file_id):
     return render(request, 'edit_file.html', {'form': form, 'file': file})
 
 def pre_dashboards(request):
-    return render(request, 'core/pre_dashboards.html')
+    # Check if user is assigned as either overseer or custodian in any customer
+    is_overseer_or_custodian = Customer.objects.filter(
+        Q(overseer=request.user) | Q(custodian=request.user)
+    ).exists()
+
+    print(f"Is overseer or custodian: {is_overseer_or_custodian}") 
+
+    return render(request, 'core/pre_dashboards.html', {
+        'is_overseer_or_custodian': is_overseer_or_custodian
+    })
+
 
 
 #@user_passes_test(is_viewer)
@@ -681,56 +802,85 @@ class SettingsView(View):
 
 
 # Ticketing Views
+from django.utils import timezone
+from django.db.models import Count
+from django.db.models.functions import TruncMonth
+from datetime import timedelta
+import calendar, json
+
+from .models import Ticket, Customer, Terminal, Profile
+
 def ticketing_dashboard(request):
     now = timezone.localtime(timezone.now())
-    print(f"Now (timezone aware): {now}")
-
-    # Define period starts
     day_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
     week_start = day_start - timedelta(days=day_start.weekday())
     month_start = day_start.replace(day=1)
     year_start = day_start.replace(month=1, day=1)
-  
 
-    # Time-based ticket counts
+    # ======================================
+    # Role-Based Filtering: same as tickets()
+    # ======================================
+    ticket_filter = Ticket.objects.none()
+    profile = getattr(request.user, 'profile', None)
+
+    if request.user.is_superuser or request.user.groups.filter(name__in=['Director', 'Manager', 'Staff']).exists():
+        print("Superuser/internal: full ticket access")
+        ticket_filter = Ticket.objects.all()
+    else:
+        customer = Customer.objects.filter(overseer=request.user).first()
+        if customer:
+            print(f"{request.user.username} is Overseer of {customer.name}")
+            ticket_filter = Ticket.objects.filter(customer=customer)
+        elif profile and profile.terminal:
+            customer = Customer.objects.filter(custodian=request.user).first()
+            if customer:
+                print(f"{request.user.username} is Custodian of terminal {profile.terminal} for {customer.name}")
+                ticket_filter = Ticket.objects.filter(customer=customer, terminal=profile.terminal)
+            else:
+                print(f"{request.user.username} has no dashboard access")
+        else:
+            print(f"{request.user.username} has no profile or terminal")
+
+    # Time-based ticket counts (restricted)
     time_data = {
-        'day': Ticket.objects.filter(created_at__gte=day_start).count(),
-        'week': Ticket.objects.filter(created_at__gte=week_start).count(),
-        'month': Ticket.objects.filter(created_at__gte=month_start).count(),
-        'year': Ticket.objects.filter(created_at__gte=year_start).count(),
+        'day': ticket_filter.filter(created_at__gte=day_start).count(),
+        'week': ticket_filter.filter(created_at__gte=week_start).count(),
+        'month': ticket_filter.filter(created_at__gte=month_start).count(),
+        'year': ticket_filter.filter(created_at__gte=year_start).count(),
     }
 
-    # Aggregated counts
-    status_counts = Ticket.objects.values('status').annotate(count=Count('id'))
-    priority_counts = Ticket.objects.values('priority').annotate(count=Count('id'))
+    # Aggregated counts (status & priority)
+    status_counts = ticket_filter.values('status').annotate(count=Count('id'))
+    priority_counts = ticket_filter.values('priority').annotate(count=Count('id'))
 
-    # Monthly ticket creation trends
+    # Monthly ticket trends
     monthly_trends = (
-        Ticket.objects
+        ticket_filter
         .annotate(month=TruncMonth('created_at'))
         .values('month')
         .annotate(count=Count('id'))
         .order_by('month')
     )
 
-    # Top terminals with the most tickets
+    # Top terminals with most tickets
     terminal_data = (
-        Ticket.objects
+        ticket_filter
         .values('terminal__branch_name')
         .annotate(count=Count('id'))
         .order_by('-count')[:10]
     )
 
+    # Region trends
     region_data = (
-        Ticket.objects
-        .values('terminal__region__name')  
+        ticket_filter
+        .values('terminal__region__name')
         .annotate(count=Count('id'))
         .order_by('-count')
     )
 
-    # Top categories
+    # Categories
     category_data = (
-        Ticket.objects
+        ticket_filter
         .values('problem_category__name')
         .annotate(count=Count('id'))
         .order_by('-count')[:10]
@@ -738,45 +888,63 @@ def ticketing_dashboard(request):
 
     # Top customers
     customer_data = (
-        Ticket.objects
+        ticket_filter
         .values('terminal__customer__name')
         .annotate(count=Count('id'))
         .order_by('-count')[:10]
     )
 
-    # Overview Data: Aggregated ticket counts for different time periods
+    # Overview + Category-time widgets
     overview_data = [
         {'label': 'Daily', 'count': time_data['day']},
         {'label': 'Weekly', 'count': time_data['week']},
         {'label': 'Monthly', 'count': time_data['month']},
         {'label': 'Yearly', 'count': time_data['year']},
     ]
+
     category_time_data = [
         {'category': d['problem_category__name'], 'daily_count': d['count']} 
         for d in category_data  
     ]
+
     kpi_data = [
         ("Daily", "dailyCount", "fa-sun"),
         ("Weekly", "weeklyCount", "fa-calendar-week"),
         ("Monthly", "monthlyCount", "fa-calendar-alt"),
         ("Yearly", "yearlyCount", "fa-calendar"),
     ]
-    # Prepare data for JSON serialization
+
     context = {
         "kpi_data": kpi_data,
         'status_data': json.dumps(list(status_counts)),
         'priority_data': json.dumps(list(priority_counts)),
-        'monthly_data': json.dumps([{'month': calendar.month_abbr[d['month'].month], 'count': d['count']} for d in monthly_trends if d['month']]),
-        'terminal_data': json.dumps([{'terminal': d['terminal__branch_name'], 'count': d['count']} for d in terminal_data]),
-        'region_data': json.dumps([{'region': d['terminal__region__name'], 'count': d['count']} for d in region_data]), 
+        'monthly_data': json.dumps([
+            {'month': calendar.month_abbr[d['month'].month], 'count': d['count']}
+            for d in monthly_trends if d['month']
+        ]),
+        'terminal_data': json.dumps([
+            {'terminal': d['terminal__branch_name'], 'count': d['count']}
+            for d in terminal_data
+        ]),
+        'region_data': json.dumps([
+            {'region': d['terminal__region__name'], 'count': d['count']}
+            for d in region_data
+        ]),
         'time_data': json.dumps(time_data),
-        'category_data': json.dumps([{'category': d['problem_category__name'], 'count': d['count']} for d in category_data]),
-        'customer_data': json.dumps([{'customer': d['terminal__customer__name'], 'count': d['count']} for d in customer_data]),
-        'overview_data': json.dumps(overview_data),  
-        'category_time_data': json.dumps(category_time_data), 
+        'category_data': json.dumps([
+            {'category': d['problem_category__name'], 'count': d['count']}
+            for d in category_data
+        ]),
+        'customer_data': json.dumps([
+            {'customer': d['terminal__customer__name'], 'count': d['count']}
+            for d in customer_data
+        ]),
+        'overview_data': json.dumps(overview_data),
+        'category_time_data': json.dumps(category_time_data),
     }
 
     return render(request, 'core/helpdesk/ticketing_dashboard.html', context)
+
 
 def statistics_view(request):
     today = timezone.now()
@@ -1027,7 +1195,7 @@ def export_report(request):
     wb.save(response)
     return response
 
-
+"""
 def tickets(request):
     query = request.GET.get('search', '')
     status_filter = request.GET.get('status', '') 
@@ -1051,7 +1219,66 @@ def tickets(request):
         'search_query': query,
         'status_filter': status_filter
     })
+"""
+def tickets(request):
+    query = request.GET.get('search', '')
+    status_filter = request.GET.get('status', '')
+    page_number = request.GET.get('page')
 
+    tickets_qs = Ticket.objects.none()
+
+    if request.user.is_authenticated:
+        print(f"Authenticated user: {request.user.username}")
+
+        # Staff/Internal roles
+        if request.user.is_superuser or request.user.groups.filter(name__in=['Director', 'Manager', 'Staff']).exists():
+            print("User has internal access (superuser or staff group)")
+            tickets_qs = Ticket.objects.all()
+
+        else:
+            profile = getattr(request.user, 'profile', None)
+
+            # Overseer check
+            overseer_customer = Customer.objects.filter(overseer=request.user).first()
+            if overseer_customer:
+                print(f"{request.user.username} is Overseer for {overseer_customer.name}")
+                tickets_qs = Ticket.objects.filter(customer=overseer_customer)
+
+            # Custodian check
+            elif profile and profile.terminal:
+                custodian_customer = Customer.objects.filter(custodian=request.user).first()
+                if custodian_customer:
+                    print(f"{request.user.username} is Custodian for {profile.terminal.branch_name} under {custodian_customer.name}")
+                    tickets_qs = Ticket.objects.filter(
+                        customer=custodian_customer,
+                        terminal=profile.terminal
+                    )
+                else:
+                    print(f"{request.user.username} is not assigned to any customer as custodian")
+            else:
+                print(f"{request.user.username} has no profile or terminal set")
+
+    # Apply filters
+    if query:
+        tickets_qs = tickets_qs.filter(
+            Q(title__icontains=query) |
+            Q(description__icontains=query) |
+            Q(problem_category__name__icontains=query)
+        )
+
+    if status_filter:
+        tickets_qs = tickets_qs.filter(status=status_filter)
+
+    tickets_qs = tickets_qs.order_by('-created_at')
+
+    paginator = Paginator(tickets_qs, 10)
+    page_obj = paginator.get_page(page_number)
+
+    return render(request, 'core/helpdesk/tickets.html', {
+        'tickets': page_obj,
+        'search_query': query,
+        'status_filter': status_filter,
+    })
 
 
 def create_ticket(request):

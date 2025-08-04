@@ -1,6 +1,9 @@
 # core/admin.py
 from django.contrib import admin
-from .models import FileCategory, File, FileAccessLog, Ticket#, TicketComment
+from .models import FileCategory, File, FileAccessLog, Ticket
+from .models import Customer
+from django.contrib.auth.models import Group
+from django.db import transaction
 
 
 @admin.register(FileCategory)
@@ -27,7 +30,21 @@ class TicketAdmin(admin.ModelAdmin):
     list_filter = ('status', 'priority')
     search_fields = ('title', 'description')
 
-"""@admin.register(TicketComment)
-class TicketCommentAdmin(admin.ModelAdmin):
-    list_display = ('ticket', 'commented_by', 'created_at')
-    list_filter = ('created_at',)"""
+class CustomerAdmin(admin.ModelAdmin):
+    list_display = ('name', 'overseer', 'custodian')
+    search_fields = ('name',)
+
+    def save_model(self, request, obj, form, change):
+        print(f"Saving Customer: {obj.name}")  
+
+        if obj.overseer:
+            print(f"Assigning {obj.overseer.username} to the 'Customer' group") 
+            obj.overseer.groups.add(Group.objects.get(name='Customer'))
+
+        if obj.custodian:
+            print(f"Assigning {obj.custodian.username} to the 'Customer' group")  # Debug log
+            obj.custodian.groups.add(Group.objects.get(name='Customer'))
+
+        super().save_model(request, obj, form, change)
+
+admin.site.register(Customer, CustomerAdmin)

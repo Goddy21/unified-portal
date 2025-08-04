@@ -63,6 +63,7 @@ def user_directory_path(instance, filename):
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     avatar = models.ImageField(upload_to=user_directory_path, blank=True, null=True)
+    customer = models.ForeignKey('Customer', on_delete=models.CASCADE, null=True, blank=True)
 
     def __str__(self):
         return self.user.username
@@ -87,6 +88,12 @@ class Terminal(models.Model):
 
     def __str__(self):
         return f"{self.customer.name if self.customer else 'No Customer'} - {self.branch_name}"
+    
+    def is_overseer(self, user):
+        return self.customer.overseer == user
+
+    def is_custodian(self, user):
+        return self.customer.custodian == user
 
 
 class SystemUser(models.Model):
@@ -105,6 +112,8 @@ class Zone(models.Model):
 
 class Customer(models.Model):
     name = models.CharField(max_length=100)
+    overseer = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='overseeing_branches')
+    custodian = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='custodians_of_customers')
 
     def __str__(self):
         return self.name

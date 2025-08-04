@@ -33,6 +33,7 @@ urlpatterns = [
     path('logout/', auth_views.LogoutView.as_view(), name='logout'),
     path('admin-dashboard/', views.admin_dashboard, name='admin_dashboard'),
     path('create-user/', views.create_user, name='create_user'),
+    path('manage-customer-roles/', views.manage_customer_roles, name='manage_customer_roles'),
 
     path('pre_dashboards/', views.pre_dashboards, name='pre_dashboards'),
     
