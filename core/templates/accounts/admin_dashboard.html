@@ -93,7 +93,7 @@
                    {% if customer.custodian %}
                     {{ customer.custodian.username }}
                     {% with customer.custodian.profile as profile %}
-                      {% if profile and profile.terminal %}
+                      {% if profile.terminal %}
                         <br><small>(Branch: {{ profile.terminal.branch_name }})</small>
                       {% else %}
                         <br><small style="color:red">(No branch assigned)</small>
@@ -105,45 +105,53 @@
                 </td>
                 <td>
                     <!-- Manage Roles Form -->
-                    <form method="post" action="{% url 'admin_dashboard' %}" style="display:inline;">
-                        {% csrf_token %}
-                        <input type="hidden" name="customer_id" value="{{ customer.id }}">
-                        <input type="hidden" name="action" value="assign_overseer_or_custodian">
+                  <form method="post" action="{% url 'admin_dashboard' %}" class="manage-customer-roles form">
+                    {% csrf_token %}
+                    <input type="hidden" name="customer_id" value="{{ customer.id }}">
+                    <input type="hidden" name="action" value="assign_overseer_or_custodian">
 
-                        <!-- Select Manager -->
+                    <div class="form-group">
                         <label for="overseer_id_{{ customer.id }}">Overseer:</label>
                         <select name="overseer_id" id="overseer_id_{{ customer.id }}">
                             <option value="">--Select Overseer--</option>
                             {% for user in users %}
-                                <option value="{{ user.id }}" {% if customer.overseer and customer.overseer.id == user.id %}selected{% endif %}>{{ user.username }}</option>
+                                <option value="{{ user.id }}" {% if customer.overseer and customer.overseer.id == user.id %}selected{% endif %}>
+                                    {{ user.username }}
+                                </option>
                             {% endfor %}
                         </select>
+                    </div>
 
-                        <!-- Select Custodian -->
+                    <div class="form-group">
                         <label for="custodian_id_{{ customer.id }}">Custodian:</label>
                         <select name="custodian_id" id="custodian_id_{{ customer.id }}">
                             <option value="">--Select Custodian--</option>
                             {% for user in users %}
-                                <option value="{{ user.id }}" {% if customer.custodian and customer.custodian.id == user.id %}selected{% endif %}>{{ user.username }}</option>
+                                <option value="{{ user.id }}" {% if customer.custodian and customer.custodian.id == user.id %}selected{% endif %}>
+                                    {{ user.username }}
+                                </option>
                             {% endfor %}
                         </select>
+                    </div>
 
-                        <!-- Select Branch (Terminal) for Custodian -->
+                    <div class="form-group">
                         <label for="terminal_id_{{ customer.id }}">Select Branch (Terminal) for Custodian:</label>
                         <select name="terminal_id_{{ customer.id }}" id="terminal_id_{{ customer.id }}" required>
                             <option value="">--Select Branch--</option>
                             {% for terminal in customer.terminal_set.all %}
                                 <option value="{{ terminal.id }}"
-                                  {% if customer.custodian and customer.custodian.profile and customer.custodian.profile.terminal.id == terminal.id %}
-                                    selected
-                                  {% endif %}>
-                                  {{ terminal.branch_name }}
+                                    {% if customer.custodian and customer.custodian.profile and customer.custodian.profile.terminal.id == terminal.id %}
+                                        selected
+                                    {% endif %}>
+                                    {{ terminal.branch_name }}
                                 </option>
                             {% endfor %}
                         </select>
+                    </div>
 
-                        <button type="submit" class="btn-update">Update Roles</button>
-                    </form>
+                    <button type="submit" class="btn-update">Update Roles</button>
+                </form>
+
                 </td>
             </tr>
             {% endfor %}
@@ -229,33 +237,33 @@
     </section>
 
     <div class="container">
-  <h2>👥 All Overseers</h2>
-  <ul>
-    {% for user in overseers %}
-      <li>{{ user.get_full_name }} ({{ user.username }})</li>
-    {% empty %}
-      <li><em>No overseers defined.</em></li>
-    {% endfor %}
-  </ul>
+      <h2>👥 All Overseers</h2>
+      <ol>
+        {% for user in overseers %}
+          <li>{{ user.get_full_name }} ({{ user.username }})</li>
+        {% empty %}
+          <li><em>No overseers defined.</em></li>
+        {% endfor %}
+      </ol>
 
-  <h2>🗄️ All Custodians</h2>
-  <ul>
-    {% for user in custodians %}
-      <li>{{ user.get_full_name }} ({{ user.username }})</li>
-    {% empty %}
-      <li><em>No custodians defined.</em></li>
-    {% endfor %}
-  </ul>
+      <h2>🗄️ All Custodians</h2>
+      <ol>
+        {% for user in custodians %}
+          <li>{{ user.get_full_name }} ({{ user.username }})</li>
+        {% empty %}
+          <li><em>No custodians defined.</em></li>
+        {% endfor %}
+      </ol>
 
-  <h2>❓ Users Without Roles</h2>
-  <ul>
-    {% for user in users_without_roles %}
-      <li>{{ user.get_full_name }} ({{ user.username }})</li>
-    {% empty %}
-      <li><em>All users have roles.</em></li>
-    {% endfor %}
-  </ul>
-</div>
+      <h2>❓ Users Without Roles</h2>
+      <ol>
+        {% for user in users_without_roles %}
+          <li>{{ user.get_full_name }} ({{ user.username }})</li>
+        {% empty %}
+          <li><em>All users have roles.</em></li>
+        {% endfor %}
+      </ol>
+  </div>
 
   </main>
 </body>
