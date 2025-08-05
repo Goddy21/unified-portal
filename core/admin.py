@@ -1,6 +1,6 @@
 # core/admin.py
 from django.contrib import admin
-from .models import FileCategory, File, FileAccessLog, Ticket
+from .models import FileCategory, File, FileAccessLog, Ticket, Profile, Terminal
 from .models import Customer
 from django.contrib.auth.models import Group
 from django.db import transaction
@@ -37,14 +37,28 @@ class CustomerAdmin(admin.ModelAdmin):
     def save_model(self, request, obj, form, change):
         print(f"Saving Customer: {obj.name}")  
 
+        # Assign Overseer to group
         if obj.overseer:
             print(f"Assigning {obj.overseer.username} to the 'Customer' group") 
             obj.overseer.groups.add(Group.objects.get(name='Customer'))
 
+        # Assign Custodian to group + ensure profile is created/updated
         if obj.custodian:
-            print(f"Assigning {obj.custodian.username} to the 'Customer' group")  # Debug log
+            print(f"Assigning {obj.custodian.username} to the 'Customer' group")  
             obj.custodian.groups.add(Group.objects.get(name='Customer'))
 
-        super().save_model(request, obj, form, change)
+            # Create or update Profile for custodian
+            profile, created = Profile.objects.get_or_create(user=obj.custodian)
+            profile.customer = obj
 
-admin.site.register(Customer, CustomerAdmin)
+            # Try to assign terminal for this customer (if any)
+            terminal = Terminal.objects.filter(customer=obj).first()
+            if terminal:
+                profile.terminal = terminal
+                print(f"Assigned terminal {terminal} to {obj.custodian.username}")
+            else:
+                print(f"No terminal found for {obj.name}, cannot assign to {obj.custodian.username}")
+
+            profile.save()
+
+        super().save_model(request, obj, form, change)

@@ -83,7 +83,7 @@ class Terminal(models.Model):
     customer = models.ForeignKey('Customer', on_delete=models.CASCADE, null=True)
     branch_name = models.CharField(max_length=100, default='Main Branch')
     cdm_name = models.CharField(max_length=100, default='CDM-Default')
-    serial_number = models.CharField(max_length=100, unique=True, default='SN0000')
+    serial_number = models.CharField(max_length=100, unique=False, default='SN0000')
     region = models.ForeignKey('Region', on_delete=models.CASCADE, null=True)
     model = models.CharField(max_length=100, default='ModelX')
     zone = models.ForeignKey('Zone', on_delete=models.SET_NULL, null=True)

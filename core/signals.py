@@ -100,38 +100,42 @@ def assign_all_permissions(user):
 def assign_director_permissions(user):
     """Assigns director-specific permissions to the user"""
     permissions = [
-        'core.view_file',
-        'core.change_file',
-        'core.delete_file',
-        'core.add_file',
-        'core.view_user',
-        'core.change_user',
-        'core.delete_user',
+        'view_file',
+        'change_file',
+        'delete_file',
+        'add_file',
+        'view_user',
+        'change_user',
+        'delete_user',
     ]
     assign_permissions(user, permissions)
 
 def assign_manager_permissions(user):
     """Assigns manager-specific permissions to the user"""
     permissions = [
-        'core.view_file',
-        'core.change_file',
-        'core.add_file',
-        'core.view_user',
-        'core.change_user',
+        'view_file',
+        'change_file',
+        'add_file',
+        'view_user',
+        'change_user',
     ]
     assign_permissions(user, permissions)
 
 def assign_staff_permissions(user):
     """Assigns staff-specific permissions to the user"""
     permissions = [
-        'core.view_file',
-        'core.add_file',
-        'core.view_user',
+        'view_file',
+        'add_file',
+        'view_user',
     ]
     assign_permissions(user, permissions)
 
 def assign_permissions(user, permissions_list):
     """Helper function to assign a list of permissions to a user"""
-    for permission_codename in permissions_list:
-        permission = Permission.objects.get(codename=permission_codename)
-        user.user_permissions.add(permission)
+    for codename in permissions_list:
+        try:
+            permission = Permission.objects.get(codename=codename)
+            user.user_permissions.add(permission)
+        except Permission.DoesNotExist:
+            print(f"⚠️ Permission with codename '{codename}' does not exist.")
+

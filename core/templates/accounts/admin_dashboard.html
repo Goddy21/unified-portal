@@ -74,7 +74,6 @@
         <thead>
             <tr>
                 <th>Customer Name</th>
-                <th>Email</th>
                 <th>Assigned Overseers</th>
                 <th>Assigned Custodian</th>
                 <th>Actions</th>
@@ -84,22 +83,29 @@
             {% for customer in customers %}
             <tr>
                 <td>{{ customer.name }}</td>
-                <td>{{ customer.email }}</td>
                 <td>{% if customer.overseer %}
                     {{ customer.overseer.username }}
                     {% else %}
                     None
                     {% endif %}
                 </td>
-                <td>{% if customer.custodian %}
+                <td>
+                   {% if customer.custodian %}
                     {{ customer.custodian.username }}
-                    {% else %}
+                    {% with customer.custodian.profile as profile %}
+                      {% if profile and profile.terminal %}
+                        <br><small>(Branch: {{ profile.terminal.branch_name }})</small>
+                      {% else %}
+                        <br><small style="color:red">(No branch assigned)</small>
+                      {% endif %}
+                    {% endwith %}
+                  {% else %}
                     None
-                    {% endif %}
+                  {% endif %}
                 </td>
                 <td>
                     <!-- Manage Roles Form -->
-                    <form method="post" action="{% url 'manage_customer_roles' %}" style="display:inline;">
+                    <form method="post" action="{% url 'admin_dashboard' %}" style="display:inline;">
                         {% csrf_token %}
                         <input type="hidden" name="customer_id" value="{{ customer.id }}">
                         <input type="hidden" name="action" value="assign_overseer_or_custodian">
@@ -124,10 +130,15 @@
 
                         <!-- Select Branch (Terminal) for Custodian -->
                         <label for="terminal_id_{{ customer.id }}">Select Branch (Terminal) for Custodian:</label>
-                        <select name="terminal_id" id="terminal_id_{{ customer.id }}">
+                        <select name="terminal_id_{{ customer.id }}" id="terminal_id_{{ customer.id }}" required>
                             <option value="">--Select Branch--</option>
                             {% for terminal in customer.terminal_set.all %}
-                                <option value="{{ terminal.id }}" {% if customer.custodian and customer.custodian.terminal == terminal %}selected{% endif %}>{{ terminal.branch_name }}</option>
+                                <option value="{{ terminal.id }}"
+                                  {% if customer.custodian and customer.custodian.profile and customer.custodian.profile.terminal.id == terminal.id %}
+                                    selected
+                                  {% endif %}>
+                                  {{ terminal.branch_name }}
+                                </option>
                             {% endfor %}
                         </select>
 
