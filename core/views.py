@@ -57,7 +57,27 @@ def is_manager(user):
 def is_staff(user):
     return in_group(user, 'Staff')
     
+@login_required(login_url='login')    
 def admin_dashboard(request):
+    query = request.GET.get('q', '').strip()
+    users_qs = User.objects.all()
+    customers_qs = Customer.objects.all()
+    terminals_qs = Terminal.objects.select_related('custodian').all()
+
+    if query:
+        users_qs = users_qs.filter(
+            Q(username__icontains=query) |
+            Q(email__icontains=query) |
+            Q(first_name__icontains=query) |
+            Q(last_name__icontains=query)
+        )
+        customers_qs = customers_qs.filter(
+            Q(name__icontains=query)
+        )
+        terminals_qs = terminals_qs.filter(
+            Q(branch_name__icontains=query)
+        )
+
     if request.method == 'POST':
         action = request.POST.get('action')
 
@@ -195,9 +215,10 @@ def admin_dashboard(request):
     terminals_prefetch = Prefetch('terminal_set', queryset=Terminal.objects.select_related('custodian'), to_attr='terminals')
 
     context = {
-        'users': User.objects.all(),
-        #'customers': Customer.objects.prefetch_related(profile_prefetch, terminals_prefetch),
-        'customers': Customer.objects.prefetch_related(terminals_prefetch),
+        'users': users_qs,
+        #'customers': Customer.objects.prefetch_related(terminals_prefetch),
+        'customers': customers_qs.prefetch_related(terminals_prefetch),
+        'terminals': terminals_qs,
         'total_users': User.objects.count(),
         'total_files': files_qs.count(),
         'open_tickets': tickets_qs.filter(status='open').count(),

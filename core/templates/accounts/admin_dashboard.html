@@ -25,6 +25,25 @@
       <p>You have administrative access. Use the panels below to manage the system.</p>
     </section>
 
+    <section class="search-section">
+      <form method="get" action="{% url 'admin_dashboard' %}" class="search-form">
+        <input type="text" name="q" placeholder="Search users by username, email..." value="{{ request.GET.q }}">
+        <button type="submit"><i class="fas fa-search"></i> Search</button>
+      </form>
+    </section>
+
+    {% if request.GET.q %}
+      <p class="search-results">
+        <strong>{{ users|length }}</strong> users,
+        <strong>{{ customers|length }}</strong> customers,
+        <strong>{{ terminals|length }}</strong> terminals match
+        "<span style="color:#007bff">{{ request.GET.q }}</span>"
+      </p>
+    {% endif %}
+
+
+
+
     <section class="dashboard-grid">
       <div class="card stat-card">
         <i class="fas fa-users card-icon"></i>
@@ -66,85 +85,6 @@
         📂 Manage File Categories
       </a>
     </section>
-
-    <!-- Manage Customer Roles -->
-    <section class="container">
-      <h2>👤 Manage Customers, Overseers & Custodians</h2>
-
-      {% for customer in customers %}
-        <div class="card mb-4 p-3 shadow-sm">
-          <div class="d-flex justify-content-between align-items-center mb-2">
-            <h4>{{ customer.name }}</h4>
-            <form method="post" action="{% url 'admin_dashboard' %}" class="d-flex align-items-center">
-              {% csrf_token %}
-              <input type="hidden" name="customer_id" value="{{ customer.id }}">
-              <input type="hidden" name="action" value="assign_overseer_or_custodian">
-
-              <select name="overseer_id" class="form-select me-2" required>
-                <option value="">--Select Overseer--</option>
-                {% for user in users %}
-                  <option value="{{ user.id }}" {% if customer.overseer and customer.overseer.id == user.id %}selected{% endif %}>
-                    {{ user.get_full_name }} ({{ user.username }})
-                  </option>
-                {% endfor %}
-              </select>
-
-              <button type="submit" class="btn btn-primary btn-sm">Update Overseer</button>
-            </form>
-          </div>
-
-          {% if customer.terminals %}
-            <table class="table table-bordered table-sm mt-3">
-              <thead class="table-light">
-                <tr>
-                  <th>Branch</th>
-                  <th>Custodian</th>
-                  <th>Assign / Update</th>
-                </tr>
-              </thead>
-              <tbody>
-                {% for terminal in customer.terminals %}
-                  <tr>
-                    <td>{{ terminal.branch_name }}</td>
-                    <td>
-                      {% if terminal.custodian %}
-                        {{ terminal.custodian.get_full_name }} ({{ terminal.custodian.username }})
-                      {% else %}
-                        <span class="text-danger">None Assigned</span>
-                      {% endif %}
-                    </td>
-                    <td>
-                      <form method="post" action="{% url 'admin_dashboard' %}" class="d-flex">
-                        {% csrf_token %}
-                        <input type="hidden" name="action" value="assign_custodian">
-                        <input type="hidden" name="customer_id" value="{{ customer.id }}">
-                        <input type="hidden" name="terminal_id" value="{{ terminal.id }}">
-
-                        <select name="custodian_id" class="form-select me-2" required>
-                          <option value="">--Select Custodian--</option>
-                          {% for user in users %}
-                            <option value="{{ user.id }}" {% if terminal.custodian and terminal.custodian.id == user.id %}selected{% endif %}>
-                              {{ user.get_full_name }} ({{ user.username }})
-                            </option>
-                          {% endfor %}
-                        </select>
-
-                        <button type="submit" class="btn btn-success btn-sm">Update</button>
-                      </form>
-                    </td>
-                  </tr>
-                {% endfor %}
-              </tbody>
-            </table>
-          {% else %}
-            <p class="text-muted"><em>No branches defined for this customer.</em></p>
-          {% endif %}
-        </div>
-      {% empty %}
-        <p>No customers available.</p>
-      {% endfor %}
-    </section>
-
 
     <!-- Manage User Roles -->
     <div class="container">
@@ -214,6 +154,84 @@
         </select>
         <button type="submit" class="btn-create"><i class="fas fa-user-plus"></i> Create User</button>
       </form>
+    </section>
+
+        <!-- Manage Customer Roles -->
+    <section class="container">
+      <h2>👤 Manage Customers, Overseers & Custodians</h2>
+
+      {% for customer in customers %}
+        <div class="card mb-4 p-3 shadow-sm">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <h4>{{ customer.name }}</h4>
+            <form method="post" action="{% url 'admin_dashboard' %}" class="form-inline-row">
+              {% csrf_token %}
+              <input type="hidden" name="customer_id" value="{{ customer.id }}">
+              <input type="hidden" name="action" value="assign_overseer_or_custodian">
+
+              <select name="overseer_id" required>
+                <option value="">-- Select Overseer --</option>
+                {% for user in users %}
+                  <option value="{{ user.id }}" {% if customer.overseer and customer.overseer.id == user.id %}selected{% endif %}>
+                    {{ user.get_full_name }} ({{ user.username }})
+                  </option>
+                {% endfor %}
+              </select>
+
+              <button type="submit" class="btn btn-primary btn-sm">Update Overseer</button>
+            </form>
+          </div>
+
+          {% if customer.terminals %}
+            <table class="table table-bordered table-sm mt-3">
+              <thead class="table-light">
+                <tr>
+                  <th>Branch</th>
+                  <th>Custodian</th>
+                  <th>Assign / Update</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for terminal in customer.terminals %}
+                  <tr>
+                    <td>{{ terminal.branch_name }}</td>
+                    <td>
+                      {% if terminal.custodian %}
+                        {{ terminal.custodian.get_full_name }} ({{ terminal.custodian.username }})
+                      {% else %}
+                        <span class="text-danger">None Assigned</span>
+                      {% endif %}
+                    </td>
+                    <td>
+                      <form method="post" action="{% url 'admin_dashboard' %}" class="form-inline-row">
+                      {% csrf_token %}
+                      <input type="hidden" name="action" value="assign_custodian">
+                      <input type="hidden" name="customer_id" value="{{ customer.id }}">
+                      <input type="hidden" name="terminal_id" value="{{ terminal.id }}">
+
+                      <select name="custodian_id" required>
+                        <option value="">-- Select Custodian --</option>
+                        {% for user in users %}
+                          <option value="{{ user.id }}" {% if terminal.custodian and terminal.custodian.id == user.id %}selected{% endif %}>
+                            {{ user.get_full_name }} ({{ user.username }})
+                          </option>
+                        {% endfor %}
+                      </select>
+
+                      <button type="submit" class="btn btn-success btn-sm">Update</button>
+                    </form>
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          {% else %}
+            <p class="text-muted"><em>No branches defined for this customer.</em></p>
+          {% endif %}
+        </div>
+      {% empty %}
+        <p>No customers available.</p>
+      {% endfor %}
     </section>
 
     <!-- User Lists -->
