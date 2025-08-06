@@ -57,12 +57,6 @@ def is_manager(user):
 def is_staff(user):
     return in_group(user, 'Staff')
     
-from django.contrib.auth.models import Group
-from django.shortcuts import render, get_object_or_404
-from django.contrib import messages
-from django.db.models import Q
-from .models import Ticket, Customer, Terminal, File, Profile, User
-"""
 def admin_dashboard(request):
     if request.method == 'POST':
         action = request.POST.get('action')
@@ -70,184 +64,50 @@ def admin_dashboard(request):
         if action == 'assign_overseer_or_custodian':
             customer_id = request.POST.get('customer_id')
             overseer_id = request.POST.get('overseer_id')
-            custodian_id = request.POST.get('custodian_id')
-            terminal_id = request.POST.get('terminal_id')
-            if not terminal_id:
-                customer_terminals = Terminal.objects.filter(customer=customer)
-                if customer_terminals.count() == 1:
-                    terminal_id = customer_terminals.first().id
-                    print(f"Auto-selected terminal {terminal_id} for customer {customer.name}")
 
             customer = get_object_or_404(Customer, id=customer_id)
-
-            if overseer_id:
-                overseer = get_object_or_404(User, id=overseer_id)
-                overseer.groups.add(Group.objects.get(name='Customer'))
-                customer.overseer = overseer
-                print(f"Assigned overseer: {overseer.username}")
-
-            if custodian_id:
-                custodian = get_object_or_404(User, id=custodian_id)
-                custodian.groups.add(Group.objects.get(name='Customer'))
-                customer.custodian = custodian
-                print(f"Assigned custodian: {custodian.username}")
-
-                if terminal_id:
-                    terminal = get_object_or_404(Terminal, id=terminal_id)
-                    profile, _ = Profile.objects.update_or_create(
-                        user=custodian,
-                        defaults={
-                            'terminal': terminal,
-                            'customer': customer
-                        }
-                    )
-                    print(f"Updated Profile → terminal: {profile.terminal}, customer: {profile.customer}")
-
-                    print(f"Assigned terminal {terminal} to {custodian.username}")
-                    print(f"Custodian Profile → terminal: {profile.terminal}, customer: {profile.customer}")
-
-
-            customer.save()
-            customer.refresh_from_db()
-            if customer.custodian:
-                customer.custodian.refresh_from_db()
-                if hasattr(customer.custodian, 'profile'):
-                    customer.custodian.profile.refresh_from_db()
-            messages.success(request, f"Manager and Custodian updated for {customer.name}.")
-            print(f"Customer saved: {customer.name}")
-
-        elif action == 'remove_role':
-            customer_id = request.POST.get('customer_id')
-            customer = get_object_or_404(Customer, id=customer_id)
-            customer.overseer = None
-            customer.custodian = None
-            customer.save()
-            messages.success(request, f"Roles removed for {customer.name}.")
-            print(f"Roles removed for: {customer.name}")
-
-    # ========================
-    # Access filtering logic
-    # ========================
-
-    tickets_qs = Ticket.objects.none()
-    files_qs = File.objects.none()
-
-    if request.user.is_superuser or request.user.groups.filter(name__in=['Director', 'Manager', 'Staff']).exists():
-        print("Admin/staff user: showing all data.")
-        tickets_qs = Ticket.objects.all()
-        files_qs = File.objects.all()
-
-    else:
-        profile = getattr(request.user, 'profile', None)
-
-        customer = Customer.objects.filter(overseer=request.user).first()
-        if customer:
-            print(f"{request.user.username} is Overseer of {customer.name}")
-            tickets_qs = Ticket.objects.filter(customer=customer)
-            files_qs = File.objects.filter(customer=customer)
-
-        elif profile and profile.terminal and profile.customer:
-            customer = Customer.objects.filter(custodian=request.user).first()
-            if customer:
-                print(f"{request.user.username} is Custodian for {profile.terminal} under {customer.name}")
-                tickets_qs = Ticket.objects.filter(customer=customer, terminal=profile.terminal)
-                files_qs = File.objects.filter(customer=customer, terminal=profile.terminal)
-            else:
-                print(f"{request.user.username} is a custodian but not linked to any customer.")
-        else:
-            print(f"{request.user.username} has no access to dashboard data.")
-
-    # Stats and role mapping
-    overseers = Customer.objects.filter(overseer__isnull=False).values('overseer')
-    custodians = Customer.objects.filter(custodian__isnull=False).values('custodian')
-
-    overseer_users = User.objects.filter(id__in=[u['overseer'] for u in overseers])
-    custodian_users = User.objects.filter(id__in=[u['custodian'] for u in custodians])
-    users_without_roles = User.objects.exclude(id__in=[*overseer_users.values_list('id', flat=True), *custodian_users.values_list('id', flat=True)])
-
-    # Prefetch custodian -> profile -> terminal
-    profile_prefetch = Prefetch(
-        'custodian__profile',
-        queryset=Profile.objects.select_related('terminal')
-    )
-    print("Profile terminal before render:", customer.custodian.profile.terminal)
-    context = {
-        'users': User.objects.all(),
-        'customers': Customer.objects.select_related('overseer', 'custodian').prefetch_related(profile_prefetch),
-        'total_users': User.objects.count(),
-        'total_files': files_qs.count(),
-        'open_tickets': tickets_qs.filter(status='open').count(),
-        'overseers': overseer_users,
-        'custodians': custodian_users,
-        'users_without_roles': users_without_roles,
-    }
-
-    return render(request, 'accounts/admin_dashboard.html', context)
-"""
-
-
-def admin_dashboard(request):
-    if request.method == 'POST':
-        action = request.POST.get('action')
-
-        if action == 'assign_overseer_or_custodian':
-            customer_id = request.POST.get('customer_id')
-            overseer_id = request.POST.get('overseer_id')
-            custodian_id = request.POST.get('custodian_id')
-            terminal_id = request.POST.get(f'terminal_id_{customer_id}')
-
-            customer = get_object_or_404(Customer, id=customer_id)
-
-            # Auto-select terminal if not provided and only one exists
-            if not terminal_id:
-                customer_terminals = Terminal.objects.filter(customer=customer)
-                if customer_terminals.count() == 1:
-                    terminal_id = customer_terminals.first().id
-                    print(f"Auto-selected terminal {terminal_id} for customer {customer.name}")
 
             # Assign overseer
             if overseer_id:
                 overseer = get_object_or_404(User, id=overseer_id)
                 overseer.groups.add(Group.objects.get(name='Customer'))
                 customer.overseer = overseer
+                customer.save()
                 print(f"Assigned overseer: {overseer.username}")
-
-            # Assign custodian
-            if custodian_id:
-                custodian = get_object_or_404(User, id=custodian_id)
-                customer.custodian = custodian
-                custodian.groups.add(Group.objects.get(name='Customer'))
-                print(f"Assigned custodian: {custodian.username}")
-                print("Custodian ID:", custodian_id)
-                print("Customer:", customer.name)
-
+                messages.success(request, f"Overseer updated for {customer.name}.")
             else:
-                print("No custodian_id")
-            customer.save()
+                messages.warning(request, f"No overseer selected for {customer.name}.")
 
-            # Always update custodian's profile if custodian exists
-            custodian = customer.custodian
-            if custodian:
-                profile, _ = Profile.objects.get_or_create(user=custodian)
-                if terminal_id:
-                    terminal = get_object_or_404(Terminal, id=terminal_id)
-                    profile.terminal = terminal
-                    profile.customer = customer
-                    profile.save()
-                    print(f"Updated profile for {custodian.username}: Terminal={terminal.branch_name}, Customer={customer.name}")
-                else:
-                    print(f"No terminal provided for custodian {custodian.username}")
+        elif action == 'assign_custodian':
+            customer_id = request.POST.get('customer_id')
+            terminal_id = request.POST.get('terminal_id')
+            custodian_id = request.POST.get('custodian_id')
 
-            # Final refresh for display
-            customer.refresh_from_db()
-            if customer.custodian:
-                customer.custodian.refresh_from_db()
-                if hasattr(customer.custodian, 'profile'):
-                    customer.custodian.profile.refresh_from_db()
+            customer = get_object_or_404(Customer, id=customer_id)
+            terminal = get_object_or_404(Terminal, id=terminal_id)
+            custodian = get_object_or_404(User, id=custodian_id)
 
-            messages.success(request, f"Manager and Custodian updated for {customer.name}.")
-            print(f"Customer saved: {customer.name}")
+            # Assign custodian to terminal
+            terminal.custodian = custodian
+            terminal.save()
             
+
+            # Ensure custodian is part of the right group
+            custodian.groups.add(Group.objects.get(name='Customer'))
+
+            # Update profile
+            profile, _ = Profile.objects.get_or_create(user=custodian)
+            profile.terminal = terminal
+            profile.customer = customer
+            profile.save()
+
+            terminal.refresh_from_db()
+            custodian.refresh_from_db()
+            if hasattr(custodian, 'profile'):
+                custodian.profile.refresh_from_db()
+
+            messages.success(request, f"Custodian {custodian.username} assigned to {terminal.branch_name}.")
+
         elif action == 'update_role':
             user_id = request.POST.get('user_id')
             new_role = request.POST.get('new_role')
@@ -317,7 +177,9 @@ def admin_dashboard(request):
 
     # Role categorization
     overseer_ids = Customer.objects.filter(overseer__isnull=False).values_list('overseer', flat=True)
-    custodian_ids = Customer.objects.filter(custodian__isnull=False).values_list('custodian', flat=True)
+    #custodian_ids = Customer.objects.filter(custodian__isnull=False).values_list('custodian', flat=True)
+    custodian_ids = Terminal.objects.filter(custodian__isnull=False).values_list('custodian', flat=True).distinct()
+
 
     overseer_users = User.objects.filter(id__in=overseer_ids)
     custodian_users = User.objects.filter(id__in=custodian_ids)
@@ -328,11 +190,14 @@ def admin_dashboard(request):
         'custodian__profile',
         queryset=Profile.objects.select_related('terminal')
     )
-    terminals_prefetch = Prefetch('terminal_set', queryset=Terminal.objects.all(), to_attr='terminals')
+    
+    #terminals_prefetch = Prefetch('terminal_set', queryset=Terminal.objects.all(), to_attr='terminals')
+    terminals_prefetch = Prefetch('terminal_set', queryset=Terminal.objects.select_related('custodian'), to_attr='terminals')
 
     context = {
         'users': User.objects.all(),
-        'customers': Customer.objects.select_related('custodian__profile__terminal').prefetch_related(profile_prefetch, terminals_prefetch),
+        #'customers': Customer.objects.prefetch_related(profile_prefetch, terminals_prefetch),
+        'customers': Customer.objects.prefetch_related(terminals_prefetch),
         'total_users': User.objects.count(),
         'total_files': files_qs.count(),
         'open_tickets': tickets_qs.filter(status='open').count(),
@@ -1117,6 +982,38 @@ def statistics_view(request):
     today = timezone.now()
     print(f"timezone.now() in view: {today} (aware: {timezone.is_aware(today)})")
    
+       # Detect user group
+    user_group = None
+    if Customer.objects.filter(custodian=request.user).exists():
+        user_group = "Custodian"
+    elif Customer.objects.filter(overseer=request.user).exists():
+        user_group = "Overseer"
+    elif request.user.groups.filter(name="Director").exists():
+        user_group = "Director"
+    elif request.user.groups.filter(name="Manager").exists():
+        user_group = "Manager"
+    elif request.user.groups.filter(name="Staff").exists():
+        user_group = "Staff"
+
+    if user_group == "Overseer":
+        assigned_customer = Customer.objects.filter(overseer=request.user).first()
+
+    elif user_group == "Custodian":
+        assigned_terminals = Terminal.objects.filter(custodian=request.user)
+        assigned_customer = assigned_terminals.first().customer if assigned_terminals.exists() else None
+        assigned_branch = assigned_terminals.first().branch_name if assigned_terminals.exists() else None
+        assigned_region = assigned_terminals.first().region if assigned_terminals.exists() else None
+
+    # Initial tickets query with role-based filtering
+    tickets = Ticket.objects.all()
+    if user_group == "Overseer":
+        assigned_customers = Customer.objects.filter(overseer=request.user)
+        tickets = tickets.filter(terminal__customer__in=assigned_customers)
+
+    elif user_group == "Custodian":
+        assigned_terminals = Terminal.objects.filter(custodian=request.user)
+        tickets = tickets.filter(terminal__in=assigned_terminals)
+
     # Get the selected filter values from the request
     time_period = request.GET.get('time-period', "all_time")
     customer_filter = request.GET.get('customer', 'all')
@@ -1250,6 +1147,10 @@ def statistics_view(request):
         'selected_terminal': terminal_filter,
         'selected_region': region_filter,
         'data_json': json.dumps(data, ensure_ascii=False),
+        "user_group": user_group,  
+        "assigned_customer": assigned_customer if user_group in ["Custodian", "Overseer"] else None,
+        "assigned_branch": assigned_branch if user_group == "Custodian" else None,
+        "assigned_region": assigned_region if user_group == "Custodian" else None,
     })
 
 def export_report(request):
@@ -1916,11 +1817,13 @@ def reports(request):
     tickets = Ticket.objects.prefetch_related('comments').all()
 
     # Filter for Custodian or Overseer to only see tickets of customers they're assigned to
-    if user_group in ["Custodian", "Overseer"]:
-        assigned_customers = Customer.objects.filter(
-            **{f"{user_group.lower()}": request.user}
-        )
+    if user_group == "Overseer":
+        assigned_customers = Customer.objects.filter(overseer=request.user)
         tickets = tickets.filter(customer__in=assigned_customers)
+
+    elif user_group == "Custodian":
+        assigned_terminals = Terminal.objects.filter(custodian=request.user)
+        tickets = tickets.filter(terminal__in=assigned_terminals)
 
     customer = request.GET.get('customer')
     terminal_name = request.GET.get("terminal_name")

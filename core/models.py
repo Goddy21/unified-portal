@@ -81,6 +81,7 @@ class Unit(models.Model):
 
 class Terminal(models.Model):
     customer = models.ForeignKey('Customer', on_delete=models.CASCADE, null=True)
+    custodian = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name='custodian_terminals')
     branch_name = models.CharField(max_length=100, default='Main Branch')
     cdm_name = models.CharField(max_length=100, default='CDM-Default')
     serial_number = models.CharField(max_length=100, unique=False, default='SN0000')

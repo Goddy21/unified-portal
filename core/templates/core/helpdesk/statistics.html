@@ -26,36 +26,63 @@
         <option value="lastyear" {% if time_period == "lastyear" %}selected{% endif %}>Last Year</option>
       </select>
       </div>
+
       <div class="col-md-3 mb-2">
-        <select id="customer-filter" class="form-select custom-select" name="customer">
-          <option value="all" {% if selected_customer == "all" %}selected{% endif %}>All Customers</option>
-          {% for customer in customers %}
-            <option value="{{ customer.id }}" {% if selected_customer == customer.id|stringformat:"s" %}selected{% endif %}>
-              {{ customer.name|default:"Unnamed Customer" }}
+        <select id="customer-filter" class="form-select custom-select" name="customer" 
+                {% if user_group == "Custodian" or user_group == "Overseer" %}disabled{% endif %}>
+          {% if user_group == "Custodian" or user_group == "Overseer" %}
+            <option value="{{ assigned_customer.id }}" selected>
+              {{ assigned_customer.name }}
             </option>
-          {% endfor %}
+          {% else %}
+            <option value="all" {% if selected_customer == "all" %}selected{% endif %}>All Customers</option>
+            {% for customer in customers %}
+              <option value="{{ customer.id }}" {% if selected_customer == customer.id|stringformat:"s" %}selected{% endif %}>
+                {{ customer.name|default:"Unnamed Customer" }}
+              </option>
+            {% endfor %}
+          {% endif %}
         </select>
       </div>
+
       <div class="col-md-3 mb-2">
-        <select id="terminal-filter" class="form-select custom-select" name="terminal">
-          <option value="all" {% if selected_terminal == "all" %}selected{% endif %}>All Terminals</option>
-          {% for terminal in terminals %}
-            <option value="{{ terminal.id }}" {% if selected_terminal == terminal.id|stringformat:"s" %}selected{% endif %}>
-              {{ terminal.branch_name }} ({{ terminal.customer__name }} - {{ terminal.region__name }})
-            </option>
-          {% endfor %}
+        <select id="terminal-filter" class="form-select custom-select" name="terminal"
+              {% if user_group == "Custodian" %}disabled{% endif %}>
+          {% if user_group == "Custodian" %}
+            {% for terminal in terminals %}
+              {% if terminal.custodian == request.user %}
+                <option value="{{ terminal.id }}" selected>
+                  {{ terminal.branch_name }} ({{ terminal.customer.name }} - {{ terminal.region.name }})
+                </option>
+              {% endif %}
+            {% endfor %}
+          {% else %}
+            <option value="all" {% if selected_terminal == "all" %}selected{% endif %}>All Terminals</option>
+            {% for terminal in terminals %}
+              <option value="{{ terminal.id }}" {% if selected_terminal == terminal.id|stringformat:"s" %}selected{% endif %}>
+                {{ terminal.branch_name }} ({{ terminal.customer.name }} - {{ terminal.region.name }})
+              </option>
+            {% endfor %}
+          {% endif %}
         </select>
       </div>
-      <div class="col-md-3 mb-2">
-        <select id="region-filter" class="form-select custom-select" name="region">
-          <option value="all" {% if selected_region == "all" %}selected{% endif %}>All Regions</option>
-          {% for region in regions %}
-            <option value="{{ region.id }}" {% if selected_region == region.id|stringformat:"s" %}selected{% endif %}>
-              {{ region.name }}
-            </option>
-          {% endfor %}
+
+     <div class="col-md-3 mb-2">
+        <select id="region-filter" class="form-select custom-select" name="region" 
+                {% if user_group == "Custodian" %}disabled{% endif %}>
+          {% if user_group == "Custodian" %}
+            <option value="{{ assigned_region.id }}" selected>{{ assigned_region.name }}</option>
+          {% else %}
+            <option value="all" {% if selected_region == "all" %}selected{% endif %}>All Regions</option>
+            {% for region in regions %}
+              <option value="{{ region.id }}" {% if selected_region == region.id|stringformat:"s" %}selected{% endif %}>
+                {{ region.name }}
+              </option>
+            {% endfor %}
+          {% endif %}
         </select>
       </div>
+
     </div>
   </form>
 
