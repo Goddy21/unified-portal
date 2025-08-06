@@ -356,7 +356,15 @@ def login_view(request):
             username = form.cleaned_data['username']
             password = form.cleaned_data["password"]
             user = authenticate(username=username, password=password)
-            if user:
+            if user is not None:
+                user_roles = list(user.groups.values_list('name', flat=True))
+                allowed_roles = ['Director', 'Manager', 'Staff', 'Customer']  # define your allowed roles
+
+                if not any(role in allowed_roles for role in user_roles):
+                    return JsonResponse({
+                        'status': 'error',
+                        'message': 'Your account has not been issued a role yet. Kindly be patient for a while as we handle that. Thank you!'
+                    })
                 request.session['pre_otp_user'] = user.id 
                 otp = str(random.randint(100000, 999999))
                 EmailOTP.objects.update_or_create(user=user, defaults={'otp': otp, 'created_at': timezone.now()})
