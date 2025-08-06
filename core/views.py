@@ -135,26 +135,38 @@ def admin_dashboard(request):
             if user_id and new_role:
                 user = get_object_or_404(User, id=user_id)
 
-                # Remove all in-house roles first
-                inhouse_roles = ['Director', 'Manager', 'Staff']
-                user.groups.remove(*Group.objects.filter(name__in=inhouse_roles))
+                # Check if user is a customer (overseer or custodian)
+                is_overseer = Customer.objects.filter(overseer=user).exists()
+                is_custodian = Terminal.objects.filter(custodian=user).exists()
+                is_customer = is_overseer or is_custodian
 
-                # Assign new role group
-                group = Group.objects.get(name=new_role)
-                user.groups.add(group)
+                restricted_roles = ['Director', 'Manager', 'Staff']
+                if is_customer and new_role in restricted_roles:
+                    messages.error(request, f"{user.username} is a Customer (overseer or custodian) and cannot be assigned the role '{new_role}'.")
+                elif is_customer and new_role == 'Superuser':
+                    messages.error(request, f"{user.username} is a Customer and cannot be made superuser.")
+                else:
+                    # Remove all in-house roles first
+                    inhouse_roles = ['Director', 'Manager', 'Staff']
+                    user.groups.remove(*Group.objects.filter(name__in=inhouse_roles))
 
-                # Reassign permissions (manually trigger if needed)
-                if new_role == 'Director':
-                    assign_director_permissions(user)
-                elif new_role == 'Manager':
-                    assign_manager_permissions(user)
-                elif new_role == 'Staff':
-                    assign_staff_permissions(user)
+                    # Assign new role group
+                    group = Group.objects.get(name=new_role)
+                    user.groups.add(group)
 
-                user.save()
-                messages.success(request, f"{user.username}'s role updated to {new_role}.")
+                    # Reassign permissions (manually trigger if needed)
+                    if new_role == 'Director':
+                        assign_director_permissions(user)
+                    elif new_role == 'Manager':
+                        assign_manager_permissions(user)
+                    elif new_role == 'Staff':
+                        assign_staff_permissions(user)
+
+                    user.save()
+                    messages.success(request, f"{user.username}'s role updated to {new_role}.")
             else:
                 messages.error(request, "User ID or role missing in role update.")
+
 
         elif action == 'remove_role':
             customer_id = request.POST.get('customer_id')
@@ -164,6 +176,19 @@ def admin_dashboard(request):
             customer.save()
             messages.success(request, f"Roles removed for {customer.name}.")
             print(f"Roles removed for: {customer.name}")
+
+        elif action == 'delete_user':
+            user_id = request.POST.get('user_id')
+            if user_id:
+                try:
+                    user = User.objects.get(id=user_id)
+                    user.delete()
+                    messages.success(request, f"User {user.username} deleted successfully.")
+                except User.DoesNotExist:
+                    messages.error(request, "User not found.")
+            else:
+                messages.error(request, "No user ID provided for deletion.")
+
 
     # ========================
     # Access filtering logic

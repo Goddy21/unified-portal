@@ -254,7 +254,7 @@
         {% endfor %}
       </ol>
 
-      <h2>❓ Users Without Roles</h2>
+      <h2>❓ Users Without Customer Roles</h2>
       <ol>
         {% for user in users_without_roles %}
           <li>{{ user.get_full_name }} ({{ user.username }})</li>
