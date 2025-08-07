@@ -380,7 +380,6 @@ if (statusChart) {
     });
   }
 
-
   const overviewChart = document.getElementById('overviewChart');
   const overviewLabels = OVERVIEW_DATA.map(item => item.label);
   const overviewCounts = OVERVIEW_DATA.map(item => item.count);

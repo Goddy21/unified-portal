@@ -6,6 +6,7 @@ function toggleSidebar() {
 }
 
 document.getElementById("hamburger")?.addEventListener("click", toggleSidebar);
+document.querySelector(".sidebar-overlay")?.addEventListener("click", toggleSidebar);
 
 // Slide animation for submenu
 document.querySelectorAll(".has-submenu > a").forEach(link => {
@@ -18,15 +19,18 @@ document.querySelectorAll(".has-submenu > a").forEach(link => {
 
     const isExpanded = parent.classList.contains("expanded");
 
+    // Prepare submenu for the transition
     submenu.style.overflow = "hidden";
-    submenu.style.height = isExpanded ? submenu.scrollHeight + "px" : "0px";
+    submenu.style.height = isExpanded ? "0px" : submenu.scrollHeight + "px";
 
+    // Apply transition after a small delay
     requestAnimationFrame(() => {
       submenu.style.transition = "height 0.3s ease";
       submenu.style.height = isExpanded ? "0px" : submenu.scrollHeight + "px";
     });
 
     submenu.addEventListener("transitionend", () => {
+      // Set height to auto after transition ends
       submenu.style.height = isExpanded ? "0px" : "auto";
     }, { once: true });
 
@@ -45,11 +49,14 @@ document.querySelectorAll(".sidebar ul li a").forEach(link => {
     }
   });
 
-  // Animate icon
+  // Animate icon on hover
   link.addEventListener("mouseenter", () => {
-    link.querySelector(".icon")?.classList.add("fa-beat");
+    const icon = link.querySelector(".icon");
+    if (icon) icon.classList.add("fa-beat");
   });
+
   link.addEventListener("mouseleave", () => {
-    link.querySelector(".icon")?.classList.remove("fa-beat");
+    const icon = link.querySelector(".icon");
+    if (icon) icon.classList.remove("fa-beat");
   });
 });

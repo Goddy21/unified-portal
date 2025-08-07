@@ -143,10 +143,10 @@
 /* Icon Styling */
 .category-icon-wrapper {
   display: inline-block;
-  max-width: 50px;
-  max-height: 50px;
+  max-width: 80px;
+  max-height: 80px;
   overflow: hidden;
-  border-radius: 6px;
+  border-radius: 8px;
   background-color: #f1f1f1;
   box-shadow: 0 1px 5px rgba(0, 0, 0, 0.1);
   transition: transform 0.3s ease;
@@ -160,6 +160,11 @@
   width: 100%;
   height: auto;
 }
+.large-icon {
+  width: 80px;
+  height: 80px;
+}
+
 
 /* Animations */
 @keyframes fadeIn {

@@ -358,7 +358,7 @@ def login_view(request):
             user = authenticate(username=username, password=password)
             if user is not None:
                 user_roles = list(user.groups.values_list('name', flat=True))
-                allowed_roles = ['Director', 'Manager', 'Staff', 'Customer']  # define your allowed roles
+                allowed_roles = ['Director', 'Manager', 'Staff', 'Customer'] 
 
                 if not user.is_superuser and not any(role in allowed_roles for role in user_roles):
                     return JsonResponse({
@@ -636,7 +636,7 @@ def pre_dashboards(request):
 
 #@user_passes_test(is_viewer)
 def user_list_view(request):
-    users = User.objects.all()
+    users = User.objects.all().order_by('username')
     paginator = Paginator(users, 10)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
@@ -683,9 +683,21 @@ def file_management_dashboard(request):
         {"type": "Word Documents", "ext": ".docx", "icon": "docx", "count": ext_counter.get(".docx", 0)},
         {"type": "Images", "ext": ".jpg", "icon": "image", "count": ext_counter.get(".jpg", 0) + ext_counter.get(".png", 0)},
         {"type": "Excel Sheets", "ext": ".xlsx", "icon": "xlsx", "count": ext_counter.get(".xlsx", 0)},
+        {"type": "PowerPoint", "ext": ".pptx", "icon": "ppt", "count": ext_counter.get(".pptx", 0) + ext_counter.get(".ppt", 0)},
+        {"type": "CSV Files", "ext": ".csv", "icon": "csv", "count": ext_counter.get(".csv", 0)},
+        {"type": "Text Files", "ext": ".txt", "icon": "text", "count": ext_counter.get(".txt", 0)},
+        {"type": "XML Files", "ext": ".xml", "icon": "xml", "count": ext_counter.get(".xml", 0)},
         {"type": "Others", "ext": "other", "icon": "file", "count": sum(ext_counter.values()) - (
-            ext_counter.get(".pdf", 0) + ext_counter.get(".docx", 0) + ext_counter.get(".jpg", 0) +
-            ext_counter.get(".png", 0) + ext_counter.get(".xlsx", 0)
+            ext_counter.get(".pdf", 0) +
+            ext_counter.get(".docx", 0) +
+            ext_counter.get(".jpg", 0) +
+            ext_counter.get(".png", 0) +
+            ext_counter.get(".xlsx", 0) +
+            ext_counter.get(".pptx", 0) +
+            ext_counter.get(".ppt", 0) +
+            ext_counter.get(".csv", 0) +
+            ext_counter.get(".txt", 0) +
+            ext_counter.get(".xml", 0)
         )},
     ]
 
@@ -893,12 +905,10 @@ def ticketing_dashboard(request):
     else:
         customer = Customer.objects.filter(overseer=request.user).first()
         if customer:
-            print(f"{request.user.username} is Overseer of {customer.name}")
             ticket_filter = Ticket.objects.filter(customer=customer)
         elif profile and profile.terminal:
             customer = Customer.objects.filter(custodian=request.user).first()
             if customer:
-                print(f"{request.user.username} is Custodian of terminal {profile.terminal} for {customer.name}")
                 ticket_filter = Ticket.objects.filter(customer=customer, terminal=profile.terminal)
             else:
                 print(f"{request.user.username} has no dashboard access")
@@ -996,7 +1006,7 @@ def ticketing_dashboard(request):
         elif request.user.groups.filter(name="Staff").exists():
             user_group = "Staff"
         else:
-            user_group = "Customer"  # Default group
+            user_group = "Customer"  
 
     allowed_roles = ["Director", "Manager", "Staff", "Superuser"]
     context = {
@@ -1394,7 +1404,7 @@ def create_ticket(request):
         # Get terminal_id from the URL parameters if available
         terminal_id = request.GET.get('terminal_id')  
         if terminal_id:
-            form = TicketForm(terminal_id=terminal_id)  # Pass terminal_id to the form
+            form = TicketForm(terminal_id=terminal_id)  
         else:
             form = TicketForm()
 
@@ -1411,7 +1421,8 @@ def get_terminal_details(request, terminal_id):
         return JsonResponse(response_data)
     except Terminal.DoesNotExist:
         return JsonResponse({'error': 'Terminal not found'}, status=404)
-    
+
+""" 
 def ticket_detail(request, ticket_id):
     ticket = get_object_or_404(Ticket, id=ticket_id)
     comments = ticket.comments.order_by('-created_at')
@@ -1459,7 +1470,48 @@ def ticket_detail(request, ticket_id):
             return render(request, 'core/helpdesk/permission_denied.html')
 
     return render(request, 'core/helpdesk/permission_denied.html')
+"""
+def ticket_detail(request, ticket_id):
+    # Retrieve the ticket or return 404 if not found
+    ticket = get_object_or_404(Ticket, id=ticket_id)
+    
+    # Retrieve the comments for the ticket, ordered by creation date
+    comments = ticket.comments.order_by('-created_at')
+    
+    # Initialize the ticket edit form
+    form = TicketEditForm(instance=ticket)
+    comment_form = TicketCommentForm()
 
+    # Handle the POST request for adding comments or editing the ticket
+    if request.method == 'POST':
+        if 'add_comment' in request.POST:
+            comment_form = TicketCommentForm(request.POST)
+            if comment_form.is_valid():
+                comment = comment_form.save(commit=False)
+                comment.ticket = ticket
+                comment.created_by = request.user
+                comment.save()
+                return redirect('ticket_detail', ticket_id=ticket.id)
+
+        elif 'edit_ticket' in request.POST:
+            form = TicketEditForm(request.POST, instance=ticket)
+            if form.is_valid():
+                form.save()
+                return redirect('ticket_detail', ticket_id=ticket.id)
+
+    # Always allow viewing the ticket details (no restrictions for users)
+    context = {
+        'ticket': ticket,
+        'form': form,
+        'comments': comments,
+        'comment_form': comment_form,
+        'is_admin': request.user.is_superuser,
+        'is_editor': request.user.groups.filter(name='Editor').exists(),
+        'can_resolve': request.user.groups.filter(name='Resolver').exists(),
+    }
+
+    # Display the ticket detail page for all users
+    return render(request, 'core/helpdesk/ticket_detail.html', context)
 
 @login_required
 def edit_comment(request, comment_id):

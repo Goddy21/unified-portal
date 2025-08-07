@@ -58,6 +58,7 @@
       <canvas id="categoryTimeChart" class="tall-chart"></canvas>
     </div>
 
+
     <!-- Ticket Report by Status -->
     <div class="chart-card" id="ticketReportByStatus">
       <div class="card-header"><h2>📋 Ticket Report by Status</h2></div>
@@ -136,6 +137,8 @@
   const CATEGORY_TIME_DATA = {{ category_time_data|default:'[]'|safe }};
   const CUSTOMER_DATA = {{ customer_data|default:'[]'|safe }};
   const TIME_DATA = {{ time_data|default:'{}'|safe }};
+  const CATEGORY_DATA = {{ category_data|default:'[]'|safe }};
+
 
   if (TIME_DATA) {
     document.getElementById("dailyCount").textContent = TIME_DATA.day;
@@ -147,5 +150,6 @@
 
 <!-- dashboard JS -->
 <script src="{% static 'js/ticketing_dashboard.js' %}"></script>
+<script src="{% static 'js/sidebar.js' %}"></script>
 
 {% endblock %}
