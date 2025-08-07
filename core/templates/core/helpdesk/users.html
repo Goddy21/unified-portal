@@ -3,9 +3,11 @@
 
 {% block title %}Users{% endblock %}
 
-{% block content %}
+{% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/users.css' %}">
+{% endblock %}
 
+{% block content %}
 <div class="page-container">
   <h2><i class="fas fa-user-friends"></i> Registered Users</h2>
 

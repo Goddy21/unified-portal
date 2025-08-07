@@ -360,7 +360,7 @@ def login_view(request):
                 user_roles = list(user.groups.values_list('name', flat=True))
                 allowed_roles = ['Director', 'Manager', 'Staff', 'Customer']  # define your allowed roles
 
-                if not any(role in allowed_roles for role in user_roles):
+                if not user.is_superuser and not any(role in allowed_roles for role in user_roles):
                     return JsonResponse({
                         'status': 'error',
                         'message': 'Your account has not been issued a role yet. Kindly be patient for a while as we handle that. Thank you!'
@@ -873,6 +873,7 @@ class SettingsView(View):
 
 
 # Ticketing Views
+@login_required(login_url='login')
 def ticketing_dashboard(request):
     now = timezone.localtime(timezone.now())
     day_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
@@ -1031,7 +1032,7 @@ def ticketing_dashboard(request):
 
     return render(request, 'core/helpdesk/ticketing_dashboard.html', context)
 
-
+@login_required(login_url='login')
 def statistics_view(request):
     today = timezone.now()
     print(f"timezone.now() in view: {today} (aware: {timezone.is_aware(today)})")
@@ -1207,6 +1208,7 @@ def statistics_view(request):
         "assigned_region": assigned_region if user_group == "Custodian" else None,
     })
 
+@login_required(login_url='login')
 def export_report(request):
     # Get the selected filter values from the request
     time_period = request.GET.get('time-period', 'today')
@@ -1317,6 +1319,7 @@ def export_report(request):
     wb.save(response)
     return response
 
+@login_required(login_url='login')
 def tickets(request):
     query = request.GET.get('search', '')
     status_filter = request.GET.get('status', '')
@@ -1372,7 +1375,7 @@ def tickets(request):
         'status_filter': status_filter,
     })
 
-
+@login_required(login_url='login')
 def create_ticket(request):
     if request.method == 'POST':
         form = TicketForm(request.POST)
@@ -1397,7 +1400,7 @@ def create_ticket(request):
 
     return render(request, 'core/helpdesk/create_ticket.html', {'form': form})
 
-
+@login_required(login_url='login')
 def get_terminal_details(request, terminal_id):
     try:
         terminal = Terminal.objects.get(id=terminal_id)
@@ -1545,7 +1548,7 @@ def ticket_statuses(request):
 def problem_category(request):
     print(">>> problem_category view reached")
     query = request.GET.get('search', '')
-    categories = ProblemCategory.objects.filter(name__icontains=query)
+    categories = ProblemCategory.objects.filter(name__icontains=query).order_by('name')
     print(f"Categories found: {categories.count()}")
     
     # Pagination setup
@@ -1640,6 +1643,7 @@ def delete_customer(request, id):
     messages.success(request, "Customer deleted successfully.")
     return redirect('customers')
 
+@login_required(login_url='login')
 def regions(request):
     if request.method == 'POST':
         name = request.POST.get('region_name')
@@ -1664,6 +1668,7 @@ def delete_region(request, region_id):
     messages.success(request, "Region deleted successfully.")
     return redirect('regions')
 
+@login_required(login_url='login')
 def terminals(request):
     form = TerminalForm()
     upload_form = TerminalUploadForm()
@@ -1759,6 +1764,7 @@ def edit_terminal(request, terminal_id):
     
     return redirect('terminals')
 
+@login_required(login_url='login')
 def fetch_tickets(request, terminal_id):
     tickets = Ticket.objects.filter(terminal_id=terminal_id).values('id', 'title')
     
@@ -1798,6 +1804,7 @@ def delete_unit(request, unit_id):
     messages.success(request, "Unit removed successfully.")
     return redirect('units')
 
+@login_required(login_url='login')
 def system_users(request):
     if request.method == 'POST':
         username = request.POST.get('username')
@@ -1825,6 +1832,7 @@ def delete_system_user(request, user_id):
         messages.success(request, "User deleted successfully.")
     return redirect('system_users')
 
+@login_required(login_url='login')
 def zones(request):
     if request.method == 'POST':
         name = request.POST.get('name')
@@ -1854,6 +1862,7 @@ def delete_zone(request, zone_id):
     messages.success(request, "Zone deleted successfully.")
     return redirect('zones') 
 
+@login_required(login_url='login')
 def reports(request):
     user_group = None
 
@@ -1868,7 +1877,7 @@ def reports(request):
     elif request.user.groups.filter(name="Staff").exists():
         user_group = "Staff"
 
-    tickets = Ticket.objects.prefetch_related('comments').all()
+    tickets = Ticket.objects.prefetch_related('comments').all().order_by('-created_at')
 
     # Filter for Custodian or Overseer to only see tickets of customers they're assigned to
     if user_group == "Overseer":
@@ -1945,7 +1954,7 @@ def reports(request):
 
     return render(request, 'core/helpdesk/reports.html', context)
 
-
+@login_required(login_url='login')
 def export_tickets_to_excel(tickets, include_terminal=False, customer_name=None, terminal_name=None, start_date=None, end_date=None):
     import openpyxl
     from openpyxl.utils import get_column_letter
@@ -2020,6 +2029,7 @@ def export_tickets_to_excel(tickets, include_terminal=False, customer_name=None,
 
     return response
 
+@login_required(login_url='login')
 def version_controls(request):
     form = VersionControlForm()
 
@@ -2070,6 +2080,7 @@ def version_controls(request):
     }
     return render(request, 'core/helpdesk/version_control.html', context)
 
+@login_required(login_url='login')
 def version_detail(request, pk):
     version = get_object_or_404(VersionControl, pk=pk)
     comments = version.comments.all().order_by('-created')  # Latest first
@@ -2086,7 +2097,7 @@ def version_detail(request, pk):
         
     })
 
-
+@login_required(login_url='login')
 def edit_version(request, pk):
     version = get_object_or_404(VersionControl, pk=pk)
     if request.method == 'POST':

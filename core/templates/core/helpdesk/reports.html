@@ -5,7 +5,9 @@
 
 {% block content %}
 
+{% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/reports.css' %}">
+{% endblock %}
 
 <div class="page-container">
   <h2><i class="fas fa-file-alt"></i> Reports</h2>
@@ -17,10 +19,10 @@
         <h3>Filter Options</h3>
         <div class="button-row">
           <button type="submit" name="download" value="excel" class="btn btn-success">
-            <i class="fas fa-file-excel"></i> Download Excel
+            <i class="fas fa-file-excel" style="display: inline;"></i> Download Excel
           </button>
           <a href="{% url 'statistics' %}" class="btn btn-info">
-            <i class="fas fa-chart-line"></i> Statistics
+            <i class="fas fa-chart-line" style="display: inline;"></i> Statistics
           </a>
         </div>
       </div>
