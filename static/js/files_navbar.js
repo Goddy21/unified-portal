@@ -31,6 +31,13 @@ document.addEventListener("DOMContentLoaded", function () {
     sidebarToggle.addEventListener('click', toggleSidebar);
   }
 
+  // Sidebar close when clicking outside
+  document.addEventListener('click', function (e) {
+    if (sidebar && !sidebar.contains(e.target) && !hamburger.contains(e.target)) {
+      sidebar.classList.remove('active');
+    }
+  });
+
   // Navbar search input (Enter key redirect)
   const searchInput = document.getElementById('navbarSearchInput');
   if (searchInput) {
@@ -40,6 +47,7 @@ document.addEventListener("DOMContentLoaded", function () {
         const query = searchInput.value.trim();
         if (query !== '') {
           window.location.href = `/search/?q=${encodeURIComponent(query)}`;
+          searchInput.value = ''; // Clear input after search
         }
       }
     });

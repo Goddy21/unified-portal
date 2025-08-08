@@ -619,19 +619,7 @@ def edit_file(request, file_id):
 
     return render(request, 'edit_file.html', {'form': form, 'file': file})
 
-"""
-def pre_dashboards(request):
-    # Check if user is assigned as either overseer or custodian in any customer
-    is_overseer_or_custodian = Customer.objects.filter(
-        Q(overseer=request.user) | Q(custodian=request.user)
-    ).exists()
-
-    print(f"Is overseer or custodian: {is_overseer_or_custodian}") 
-
-    return render(request, 'core/pre_dashboards.html', {
-        'is_overseer_or_custodian': is_overseer_or_custodian
-    })
-"""
+@login_required(login_url='login')
 def pre_dashboards(request):
     # Check if the user is assigned as either overseer or custodian in any customer
     is_overseer_or_custodian = False
