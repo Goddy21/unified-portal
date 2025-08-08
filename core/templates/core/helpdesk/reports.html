@@ -30,7 +30,7 @@
       <div class="filter-grid">
         <div class="filter-group">
           <label for="customer-select">Customer:</label>
-          <select id="customer-select" name="customer" class="form-control">
+          <select id="customer-select" name="customer" class="form-control" {% if user_group == 'Custodian' or user_group == 'Overseer' %}disabled{% endif %}>
             <option value="All">All Customers</option>
             {% for customer in customers %}
               <option value="{{ customer.id }}" {% if request.GET.customer == customer.id|stringformat:"s" %}selected{% endif %}>
@@ -40,10 +40,28 @@
           </select>
         </div>
 
-        <div class="filter-group">
-          <label for="terminal-search">Terminal Name:</label>
-          <input type="text" id="terminal-search" name="terminal_name" class="form-control" placeholder="Search Terminal by Branch Name" value="{{ request.GET.terminal_name }}">
-        </div>
+        {% if user_group == 'Custodian' %}
+          <div class="filter-group">
+            <label>Branch:</label>
+            <select class="form-control" disabled>
+              {% for terminal in terminals %}
+                <option selected>{{ terminal.branch_name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        {% else %}
+          <div class="filter-group">
+            <label for="terminal-search">Terminal Name:</label>
+            <input
+              type="text"
+              id="terminal-search"
+              name="terminal_name"
+              class="form-control"
+              placeholder="Search Terminal by Branch Name"
+              value="{{ request.GET.terminal_name }}"
+            >
+          </div>
+        {% endif %}
 
         <div class="filter-group">
           <label for="category-select">Category:</label>
