@@ -71,6 +71,7 @@ urlpatterns = [
     path('comments/<int:comment_id>/edit/', views.edit_comment, name='edit_comment'),
     path('comments/<int:comment_id>/delete/', views.delete_comment, name='delete_comment'),
     path('ticket/<int:ticket_id>/resolve/', views.resolve_ticket_view, name='resolve_ticket'),
+    path('tickets/<int:ticket_id>/escalate/', views.escalate_ticket, name='escalate_ticket'),
     path('tickets/delete/<int:ticket_id>/', views.delete_ticket, name='delete_ticket'),
     path('ticket-statuses/', views.ticket_statuses, name='ticket_statuses'),
     path('tickets/status/<str:status>/', views.tickets_by_status, name='ticket_by_status'),

@@ -184,3 +184,14 @@ class TicketEditForm(forms.ModelForm):
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
             'resolution': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
         }
+
+class EscalationNoteForm(forms.Form):
+    note = forms.CharField(
+        label="Escalation Note",
+        widget=forms.Textarea(attrs={
+            'class': 'form-control',
+            'rows': 3,
+            'placeholder': 'Add a note for the escalation'
+        }),
+        required=False
+    )

@@ -199,6 +199,13 @@ class Ticket(models.Model):
         ('urgent', 'Urgent'),
     ]
 
+    ESCALATION_LEVELS = [
+        ('Tier 1', 'Tier 1'),
+        ('Tier 2', 'Tier 2'),
+        ('Tier 3', 'Tier 3'),
+        ('Tier 4', 'Tier 4'),
+    ]
+
     title = models.CharField(max_length=255, null=True)
     brts_unit = models.ForeignKey(Unit, on_delete=models.SET_NULL, null=True)
     problem_category = models.ForeignKey(ProblemCategory, on_delete=models.SET_NULL, null=True)
@@ -219,6 +226,14 @@ class Ticket(models.Model):
     resolved_at = models.DateTimeField(null=True, blank=True)
     comment_summary = models.TextField(blank=True, null=True)
 
+    is_escalated = models.BooleanField(default=False)
+    escalated_at = models.DateTimeField(null=True, blank=True)
+    escalated_by = models.ForeignKey(
+        User, null=True, blank=True, related_name='escalated_tickets', on_delete=models.SET_NULL
+    )
+    escalation_reason = models.TextField(null=True, blank=True)
+    current_escalation_level = models.CharField(max_length=20, choices=ESCALATION_LEVELS, blank=True, null=True)
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
@@ -231,6 +246,22 @@ class Ticket(models.Model):
     def __str__(self):
         return self.title
 
+class EscalationHistory(models.Model):
+        
+        ESCALATION_LEVELS = [
+            ('Tier 1', 'Tier 1'),
+            ('Tier 2', 'Tier 2'),
+            ('Tier 3', 'Tier 3'),
+            ('Tier 4', 'Tier 4'),
+        ]
+
+        ticket = models.ForeignKey(Ticket, on_delete=models.CASCADE, related_name="escalation_history")
+        escalated_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+        from_level = models.CharField(max_length=20, choices=ESCALATION_LEVELS , blank=True, null=True)
+        to_level = models.CharField(max_length=20, choices=ESCALATION_LEVELS )
+        note = models.TextField(blank=True)
+        timestamp = models.DateTimeField(auto_now_add=True)
+        
 class TicketComment(models.Model):
     ticket = models.ForeignKey(Ticket, on_delete=models.CASCADE, related_name='comments')
     content = models.TextField()
