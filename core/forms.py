@@ -145,17 +145,24 @@ class TerminalUploadForm(forms.Form):
 class VersionControlForm(forms.ModelForm):
     class Meta:
         model = VersionControl
-        fields = ['terminal', 'manufacturer', 'template', 'firmware', 'xfs', 'ejournal', 'responsible', 'app_version']
+        fields = [
+            'terminal', 'manufacturer', 'template', 'firmware',
+            'xfs', 'ejournal',
+            'brits', 'app_version', 'neo_atm'
+        ]
         widgets = {
             'terminal': forms.Select(attrs={'class': 'form-control'}),
-            'manufacturer': forms.TextInput(attrs={'class': 'form-control'}),
+            'manufacturer': forms.Select(attrs={'class': 'form-select'}),
             'template': forms.TextInput(attrs={'class': 'form-control'}),
             'firmware': forms.TextInput(attrs={'class': 'form-control'}),
             'xfs': forms.TextInput(attrs={'class': 'form-control'}),
             'ejournal': forms.TextInput(attrs={'class': 'form-control'}),
-            'responsible': forms.TextInput(attrs={'class': 'form-control'}),
+            #'responsible': forms.TextInput(attrs={'class': 'form-control'}),
+            'brits': forms.TextInput(attrs={'class': 'form-control'}),
             'app_version': forms.TextInput(attrs={'class': 'form-control'}),
+            'neo_atm': forms.TextInput(attrs={'class': 'form-control'}),
         }
+
         
 class TicketCommentForm(forms.ModelForm):
     class Meta:

@@ -1,179 +1,141 @@
-{% extends "base.html" %}
+{% extends 'base.html' %}
 {% load static %}
 
 {% block extra_css %}
-<link rel="stylesheet" type="text/css" href="{% static 'css/version_controls.css' %}">
+<link rel="stylesheet" href="{% static 'css/version_controls.css' %}">
 {% endblock %}
 
-{% block title %}Version Controls{% endblock %}
-
 {% block content %}
-<div class="page-container">
-  <h2><i class="fas fa-code-branch"></i> Version Controls</h2>
-  <p>Manage and review system versions here.</p>
+<div class="container mt-4" id="body">
+  <h2>Version Controls</h2>
 
-  <!-- Trigger Modal Buttons -->
-  <div class="form-buttons">
-    <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#createVersionModal">Create</button>
-  </div>
+  <!-- Button to trigger modal -->
+  <button class="btn btn-success mb-3" data-bs-toggle="modal" data-bs-target="#createVersionModal">
+    + Create Version
+  </button>
 
-  <!-- Modal -->
-  <div class="modal fade" id="createVersionModal" tabindex="-1" aria-labelledby="createVersionModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-      <div class="modal-content">
-        <form method="post" action="{% url 'version_controls' %}" class="version-form">
-          {% csrf_token %}
-          <div class="modal-header">
-            <h5 class="modal-title" id="createVersionModalLabel">Create New Version</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
+  <div class="filters-row">
+    <div>
+      <label for="terminalFilter">Terminal:</label>
+      <select id="terminalFilter" class="filter-select">
+        <option value="All">All Terminals</option>
+        {% for terminal in terminals %}
+          <option value="{{ terminal.terminal__id }}">{{ terminal.terminal__branch_name }}</option>
+        {% endfor %}
+      </select>
+    </div>
 
-          <div class="modal-body">
-            <div class="form-section">
-              <div class="form-group">{{ form.terminal.label_tag }}{{ form.terminal }}</div>
-              <div class="form-group">{{ form.manufacturer.label_tag }}{{ form.manufacturer }}</div>
-              <div class="form-group">{{ form.template.label_tag }}{{ form.template }}</div>
-              <div class="form-group">{{ form.firmware.label_tag }}{{ form.firmware }}</div>
-              <div class="form-group">{{ form.xfs.label_tag }}{{ form.xfs }}</div>
-              <div class="form-group">{{ form.ejournal.label_tag }}{{ form.ejournal }}</div>
-              <div class="form-group">{{ form.responsible.label_tag }}{{ form.responsible }}</div>
-              <div class="form-group">{{ form.app_version.label_tag }}{{ form.app_version }}</div>
-            </div>
-          </div>
-
-          <div class="modal-footer">
-            <button type="submit" name="create" class="btn btn-danger">Create</button>
-            <button type="submit" name="create_another" class="btn btn-secondary">Create & Create Another</button>
-            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-          </div>
-        </form>
-      </div>
+    <div>
+      <label for="manufacturerFilter">Manufacturer:</label>
+      <select id="manufacturerFilter" class="filter-select">
+        <option value="All">All Manufacturers</option>
+        {% for manufacturer in manufacturers %}
+          <option value="{{ manufacturer }}">{{ manufacturer }}</option>
+        {% endfor %}
+      </select>
     </div>
   </div>
 
-  <!--adding filter on version controls-->
-  <div class="filter-section">
-  <label>Terminal:
-    <select id="terminal-filter" class="form-select">
-      <option value="All">All</option>
-      {% for terminal in terminals  %}
-        <option value="{{ terminal.terminal__id }}">{{ terminal.terminal__branch_name }}</option>
-      {% endfor %}
-    </select>
-  </label>
 
-  <label>Firmware:
-    <select id="firmware-filter" class="form-select">
-      <option value="All">All</option>
-      {% for f in firmwares %}
-        <option value="{{ f }}">{{ f }}</option>
-      {% endfor %}
-    </select>
-  </label>
-
-  <label>App Version:
-    <select id="app-version-filter" class="form-select">
-      <option value="All">All</option>
-      {% for a in app_versions %}
-        <option value="{{ a }}">{{ a }}</option>
-      {% endfor %}
-    </select>
-  </label>
-</div>
-
-
-  <hr>
-
-  <div class="table-responsive">
-    <table class="version-table">
-      <thead>
-        <tr>
-          <th>#</th>
-          <th>Terminal</th>
-          <th>Manufacturer</th>
-          <th>Template</th>
-          <th>Firmware</th>
-          <th>App Version</th>
-          <th>Created</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-       
-        {% for item in versions %}
-        <tr>
-          <td>{{ forloop.counter }}</td>
-          <td>{{ item.terminal }}</td>
-          <td>{{ item.manufacturer }}</td>
-          <td>{{ item.template }}</td>
-          <td>{{ item.firmware }}</td>
-          <td>{{ item.app_version }}</td>
-          <td>{{ item.created_at|date:"Y-m-d H:i" }}</td>
-          <td>
-            <a href="{% url 'version_detail' item.pk %}" class="btn btn-sm btn-primary">View</a>
-            <a href="{% url 'delete_version' item.pk %}" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to delete this version?');">Delete</a> 
-          </td>
-        </tr>
-        {% empty %}
-        <tr><td colspan="8">No version entries found.</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
+  <!-- Table displaying all versions -->
+  <div id="versionTableContainer">
     
+    {% include 'core/helpdesk/partials/version_table.html' %}
   </div>
 
-   <!-- Pagination Links -->
-  <div class="pagination">
-    <span class="step-links">
-      {% if page_obj.has_previous %}
-        <a href="?page=1">&laquo; first</a>
-        <a href="?page={{ page_obj.previous_page_number }}">previous</a>
-      {% endif %}
+  <!-- Modal for Create Version -->
+<div class="modal fade" id="createVersionModal" tabindex="-1" aria-labelledby="createVersionModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <form method="POST" action="{% url 'version_controls' %}" id="versionForm">
+        {% csrf_token %}
+        <div class="modal-header">
+          <h5 class="modal-title" id="createVersionModalLabel">Create Version Entry</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body row g-3">
+          <div class="col-md-6 form-group">{{ form.terminal.label_tag }}{{ form.terminal }}</div>
+          <div class="col-md-6 form-group">{{ form.manufacturer.label_tag }}{{ form.manufacturer }}</div>
+          <div class="col-md-6 form-group">{{ form.template.label_tag }}{{ form.template }}</div>
+          <div class="col-md-6 form-group">{{ form.firmware.label_tag }}{{ form.firmware }}</div>
 
-      <span class="current">
-        Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}.
-      </span>
+         <!-- GRG specific -->
+          <div class="col-md-6 form-group" id="brits-wrapper">{{ form.brits.label_tag }}{{ form.brits }}</div>
+          <div class="col-md-6 form-group" id="xfs-wrapper">{{ form.xfs.label_tag }}{{ form.xfs }}</div>
+          <div class="col-md-6 form-group" id="ejournal-wrapper">{{ form.ejournal.label_tag }}{{ form.ejournal }}</div>
 
-      {% if page_obj.has_next %}
-        <a href="?page={{ page_obj.next_page_number }}">next</a>
-        <a href="?page={{ page_obj.paginator.num_pages }}">last &raquo;</a>
-      {% endif %}
-    </span>
+          <!-- Hitachi specific -->
+          <div class="col-md-6 form-group" id="neo-atm-wrapper">{{ form.neo_atm.label_tag }}{{ form.neo_atm }}</div>
+          <div class="col-md-12 form-group" id="app-version-wrapper">{{ form.app_version.label_tag }}{{ form.app_version }}</div>
+
+        </div>
+        <div class="modal-footer">
+          <button type="submit"  name="create" class="btn btn-primary">Create</button>
+          <button type="submit" name="create_another" class="btn btn-secondary">Create & Create Another</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        </div>
+      </form>
+    </div>
   </div>
 </div>
 
+{% endblock %}
 
+{% block extra_js %}
 <script>
-  const terminalSelect = document.getElementById("terminal-filter");
-  const firmwareSelect = document.getElementById("firmware-filter");
-  const appVersionSelect = document.getElementById("app-version-filter");
+  function toggleFields(manufacturer) {
+    const isGRG = manufacturer.toLowerCase().includes('grg');
+    const isHitachi = manufacturer.toLowerCase().includes('hitachi');
 
-  const applyFilters = () => {
-    const terminal = terminalSelect.value;
-    const firmware = firmwareSelect.value;
-    const appVersion = appVersionSelect.value;
+    // GRG-only fields
+    document.getElementById('brits-wrapper').style.display = isGRG ? 'block' : 'none';
+    document.getElementById('xfs-wrapper').style.display = isGRG ? 'block' : 'none';
+    document.getElementById('ejournal-wrapper').style.display = isGRG ? 'block' : 'none';
+
+    // Hitachi-only fields
+    document.getElementById('neo-atm-wrapper').style.display = isHitachi ? 'block' : 'none';
+    document.getElementById('app-version-wrapper').style.display = isHitachi ? 'block' : 'none';
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    const manufacturerInput = document.getElementById('id_manufacturer');
+    if (manufacturerInput) {
+      manufacturerInput.addEventListener('change', function () {
+        toggleFields(this.value);
+      });
+      toggleFields(manufacturerInput.value);
+    }
+  });
+</script>
+<script>
+  function applyFilters() {
+    const terminal = document.getElementById('terminalFilter').value;
+    const manufacturer = document.getElementById('manufacturerFilter').value;
 
     const params = new URLSearchParams({
-      terminal,
-      firmware,
-      app_version: appVersion,
+      terminal: terminal,
+      manufacturer: manufacturer
     });
 
-    fetch(`?${params}`, {
+    fetch(`?${params.toString()}`, {
       headers: {
-        'X-Requested-With': 'XMLHttpRequest',
-      },
+        'X-Requested-With': 'XMLHttpRequest'
+      }
     })
-      .then(response => response.text())
-      .then(data => {
-        document.querySelector(".table-responsive").innerHTML = data;
-      });
-  };
+    .then(response => response.text())
+    .then(html => {
+      document.getElementById('versionTableContainer').innerHTML = html;
+    });
+  }
 
-  terminalSelect.addEventListener("change", applyFilters);
-  firmwareSelect.addEventListener("change", applyFilters);
-  appVersionSelect.addEventListener("change", applyFilters);
+  // Trigger filter when dropdowns change
+  document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('terminalFilter').addEventListener('change', applyFilters);
+    document.getElementById('manufacturerFilter').addEventListener('change', applyFilters);
+  });
 </script>
-<script src="{% static 'js/ticketing_dashboard.js' %}"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+
+
+
 {% endblock %}

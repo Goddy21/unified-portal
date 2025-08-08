@@ -135,19 +135,35 @@ class ProblemCategory(models.Model):
         return f"{self.name} ({self.brts_unit.name})"
     
 class VersionControl(models.Model):
+
+    MANUFACTURER_CHOICES = [
+        ('GRG Banking', 'GRG Banking'),
+        ('Hitachi', 'Hitachi'),
+    ]
+    
+    manufacturer = models.CharField(
+        max_length=100,
+        choices=MANUFACTURER_CHOICES,
+        default='GRG Banking'
+    )
     terminal = models.ForeignKey(Terminal, on_delete=models.CASCADE)
-    manufacturer = models.CharField(max_length=100)
+    #manufacturer = models.CharField(max_length=100)
     template = models.CharField(max_length=100)
     firmware = models.CharField(max_length=100)
-    xfs = models.CharField(max_length=100,  default='N/A')  
-    ejournal = models.CharField(max_length=100,  default='N/A') 
-    responsible = models.CharField(max_length=100,  default='N/A')  
-    app_version = models.CharField(max_length=100,  default='1.0.0') 
+    xfs = models.CharField(max_length=100,  blank=True, null=True)  
+    ejournal = models.CharField(max_length=100,  blank=True, null=True) 
+    #responsible = models.CharField(max_length=100,  default='N/A')  
+    app_version = models.CharField(max_length=100, blank=True, null=True)
+    # New fields
+    neo_atm = models.CharField(max_length=100, blank=True, null=True)
+    brits = models.CharField(max_length=100, blank=True, null=True)
+
     created_at = models.DateTimeField(auto_now_add=True)
     
 
     def __str__(self):
         return f"{self.terminal} - {self.firmware}"
+    
 class VersionComment(models.Model):
     version = models.ForeignKey(VersionControl, related_name='comments', on_delete=models.CASCADE)
     author = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)

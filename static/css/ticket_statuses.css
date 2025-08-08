@@ -80,7 +80,9 @@
 .badge-closed {
   background-color: #6c757d;
 }
-
+.badge-resolved {
+  background-color: #87f37d;
+}
 .badge-high {
   background-color: #dc3545;
 }

@@ -1986,6 +1986,13 @@ def delete_ticket(request, ticket_id):
 def ticket_statuses(request):
     return render(request, 'core/helpdesk/ticket_statuses.html')
 
+def tickets_by_status(request, status):
+    tickets = Ticket.objects.filter(status__iexact=status.replace('-', '_'))
+    return render(request, 'core/helpdesk/ticket_by_status.html', {
+        'status': status.title().replace('-', ' '),
+        'tickets': tickets
+    })
+
 def problem_category(request):
     print(">>> problem_category view reached")
     query = request.GET.get('search', '')
@@ -2575,52 +2582,58 @@ def export_tickets_to_excel(tickets, include_terminal=False, customer_name=None,
 
 @login_required(login_url='login')
 def version_controls(request):
+    print("view reached") 
     form = VersionControlForm()
 
     if request.method == 'POST':
         if 'create' in request.POST or 'create_another' in request.POST:
             form = VersionControlForm(request.POST)
             if form.is_valid():
+                print("form is valid")
                 form.save()
                 if 'create_another' in request.POST:
                     form = VersionControlForm()
                 else:
                     return redirect('version_controls')
-
-    # Initial unfiltered queryset
+            else:
+                print("Form is not valid")
     versions = VersionControl.objects.all().order_by('-created_at')
 
-    # Handle AJAX filter request
+    # Handle AJAX filtering
     if request.headers.get('x-requested-with') == 'XMLHttpRequest':
         terminal = request.GET.get('terminal')
         firmware = request.GET.get('firmware')
         app_version = request.GET.get('app_version')
+        manufacturer = request.GET.get('manufacturer')
 
         if terminal and terminal != 'All':
-            versions = versions.filter(terminal=terminal)
-        if firmware and firmware != 'All':
-            versions = versions.filter(firmware=firmware)
-        if app_version and app_version != 'All':
-            versions = versions.filter(app_version=app_version)
+            versions = versions.filter(terminal__id=terminal)
+        if manufacturer and manufacturer != 'All':
+            versions = versions.filter(manufacturer=manufacturer)
+        
 
         return render(request, 'core/helpdesk/partials/version_table.html', {
             'versions': versions
         })
 
+    # Paginate the full list
     paginator = Paginator(versions, 10)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
-    # Get terminals with their branch_name and id only
-    terminals = VersionControl.objects.select_related('terminal').values('terminal__branch_name', 'terminal__id').distinct()
+    # Terminal filter options
+    terminals = VersionControl.objects.select_related('terminal').values(
+        'terminal__branch_name', 'terminal__id'
+    ).distinct()
 
     context = {
         'form': form,
-        'versions': versions,
-        'page_obj':page_obj,
+        'page_obj': page_obj,
+        'versions': page_obj,  # This line ensures compatibility with both paginated and non-paginated loops
         'terminals': terminals,
-        'firmwares': VersionControl.objects.values_list('firmware', flat=True).distinct(),
-        'app_versions': VersionControl.objects.values_list('app_version', flat=True).distinct(),
+        'manufacturers': VersionControl.objects.values_list('manufacturer', flat=True).distinct(),
+        #'firmwares': VersionControl.objects.values_list('firmware', flat=True).distinct(),
+        #'app_versions': VersionControl.objects.values_list('app_version', flat=True).distinct(),
     }
     return render(request, 'core/helpdesk/version_control.html', context)
 

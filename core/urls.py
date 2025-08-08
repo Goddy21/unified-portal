@@ -73,6 +73,7 @@ urlpatterns = [
     path('ticket/<int:ticket_id>/resolve/', views.resolve_ticket_view, name='resolve_ticket'),
     path('tickets/delete/<int:ticket_id>/', views.delete_ticket, name='delete_ticket'),
     path('ticket-statuses/', views.ticket_statuses, name='ticket_statuses'),
+    path('tickets/status/<str:status>/', views.tickets_by_status, name='ticket_by_status'),
     path('problem-categories/', views.problem_category, name='problem_category'), 
     path('create_problem_category/', views.create_problem_category, name='create_problem_category'),
     path('categories/edit/<int:category_id>/', views.edit_problem_category, name='edit_problem_category'),
