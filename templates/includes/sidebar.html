@@ -70,7 +70,9 @@
             </a>
             <ul class="sub-menu">
                 <li><a href="{% url 'reports' %}"><i class="fas fa-file-alt icon"></i> Reports</a></li>
+                {% if user_group in allowed_roles or request.user.is_superuser %}
                 <li><a href="{% url 'version_controls' %}"><i class="fas fa-code-branch icon"></i> Version Controls</a></li>
+                {% endif %}
             </ul>
         </li>
     </ul>
