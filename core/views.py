@@ -1933,49 +1933,6 @@ def get_terminal_details(request, terminal_id):
         return JsonResponse(response_data)
     except Terminal.DoesNotExist:
         return JsonResponse({'error': 'Terminal not found'}, status=404)
-"""
-def ticket_detail(request, ticket_id):
-    # Retrieve the ticket or return 404 if not found
-    ticket = get_object_or_404(Ticket, id=ticket_id)
-    
-    # Retrieve the comments for the ticket, ordered by creation date
-    comments = ticket.comments.order_by('-created_at')
-    
-    # Initialize the ticket edit form
-    form = TicketEditForm(instance=ticket)
-    comment_form = TicketCommentForm()
-
-    # Handle the POST request for adding comments or editing the ticket
-    if request.method == 'POST':
-        if 'add_comment' in request.POST:
-            comment_form = TicketCommentForm(request.POST)
-            if comment_form.is_valid():
-                comment = comment_form.save(commit=False)
-                comment.ticket = ticket
-                comment.created_by = request.user
-                comment.save()
-                return redirect('ticket_detail', ticket_id=ticket.id)
-
-        elif 'edit_ticket' in request.POST:
-            form = TicketEditForm(request.POST, instance=ticket)
-            if form.is_valid():
-                form.save()
-                return redirect('ticket_detail', ticket_id=ticket.id)
-
-    # Always allow viewing the ticket details (no restrictions for users)
-    context = {
-        'ticket': ticket,
-        'form': form,
-        'comments': comments,
-        'comment_form': comment_form,
-        'is_admin': request.user.is_superuser,
-        'is_editor': request.user.groups.filter(name='Editor').exists(),
-        'can_resolve': request.user.groups.filter(name='Resolver').exists(),
-    }
-
-    # Display the ticket detail page for all users
-    return render(request, 'core/helpdesk/ticket_detail.html', context)
-"""
 
 def ticket_detail(request, ticket_id):
     ticket = get_object_or_404(Ticket, id=ticket_id)
@@ -2835,7 +2792,7 @@ def export_tickets_to_excel(tickets, include_terminal=False, customer_name=None,
         ])
         row = []
         if include_terminal:
-            row.append(ticket.terminal.branch_name)  # Ensure 'terminal' exists and is valid
+            row.append(ticket.terminal.branch_name)  
         row += [
             ticket.created_at.strftime('%Y-%m-%d %H:%M'),
             ticket.updated_at.strftime('%Y-%m-%d %H:%M'),
