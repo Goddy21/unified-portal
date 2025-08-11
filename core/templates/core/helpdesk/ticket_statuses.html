@@ -1,72 +1,87 @@
 {% extends "base.html" %}
+
 {% load static %}
 
-{% block title %}Ticket Statuses{% endblock %}
+{% block title %}Ticket Statuses Overview{% endblock %} {# More descriptive title #}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/ticket_statuses.css' %}">
 {% endblock %}
 
 {% block content %}
+
 <div class="tickets-container">
   <div class="section-header">
-    <h2>🎫 Ticket Statuses</h2>
-    <p>
+    <h2>🎫 Ticket Statuses Overview</h2> {# Enhanced header #}
+    <p class="subtitle">
+      Understanding the current state of support tickets in the system.
+    </p>
+    <p class="access-info"> {# Added a class for specific styling #}
       {% if is_custodian %}
-        Viewing ticket statuses for your assigned terminal only.
+        You are viewing ticket statuses for your assigned terminal only.
       {% elif is_overseer or is_customer %}
-        Viewing ticket statuses for your assigned customer only.
+        You are viewing ticket statuses for your assigned customer only.
       {% else %}
-        Viewing all ticket statuses.
+        You have global access and are viewing all ticket statuses.
       {% endif %}
     </p>
   </div>
-  
+
   <div class="ticket-table-wrapper">
     <table class="ticket-table">
       <thead>
         <tr>
           <th>Status</th>
           <th>Description</th>
-          <th>Color</th>
+          <th class="text-center">Visual Cue</th> {# More descriptive #}
         </tr>
       </thead>
       <tbody>
         <tr>
           <td>
-            <a href="{% url 'ticket_by_status' 'open' %}">
+            <a href="{% url 'ticket_by_status' 'open' %}" class="status-link"> {# Added status-link class #}
               <span class="badge badge-open">Open</span>
             </a>
           </td>
-          <td>Ticket is currently open and awaiting action.</td>
-          <td style="color: green;">Green</td>
+          <td>Tickets that are currently active and require attention.</td> {# More descriptive #}
+          <td class="text-center"><span class="color-box bg-open"></span></td> {# Visual color box #}
         </tr>
         <tr>
           <td>
-            <a href="{% url 'ticket_by_status' 'in-progress' %}">
-              <span class="badge badge-pending">In Progress</span>
+            <a href="{% url 'ticket_by_status' 'in-progress' %}" class="status-link">
+              <span class="badge badge-in-progress">In Progress</span> {# Changed to in-progress for consistency #}
             </a>
           </td>
-          <td>Ticket is on hold awaiting more information.</td>
-          <td style="color: orange;">Orange</td>
+          <td>Tickets that are actively being worked on by a support agent.</td>
+          <td class="text-center"><span class="color-box bg-in-progress"></span></td>
         </tr>
         <tr>
           <td>
-            <a href="{% url 'ticket_by_status' 'resolved' %}">
+            <a href="{% url 'ticket_by_status' 'resolved' %}" class="status-link">
               <span class="badge badge-resolved">Resolved</span>
             </a>
           </td>
-          <td>Ticket issue has been resolved.</td>
-          <td style="color: blue;">Blue</td>
+          <td>Issues that have been addressed and are awaiting final confirmation.</td>
+          <td class="text-center"><span class="color-box bg-resolved"></span></td>
         </tr>
         <tr>
           <td>
-            <a href="{% url 'ticket_by_status' 'closed' %}">
+            <a href="{% url 'ticket_by_status' 'closed' %}" class="status-link">
               <span class="badge badge-closed">Closed</span>
             </a>
           </td>
-          <td>Ticket has been resolved or closed.</td>
-          <td style="color: grey;">Grey</td>
+          <td>Tickets that have been successfully completed and archived.</td>
+          <td class="text-center"><span class="color-box bg-closed"></span></td>
+        </tr>
+        {# Example for a potential 'Pending' or 'On Hold' status if you add it later #}
+        <tr>
+          <td>
+            <a href="{% url 'ticket_by_status' 'pending' %}" class="status-link">
+              <span class="badge badge-pending">Pending</span>
+            </a>
+          </td>
+          <td>Awaiting further information or action from the customer.</td>
+          <td class="text-center"><span class="color-box bg-pending"></span></td>
         </tr>
       </tbody>
     </table>
@@ -74,4 +89,5 @@
 </div>
 
 <script src="{% static 'js/ticketing_dashboard.js' %}"></script>
+
 {% endblock %}

@@ -1,15 +1,17 @@
 {% extends "base.html" %}
 {% load static %}
 
-
 {% block extra_css %}
 <link rel="stylesheet" type="text/css" href="{% static 'css/ticket_by_status.css' %}" >
-{% endblock%}
+{% endblock %}
 
 {% block content %}
-<div class="container">
+<div class="container ticket-status-container">
+
   <h2>{{ status|title }} Tickets</h2>
-  <table class="table table-bordered">
+
+  <table class="table table-bordered ticket-table">
+
     <thead>
       <tr>
         <th>ID</th>
@@ -19,14 +21,15 @@
         <th>Status</th>
       </tr>
     </thead>
+
     <tbody>
       {% for ticket in tickets %}
       <tr>
         <td>{{ ticket.id }}</td>
-        <td>{{ ticket.title }}</td>
+        <td class="title-cell">{{ ticket.title }}</td>
         <td>{{ ticket.terminal }}</td>
-        <td>{{ ticket.created_at }}</td>
-        <td>{{ ticket.status|title }}</td>
+        <td>{{ ticket.created_at|date:"M d, Y H:i" }}</td>
+        <td><span class="status-label status-{{ ticket.status|lower }}">{{ ticket.status|title }}</span></td>
       </tr>
       {% empty %}
       <tr>
@@ -34,6 +37,7 @@
       </tr>
       {% endfor %}
     </tbody>
+
   </table>
 </div>
 {% endblock %}
