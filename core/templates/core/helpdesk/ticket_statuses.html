@@ -11,7 +11,15 @@
 <div class="tickets-container">
   <div class="section-header">
     <h2>🎫 Ticket Statuses</h2>
-    <p>Display and manage ticket statuses here.</p>
+    <p>
+      {% if is_custodian %}
+        Viewing ticket statuses for your assigned terminal only.
+      {% elif is_overseer or is_customer %}
+        Viewing ticket statuses for your assigned customer only.
+      {% else %}
+        Viewing all ticket statuses.
+      {% endif %}
+    </p>
   </div>
   
   <div class="ticket-table-wrapper">
@@ -25,29 +33,45 @@
       </thead>
       <tbody>
         <tr>
-          <td><a href="{% url 'ticket_by_status' 'open' %}"><span class="badge badge-open">Open</span></a></td>
+          <td>
+            <a href="{% url 'ticket_by_status' 'open' %}">
+              <span class="badge badge-open">Open</span>
+            </a>
+          </td>
           <td>Ticket is currently open and awaiting action.</td>
           <td style="color: green;">Green</td>
         </tr>
         <tr>
-          <td><a href="{% url 'ticket_by_status' 'in-progress' %}"><span class="badge badge-pending">In Progress</span></a></td>
+          <td>
+            <a href="{% url 'ticket_by_status' 'in-progress' %}">
+              <span class="badge badge-pending">In Progress</span>
+            </a>
+          </td>
           <td>Ticket is on hold awaiting more information.</td>
           <td style="color: orange;">Orange</td>
         </tr>
         <tr>
-          <td><a href="{% url 'ticket_by_status' 'resolved' %}"><span class="badge badge-resolved">Resolved</span></a></td>
+          <td>
+            <a href="{% url 'ticket_by_status' 'resolved' %}">
+              <span class="badge badge-resolved">Resolved</span>
+            </a>
+          </td>
           <td>Ticket issue has been resolved.</td>
           <td style="color: blue;">Blue</td>
         </tr>
         <tr>
-          <td><a href="{% url 'ticket_by_status' 'closed' %}"><span class="badge badge-closed">Closed</span></a></td>
+          <td>
+            <a href="{% url 'ticket_by_status' 'closed' %}">
+              <span class="badge badge-closed">Closed</span>
+            </a>
+          </td>
           <td>Ticket has been resolved or closed.</td>
           <td style="color: grey;">Grey</td>
         </tr>
-
       </tbody>
     </table>
   </div>
 </div>
+
 <script src="{% static 'js/ticketing_dashboard.js' %}"></script>
 {% endblock %}

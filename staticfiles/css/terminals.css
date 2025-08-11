@@ -135,6 +135,16 @@
   background-color: #dc3545;
   border-color: #dc3545;
 }
+.terminal-table td .btn {
+  display: inline-block;
+  margin-right: 8px;
+  margin-bottom: 4px; 
+  vertical-align: middle;
+}
+
+.terminal-table td {
+  white-space: nowrap;
+}
 
 /* Mobile responsiveness */
 @media (max-width: 768px) {

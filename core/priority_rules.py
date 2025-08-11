@@ -28,7 +28,7 @@ SYNONYMS = {
     'nv': {'nv', 'note', 'validator'},
     'scanner': {'scanner', 'reader'},
     'slot': {'slot', 'tray'},
-    'outage': {'outage', 'disruption', 'blackout'},
+    'outage': {'outage', 'disruption', 'blackout', 'downtime'},
     'issue': {'issue', 'problem', 'challenge'},
     'safe': {'safe', 'vault'},
     'lock': {'lock', 'door'},
@@ -39,11 +39,16 @@ SYNONYMS = {
     'router': {'router', 'modem', 'network'},
     'configuration': {'configuration', 'setup', 'settings'},
     'connect': {'connect', 'connection', 'link'},
+    'urgent': {'urgent', 'urgently', 'asap', 'immediately'},
+    'breach': {'breach', 'intrusion', 'penetration', 'compromise'},
 }
 
 # Patterns grouped by priority
 PRIORITY_PATTERNS = {
     'critical': [
+        {'urgent'},           
+        {'breach'},           
+        {'outage'},           
         {'note', 'validator', 'printer', 'not', 'coming'},
         {'faulty', 'cassette', 'slot'},
         {'tes', 'sensor', 'failure'},

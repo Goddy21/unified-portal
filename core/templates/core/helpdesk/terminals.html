@@ -28,7 +28,17 @@
     </form>
 
     <!-- Terminal Table Section -->
+    
+
     <div class="table-responsive">
+        <form method="get" action="" class="mb-3">
+            <div class="input-group">
+                <input type="text" name="q" class="form-control" placeholder="Search terminals..." value="{{ request.GET.q }}">
+                <button class="btn btn-outline-primary" type="submit">
+                    <i class="fas fa-search"></i> Search
+                </button>
+            </div>
+        </form>
         <table class="terminal-table">
             <thead>
                 <tr>

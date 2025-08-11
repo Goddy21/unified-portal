@@ -23,6 +23,31 @@
       <div><strong>Problem Category:</strong> {{ ticket.problem_category }}</div>
       <div><strong>Description:</strong><br><p class="description">{{ ticket.description }}</p></div>
       <div><strong>Created By:</strong> {{ ticket.created_by }}</div>
+      <div class="assigned-to-wrapper">
+          <strong>Assigned To:</strong>
+          {% if is_manager %}
+              <form method="post" class="assigned-form">
+                  {% csrf_token %}
+                  <select name="assigned_to" class="form-select form-select-sm">
+                      <option value="">-- Select Staff --</option>
+                      {% for staff in staff_users %}
+                          <option value="{{ staff.id }}" {% if ticket.assigned_to and ticket.assigned_to.id == staff.id %}selected{% endif %}>
+                              {{ staff.get_full_name|default:staff.username }}
+                          </option>
+                      {% endfor %}
+                  </select>
+                  <button type="submit" name="assign_ticket" class="btn btn-success btn-sm">Assign</button>
+              </form>
+          {% else %}
+              <span class="assigned-name">
+                  {% if ticket.assigned_to %}
+                      {{ ticket.assigned_to.get_full_name|default:ticket.assigned_to.username }}
+                  {% else %}
+                      <em class="text-muted">Not assigned</em>
+                  {% endif %}
+              </span>
+          {% endif %}
+      </div>
       <div><strong>Created At:</strong> {{ ticket.created_at|date:"Y-m-d H:i" }}</div>
       <div><strong>Updated At:</strong> {{ ticket.updated_at|date:"Y-m-d H:i" }}</div>
       <div><strong>Resolved By:</strong> {% if ticket.resolved_by %}{{ ticket.resolved_by.username }}{% else %}Not resolved yet{% endif %}</div>

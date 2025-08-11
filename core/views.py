@@ -45,6 +45,7 @@ from openpyxl.styles import Alignment
 from django.views.decorators.http import require_POST
 from core.priority_rules import determine_priority
 from django.conf import settings
+from django.urls import reverse
 
 def in_group(user, group_name):
     return user.is_authenticated and (user.is_superuser or user.groups.filter(name=group_name).exists())
@@ -1904,55 +1905,6 @@ def get_terminal_details(request, terminal_id):
         return JsonResponse(response_data)
     except Terminal.DoesNotExist:
         return JsonResponse({'error': 'Terminal not found'}, status=404)
-
-""" 
-def ticket_detail(request, ticket_id):
-    ticket = get_object_or_404(Ticket, id=ticket_id)
-    comments = ticket.comments.order_by('-created_at')
-    form = TicketEditForm(instance=ticket)
-    comment_form = TicketCommentForm()
-
-    if request.method == 'POST':
-        if 'add_comment' in request.POST:
-            comment_form = TicketCommentForm(request.POST)
-            if comment_form.is_valid():
-                comment = comment_form.save(commit=False)
-                comment.ticket = ticket
-                comment.created_by = request.user
-                comment.save()
-                return redirect('ticket_detail', ticket_id=ticket.id)
-
-        elif 'edit_ticket' in request.POST:
-            form = TicketEditForm(request.POST, instance=ticket)
-            if form.is_valid():
-                form.save()
-                return redirect('ticket_detail', ticket_id=ticket.id)
-            else:
-                print("EDIT FORM ERRORS:", form.errors)  # 👈 debug
-
-    elif is_director(request.user) or is_manager(request.user):
-        form = TicketForm(instance=ticket)
-
-    context = {
-        'ticket': ticket,
-        'form': form,
-        'comments': comments,
-        'comment_form': comment_form,
-        'is_admin': request.user.is_superuser,
-        'is_editor': request.user.groups.filter(name='Editor').exists(),
-        'can_resolve': request.user.groups.filter(name='Resolver').exists(),
-    }
-
-    if is_director(request.user) or is_manager(request.user):
-        return render(request, 'core/helpdesk/ticket_detail.html', context)
-
-    elif is_staff(request.user):
-        if ticket.status in ['resolved', 'closed']:
-            return render(request, 'core/helpdesk/ticket_detail.html', context)
-        else:
-            return render(request, 'core/helpdesk/permission_denied.html')
-
-    return render(request, 'core/helpdesk/permission_denied.html')
 """
 def ticket_detail(request, ticket_id):
     # Retrieve the ticket or return 404 if not found
@@ -1994,6 +1946,165 @@ def ticket_detail(request, ticket_id):
     }
 
     # Display the ticket detail page for all users
+    return render(request, 'core/helpdesk/ticket_detail.html', context)
+"""
+
+def ticket_detail(request, ticket_id):
+    ticket = get_object_or_404(Ticket, id=ticket_id)
+    comments = ticket.comments.order_by('-created_at')
+    form = TicketEditForm(instance=ticket)
+    comment_form = TicketCommentForm()
+
+    is_manager = request.user.groups.filter(name='Manager').exists()
+
+    # Fetch staff members for the dropdown (only for managers)
+    staff_users = User.objects.filter(groups__name='Staff')
+
+    if request.method == 'POST':
+        if 'add_comment' in request.POST:
+            comment_form = TicketCommentForm(request.POST)
+            if comment_form.is_valid():
+                comment = comment_form.save(commit=False)
+                comment.ticket = ticket
+                comment.created_by = request.user
+                comment.save()
+                return redirect('ticket_detail', ticket_id=ticket.id)
+
+        elif 'edit_ticket' in request.POST:
+            form = TicketEditForm(request.POST, instance=ticket)
+            if form.is_valid():
+                form.save()
+                return redirect('ticket_detail', ticket_id=ticket.id)
+
+        elif 'assign_ticket' in request.POST and is_manager:
+            staff_id = request.POST.get('assigned_to')
+            if staff_id:
+                staff_member = get_object_or_404(User, id=staff_id, groups__name='Staff')
+                ticket.assigned_to = staff_member
+                ticket.save()
+
+                subject = f"🎫 Ticket #{ticket.id} Assigned to You"
+                text_content = (
+                    f"Hello {staff_member.get_full_name() or staff_member.username},\n\n"
+                    f"You have been assigned ticket #{ticket.id} - {ticket.title}.\n"
+                    f"Please log in to the system to view and resolve it:\n"
+                    f"{request.build_absolute_uri(reverse('ticket_detail', args=[ticket.id]))}\n\n"
+                    "Thank you."
+                )
+
+                html_content = f"""
+                <html>
+                <body style="font-family: Arial, sans-serif; background-color: #f4f6f8; margin:0; padding:0;">
+                <table width="100%" cellpadding="0" cellspacing="0" 
+                    style="max-width:600px; margin:40px auto; background:#ffffff; border-radius:8px;
+                            overflow:hidden; box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+                    
+                    <!-- LOGO HEADER -->
+                    <tr>
+                        <td style="background-color:#ffffff; text-align:center; padding:20px;">
+                            <img src="cid:logo" alt="BRITS Logo" width="150" 
+                                style="display:block; margin:0 auto;" />
+                        </td>
+                    </tr>
+
+                    <!-- TITLE BAR -->
+                    <tr>
+                        <td style="background-color:#172d69; text-align:center; padding:15px;">
+                            <h1 style="color:#ffffff; font-size:24px; margin:0;">
+                                📌 New Ticket Assigned
+                            </h1>
+                        </td>
+                    </tr>
+
+                    <!-- BODY -->
+                    <tr>
+                        <td style="padding:30px;">
+                            <p style="font-size:16px; line-height:1.6; margin-bottom:20px;">
+                                Hello <strong>{staff_member.get_full_name() or staff_member.username}</strong>,
+                            </p>
+                            <p style="font-size:16px; line-height:1.6; margin-bottom:20px;">
+                                You have been assigned a new ticket with the following details:
+                            </p>
+
+                            <!-- TICKET DETAILS TABLE -->
+                            <table cellpadding="0" cellspacing="0" width="100%" 
+                                style="margin-bottom:30px; border:1px solid #e0e0e0; border-radius:6px; overflow:hidden;">
+                                <tr>
+                                    <td style="padding:10px; background-color:#f9fafc; border-bottom:1px solid #e0e0e0;">
+                                        <strong>ID:</strong>
+                                    </td>
+                                    <td style="padding:10px; border-bottom:1px solid #e0e0e0;">{ticket.id}</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:10px; background-color:#f9fafc; border-bottom:1px solid #e0e0e0;">
+                                        <strong>Title:</strong>
+                                    </td>
+                                    <td style="padding:10px; border-bottom:1px solid #e0e0e0;">{ticket.title}</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:10px; background-color:#f9fafc;">
+                                        <strong>Status:</strong>
+                                    </td>
+                                    <td style="padding:10px;">{ticket.status}</td>
+                                </tr>
+                            </table>
+
+                            <!-- CTA BUTTON -->
+                            <p style="text-align:center; margin-bottom:30px;">
+                                <a href="{request.build_absolute_uri(reverse('ticket_detail', args=[ticket.id]))}"
+                                style="background-color:#007bff; color:#ffffff; text-decoration:none;
+                                        padding:14px 24px; border-radius:6px; display:inline-block;
+                                        font-size:16px; font-weight:bold; box-shadow:0 2px 4px rgba(0,0,0,0.1);">
+                                    View & Resolve Ticket
+                                </a>
+                            </p>
+                        </td>
+                    </tr>
+
+                    <!-- FOOTER -->
+                    <tr>
+                        <td style="background-color:#f0f2f5; padding:15px; text-align:center; font-size:12px; color:#7f8c8d;">
+                            This is an automated message. Please do not reply.<br>
+                            <span style="color:red;">⚠ Urgent tickets must be addressed promptly.</span>
+                        </td>
+                    </tr>
+                </table>
+                </body>
+                </html>
+                """
+
+                msg = EmailMultiAlternatives(
+                    subject,
+                    text_content,
+                    settings.DEFAULT_FROM_EMAIL,
+                    [staff_member.email]
+                )
+                msg.mixed_subtype = 'related'
+                msg.attach_alternative(html_content, "text/html")
+
+                logo_path = os.path.join(settings.BASE_DIR, 'static', 'icons', 'logo.png')
+                with open(logo_path, 'rb') as f:
+                    logo = MIMEImage(f.read())
+                    logo.add_header('Content-ID', '<logo>')
+                    logo.add_header('Content-Disposition', 'inline; filename="logo.png"')
+                    msg.attach(logo)
+
+                msg.send()
+                return redirect('ticket_detail', ticket_id=ticket.id)
+
+
+    context = {
+        'ticket': ticket,
+        'form': form,
+        'comments': comments,
+        'comment_form': comment_form,
+        'is_admin': request.user.is_superuser,
+        'is_editor': request.user.groups.filter(name='Editor').exists(),
+        'can_resolve': request.user.groups.filter(name='Resolver').exists(),
+        'is_manager': is_manager,
+        'staff_users': staff_users if is_manager else None
+    }
+
     return render(request, 'core/helpdesk/ticket_detail.html', context)
 
 @login_required
@@ -2038,7 +2149,7 @@ def resolve_ticket_view(request, ticket_id):
     resolution = request.POST.get('resolution', '').strip()
 
     # Check if the user is authorized to resolve the ticket
-    if is_director(request.user) or is_manager(request.user):
+    if is_director(request.user) or is_manager(request.user) or is_staff(request.user):
         # Admins and Editors can resolve tickets
         if ticket.status != 'resolved':
             ticket.resolution = resolution
@@ -2076,16 +2187,68 @@ def delete_ticket(request, ticket_id):
     ticket.delete()
     messages.success(request, "Ticket deleted successfully.")
     return redirect('tickets')
-
+"""
 def ticket_statuses(request):
     return render(request, 'core/helpdesk/ticket_statuses.html')
+"""
+def ticket_statuses(request):
+    user = request.user
+    is_custodian = user.groups.filter(name="Custodian").exists()
+    is_overseer = user.groups.filter(name="Overseer").exists()
+    is_customer = user.groups.filter(name="Customer").exists()
+    
+    return render(request, 'core/helpdesk/ticket_statuses.html', {
+        "is_custodian": is_custodian,
+        "is_overseer": is_overseer,
+        "is_customer": is_customer,
+    })
 
+"""
 def tickets_by_status(request, status):
     tickets = Ticket.objects.filter(status__iexact=status.replace('-', '_'))
     return render(request, 'core/helpdesk/ticket_by_status.html', {
         'status': status.title().replace('-', ' '),
         'tickets': tickets
     })
+"""
+@login_required
+def tickets_by_status(request, status):
+    tickets = Ticket.objects.filter(
+        status__iexact=status.replace('-', '_')
+    )
+
+    user = request.user
+    print(f"Authenticated user: {user.username}")
+    print(f"Groups: {[g.name for g in user.groups.all()]}")
+    print(f"Profile terminal: {getattr(user.profile, 'terminal', None)}")
+    print(f"Profile customer: {getattr(user.profile, 'customer', None)}")
+    print(f"Tickets before filtering: {tickets.count()}")
+
+    if user.groups.filter(name='Custodian').exists():
+        terminal = getattr(user.profile, 'terminal', None)
+        customer = getattr(user.profile, 'customer', None)
+        if terminal:
+            tickets = tickets.filter(terminal=terminal)
+        print(f"Custodian tickets after filter: {tickets.count()}")
+
+    elif user.groups.filter(name='Overseer').exists():
+        customer = getattr(user.profile, 'customer', None)
+        if customer:
+            tickets = tickets.filter(customer=customer)
+        print(f"Overseer tickets after filter: {tickets.count()}")
+
+    elif user.groups.filter(name='Customer').exists():
+        customer = getattr(user.profile, 'customer', None)
+        if customer:
+            tickets = tickets.filter(customer=customer)
+        print(f"Customer tickets after filter: {tickets.count()}")
+
+    return render(request, 'core/helpdesk/ticket_by_status.html', {
+        'status': status.title().replace('-', ' '),
+        'tickets': tickets
+    })
+
+
 
 def problem_category(request):
     print(">>> problem_category view reached")
@@ -2271,7 +2434,18 @@ def terminals(request):
                 return redirect('terminals')
 
     # GET request: Display the page with all terminals
+    query = request.GET.get('q', '').strip()
     all_terminals = Terminal.objects.all().order_by('id') 
+    if query:
+        all_terminals = all_terminals.filter(
+            Q(customer__name__icontains=query) |
+            Q(branch_name__icontains=query) |
+            Q(cdm_name__icontains=query) |
+            Q(serial_number__icontains=query) |
+            Q(region__name__icontains=query) |
+            Q(model__icontains=query) |
+            Q(zone__name__icontains=query)
+        )
     paginator = Paginator(all_terminals, 10)  
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
