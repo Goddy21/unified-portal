@@ -95,7 +95,7 @@
             <th>Username</th>
             <th>Email</th>
             <th>Current Role</th>
-            <th>Change Role / Delete</th>
+            <th>Change Role /Remove Assignment/Delete</th>
           </tr>
         </thead>
         <tbody>
@@ -117,11 +117,18 @@
                   <input type="hidden" name="action" value="update_role">
                   <select name="new_role" required>
                     <option value="">--Select--</option>
-                    <option value="Director">Director</option>
-                    <option value="Manager">Manager</option>
-                    <option value="Staff">Staff</option>
+                    <option value="Director" {% if user.groups.first.name == "Director" %}selected{% endif %}>Director</option>
+                    <option value="Manager" {% if user.groups.first.name == "Manager" %}selected{% endif %}>Manager</option>
+                    <option value="Staff" {% if user.groups.first.name == "Staff" %}selected{% endif %}>Staff</option>
                   </select>
                   <button type="submit" class="btn-update">Update</button>
+                </form>
+                <form method="post" action="{% url 'admin_dashboard' %}" style="display:inline;">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="remove_assignment">
+                  <input type="hidden" name="target_type" value="role">
+                  <input type="hidden" name="user_id" value="{{ user.id }}">
+                  <button type="submit" class="btn-warning btn-sm">Remove Assignment</button>
                 </form>
                 <form method="post" action="{% url 'admin_dashboard' %}" style="display:inline;">
                   {% csrf_token %}
@@ -169,16 +176,32 @@
               <input type="hidden" name="customer_id" value="{{ customer.id }}">
               <input type="hidden" name="action" value="assign_overseer_or_custodian">
 
-              <select name="overseer_id" required>
-                <option value="">-- Select Overseer --</option>
-                {% for user in users %}
-                  <option value="{{ user.id }}" {% if customer.overseer and customer.overseer.id == user.id %}selected{% endif %}>
-                    {{ user.get_full_name }} ({{ user.username }})
-                  </option>
-                {% endfor %}
-              </select>
+              <div class="form-inline-row">
+                <form method="post" action="{% url 'admin_dashboard' %}" style="display:inline;">
+                  {% csrf_token %}
+                  <input type="hidden" name="customer_id" value="{{ customer.id }}">
+                  <input type="hidden" name="action" value="assign_overseer_or_custodian">
+                  <select name="overseer_id" required>
+                    <option value="">-- Select Overseer --</option>
+                    {% for user in users %}
+                      <option value="{{ user.id }}" {% if customer.overseer and customer.overseer.id == user.id %}selected{% endif %}>
+                        {{ user.get_full_name }} ({{ user.username }})
+                      </option>
+                    {% endfor %}
+                  </select>
+                  <button type="submit" class="btn btn-primary btn-sm">Update Overseer</button>
+                </form>
 
-              <button type="submit" class="btn btn-primary btn-sm">Update Overseer</button>
+                <form method="post" action="{% url 'admin_dashboard' %}" style="display:inline;">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="remove_assignment">
+                  <input type="hidden" name="target_type" value="overseer">
+                  <input type="hidden" name="customer_id" value="{{ customer.id }}">
+                  <button type="submit" class="btn btn-danger btn-sm">Remove Assignment</button>
+                </form>
+              </div>
+
+
             </form>
           </div>
 
@@ -188,7 +211,7 @@
                 <tr>
                   <th>Branch</th>
                   <th>Custodian</th>
-                  <th>Assign / Update</th>
+                  <th>Assign / Update/Remove Assignment</th>
                 </tr>
               </thead>
               <tbody>
@@ -209,16 +232,31 @@
                       <input type="hidden" name="customer_id" value="{{ customer.id }}">
                       <input type="hidden" name="terminal_id" value="{{ terminal.id }}">
 
-                      <select name="custodian_id" required>
-                        <option value="">-- Select Custodian --</option>
-                        {% for user in users %}
-                          <option value="{{ user.id }}" {% if terminal.custodian and terminal.custodian.id == user.id %}selected{% endif %}>
-                            {{ user.get_full_name }} ({{ user.username }})
-                          </option>
-                        {% endfor %}
-                      </select>
+                      <form method="post" action="{% url 'admin_dashboard' %}" class="form-inline-row" style="display:inline;">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="assign_custodian">
+                        <input type="hidden" name="customer_id" value="{{ customer.id }}">
+                        <input type="hidden" name="terminal_id" value="{{ terminal.id }}">
+                        <select name="custodian_id" required>
+                          <option value="">-- Select Custodian --</option>
+                          {% for user in users %}
+                            <option value="{{ user.id }}" {% if terminal.custodian and terminal.custodian.id == user.id %}selected{% endif %}>
+                              {{ user.get_full_name }} ({{ user.username }})
+                            </option>
+                          {% endfor %}
+                        </select>
+                        <button type="submit" class="btn btn-success btn-sm">Update</button>
+                      </form>
 
-                      <button type="submit" class="btn btn-success btn-sm">Update</button>
+                      <form method="post" action="{% url 'admin_dashboard' %}" style="display:inline;">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="remove_assignment">
+                        <input type="hidden" name="target_type" value="custodian">
+                        <input type="hidden" name="customer_id" value="{{ customer.id }}">
+                        <input type="hidden" name="terminal_id" value="{{ terminal.id }}">
+                        <button type="submit" class="btn btn-danger btn-sm">Remove Assignment</button>
+                      </form>
+
                     </form>
                     </td>
                   </tr>

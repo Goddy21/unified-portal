@@ -169,15 +169,43 @@ def admin_dashboard(request):
             else:
                 messages.error(request, "User ID or role missing in role update.")
 
-
-        elif action == 'remove_role':
+        elif action == 'remove_assignment':
+            target_type = request.POST.get('target_type')  # 'overseer', 'custodian', or 'role'
             customer_id = request.POST.get('customer_id')
-            customer = get_object_or_404(Customer, id=customer_id)
-            customer.overseer = None
-            customer.custodian = None
-            customer.save()
-            messages.success(request, f"Roles removed for {customer.name}.")
-            print(f"Roles removed for: {customer.name}")
+            terminal_id = request.POST.get('terminal_id', None)
+            user_id = request.POST.get('user_id')  # for role removal from user
+
+            if target_type == 'overseer':
+                if not customer_id or not customer_id.isdigit():
+                    messages.error(request, "Invalid customer ID.")
+                else:
+                    customer = get_object_or_404(Customer, id=customer_id)
+                    customer.overseer = None
+                    customer.save()
+                    messages.success(request, f"Overseer removed from {customer.name}.")
+
+            elif target_type == 'custodian':
+                if not terminal_id or not terminal_id.isdigit():
+                    messages.error(request, "Invalid terminal ID.")
+                else:
+                    terminal = get_object_or_404(Terminal, id=terminal_id)
+                    terminal.custodian = None
+                    terminal.save()
+                    Profile.objects.filter(terminal=terminal).update(terminal=None, customer=None)
+                    messages.success(request, f"Custodian removed from terminal {terminal.branch_name}.")
+
+            elif target_type == 'role':
+                if not user_id or not user_id.isdigit():
+                    messages.error(request, "Invalid user ID for role removal.")
+                else:
+                    user = get_object_or_404(User, id=user_id)
+                    roles_to_remove = ['Director', 'Manager', 'Staff']
+                    groups_to_remove = Group.objects.filter(name__in=roles_to_remove)
+                    user.groups.remove(*groups_to_remove)
+                    user.save()
+                    messages.success(request, f"Roles removed from user {user.username}.")
+
+
 
         elif action == 'delete_user':
             user_id = request.POST.get('user_id')

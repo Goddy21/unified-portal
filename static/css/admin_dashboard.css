@@ -408,6 +408,21 @@ button, .btn-create, .btn-update, .btn-delete {
   border-radius: 6px;
   font-size: 0.95rem;
 }
+.btn-warning {
+  background-color: #f39c12;  /* nice orange/yellow */
+  color: #222;
+  padding: 0.6rem 1.25rem;
+  border-radius: 6px;
+  border: none;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.btn-warning:hover {
+  background-color: #d78e10;
+  color: #111;
+}
 
 /* RESPONSIVE ADJUSTMENTS */
 @media (max-width: 900px) {
