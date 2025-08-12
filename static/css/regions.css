@@ -8,7 +8,7 @@
 }
 
 .page-container h2 {
-  color: #007bff;
+  color: #123692;
   margin-bottom: 1rem;
 }
 
@@ -28,7 +28,7 @@
 
 .region-form .btn {
   padding: 10px 16px;
-  background-color: #007bff;
+  background-color: #123692;
   color: white;
   border: none;
   border-radius: 6px;
@@ -36,7 +36,7 @@
 }
 
 .region-form .btn:hover {
-  background-color: #0056b3;
+  background-color: #172d69;
 }
 
 .table-responsive {

@@ -33,7 +33,7 @@
 .error-card .btn {
     padding: 12px 25px;
     font-size: 1.1em;
-    background-color: #007bff;
+    background-color: #123692;
     color: white;
     border-radius: 6px;
     text-decoration: none;
@@ -41,7 +41,7 @@
 }
 
 .error-card .btn:hover {
-    background-color: #0056b3;
+    background-color: #172d69;
 }
 
 /* Responsive Styles */

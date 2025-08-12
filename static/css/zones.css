@@ -22,7 +22,7 @@
 }
 
 .zone-form .btn {
-  background-color: #007bff;
+  background-color: #123692;
   color: #fff;
   border: none;
   padding: 10px 18px;
@@ -32,7 +32,7 @@
 }
 
 .zone-form .btn:hover {
-  background-color: #0056b3;
+  background-color: #172d69;
 }
 
 .zone-table {
@@ -118,7 +118,7 @@
 .pagination .current {
   padding: 8px 16px;
   font-weight: bold;
-  background-color: #007bff;
+  background-color: #123692;
   color: white;
   border-radius: 4px;
 }

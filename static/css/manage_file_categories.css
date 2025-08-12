@@ -75,7 +75,7 @@
 .category-form select:focus,
 .inline-form select:focus {
   outline: none;
-  border-color: #007bff;
+  border-color: #123692;
 }
 
 /* Buttons */
@@ -99,12 +99,12 @@
 }
 
 .btn-update {
-  background: #007bff;
+  background: #123692;
   color: white;
 }
 
 .btn-update:hover {
-  background: #0056b3;
+  background: #172d69;
 }
 
 .btn-delete {

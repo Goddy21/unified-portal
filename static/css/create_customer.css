@@ -10,7 +10,7 @@
 .form-header {
   font-size: 1.5rem;
   margin-bottom: 1.5rem;
-  color: #007bff;
+  color: #123692;
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -42,7 +42,7 @@
 }
 
 .form-input:focus {
-  border-color: #007bff;
+  border-color: #123692;
   outline: none;
   background-color: #fff;
   box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
@@ -70,12 +70,12 @@
 }
 
 .btn-primary {
-  background-color: #007bff;
+  background-color: #123692;
   color: white;
 }
 
 .btn-primary:hover {
-  background-color: #0056b3;
+  background-color: #172d69;
 }
 
 .btn-secondary {

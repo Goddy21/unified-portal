@@ -42,7 +42,7 @@
 
 /* Focus effect on text fields */
 .comment-form .form-control:focus {
-    border-color: #007bff;
+    border-color: #123692;
     box-shadow: 0 0 5px rgba(0, 123, 255, 0.3);
 }
 
@@ -67,14 +67,14 @@
 
 /* Button Styles */
 .btn-primary {
-    background-color: #007bff;
+    background-color: #123692;
     color: white;
     border: none;
     text-align: center;
 }
 
 .btn-primary:hover {
-    background-color: #0056b3;
+    background-color: #172d69;
     box-shadow: 0 2px 5px rgba(0, 123, 255, 0.2);
 }
 
@@ -94,7 +94,7 @@
 .btn-back {
     display: inline-block;
     padding: 12px 25px;
-    background-color: #007bff;
+    background-color: #123692;
     color: white;
     text-decoration: none;
     border-radius: 5px;
@@ -102,7 +102,7 @@
 }
 
 .btn-back:hover {
-    background-color: #0056b3;
+    background-color: #172d69;
 }
 
 /* Mobile Responsiveness */

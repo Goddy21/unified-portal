@@ -34,7 +34,7 @@
 }
 
 .ticket-actions .btn:hover {
-  background-color: #0056b3;
+  background-color: #123692;
 }
 
 .ticket-actions .ticket-search {
@@ -150,15 +150,15 @@
 }
 
 .step-links a:hover {
-  background-color: #0056b3;
+  background-color: #172d69;
   color: white;
 }
 
 .step-links a:active,
 .step-links a:focus {
-  background-color: #0056b3;
+  background-color: #123692;
   color: white;
-  border-color: #0056b3;
+  border-color: #172d69;
 }
 
 /* Current page display styling */

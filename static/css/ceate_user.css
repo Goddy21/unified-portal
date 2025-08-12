@@ -61,7 +61,7 @@ body {
 
 .form-group label i {
   margin-right: 6px;
-  color: #007bff;
+  color: #123692;
 }
 
 .form-group input,
@@ -77,14 +77,14 @@ body {
 
 .form-group input:focus,
 .form-group select:focus {
-  border-color: #007bff;
+  border-color: #123692;
   box-shadow: 0 0 0 3px rgba(0,123,255,0.15);
   outline: none;
 }
 
 .btn-submit {
   width: 100%;
-  background-color: #007bff;
+  background-color: #123692;
   color: white;
   padding: 12px;
   font-size: 1rem;
@@ -99,14 +99,14 @@ body {
 }
 
 .btn-submit:hover {
-  background-color: #0056b3;
+  background-color: #172d69;
 }
 
 .back-link {
   display: block;
   text-align: center;
   margin-top: 1.2rem;
-  color: #007bff;
+  color: #123692;
   font-size: 0.95rem;
   text-decoration: none;
 }

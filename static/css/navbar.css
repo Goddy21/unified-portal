@@ -20,14 +20,14 @@
 .logo {
   font-weight: 700;
   font-size: 1.5rem; /* Slightly larger for better visibility */
-  color: #007bff;
+  color: #123692;
   letter-spacing: 1px; /* Add a little spacing to the letters */
   flex-shrink: 0;
   transition: color 0.3s ease; /* Smooth transition for hover effect */
 }
 
 .logo:hover {
-  color: #0056b3; /* Darken on hover */
+  color: #172d69; /* Darken on hover */
 }
 
 /* Hamburger for small screens */
@@ -77,7 +77,7 @@
 }
 
 .search-bar input:focus {
-  border-color: #007bff; /* Add a blue border when focused */
+  border-color: #123692; /* Add a blue border when focused */
 }
 
 /* User profile dropdown */
@@ -97,7 +97,7 @@
 }
 
 .profile-trigger:hover {
-  color: #007bff; /* Change color on hover */
+  color: #172d69; /* Change color on hover */
 }
 
 .profile-trigger img {
@@ -146,7 +146,7 @@
 .dropdown-menu a:hover,
 .dropdown-menu .dropdown-link:hover {
   background-color: #f1f3f5;
-  color: #007bff;
+  color: #172d69;
 }
 
 /* Logout button styles */

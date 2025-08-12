@@ -18,7 +18,7 @@ body {
   font-size: 2em;
   color: #343a40;
   margin-bottom: 15px;
-  border-bottom: 2px solid #007bff;
+  border-bottom: 2px solid #123692;
   padding-bottom: 10px;
   animation: slideInLeft 0.8s ease-out;
   display: flex;
@@ -27,7 +27,7 @@ body {
 
 .page-container h2 i {
   margin-right: 10px;
-  color: #007bff;
+  color: #123692;
 }
 
 .page-container p {
@@ -119,13 +119,13 @@ body {
 }
 
 .btn-primary {
-  background-color: #007bff;
+  background-color: #123692;
   color: white;
-  border: 1px solid #007bff;
+  border: 1px solid #123692;
 }
 
 .btn-primary:hover {
-  background-color: #0056b3;
+  background-color: #172d69;
   border-color: #004085;
   transform: translateY(-1px);
   box-shadow: 0 4px 10px rgba(0, 123, 255, 0.2);
@@ -158,7 +158,7 @@ body {
 }
 
 .btn-link {
-  color: #007bff;
+  color: #123692;
   text-decoration: none;
   background-color: transparent;
   border: none;
@@ -166,7 +166,7 @@ body {
 }
 
 .btn-link:hover {
-  color: #0056b3;
+  color: #172d69;
   text-decoration: underline;
 }
 
@@ -223,7 +223,7 @@ body {
 
 .report-table tbody tr:hover {
   background-color: #e9f5ff;
-  box-shadow: inset 3px 0 0 #007bff; /* Subtle highlight on hover */
+  box-shadow: inset 3px 0 0 #123692; /* Subtle highlight on hover */
 }
 
 /* Animation improvements */
@@ -259,22 +259,22 @@ body {
   background-color: #f1f1f1;
   border: 1px solid #ddd;
   border-radius: 5px;
-  color: #007bff;
+  color: #123692;
   text-decoration: none;
   font-weight: 600;
   transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
 .page-number a:hover {
-  background-color: #0056b3;
+  background-color: #172d69;
   color: white;
 }
 
 .page-number a:active,
 .page-number a:focus {
-  background-color: #0056b3;
+  background-color: #172d69;
   color: white;
-  border-color: #0056b3;
+  border-color: #172d69;
 }
 
 /* Current page display styling */
