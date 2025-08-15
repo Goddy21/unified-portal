@@ -1712,10 +1712,20 @@ def ticket_detail(request, ticket_id):
         elif 'assign_ticket' in request.POST and is_manager:
             staff_id = request.POST.get('assigned_to')
             if staff_id:
-                staff_member = get_object_or_404(User, id=staff_id, groups__name='Staff')
+                # Allow Staff, Manager, or Director
+                staff_member = get_object_or_404(
+                    User.objects.distinct(),
+                    id=staff_id,
+                    groups__name__in=['Staff', 'Manager', 'Director']
+                )
                 ticket.assigned_to = staff_member
                 ticket.save()
 
+                # Load related objects
+                comments = ticket.comments.select_related('created_by').order_by('created_at')
+                # escalations = ticket.escalations.select_related('escalated_by').order_by('-escalated_at')
+
+                # Email subject & plain text content
                 subject = f"🎫 Ticket #{ticket.id} Assigned to You"
                 text_content = (
                     f"Hello {staff_member.get_full_name() or staff_member.username},\n\n"
@@ -1725,104 +1735,37 @@ def ticket_detail(request, ticket_id):
                     "Thank you."
                 )
 
-                html_content = f"""
-                <html>
-                <body style="font-family: Arial, sans-serif; background-color: #f4f6f8; margin:0; padding:0;">
-                <table width="100%" cellpadding="0" cellspacing="0" 
-                    style="max-width:600px; margin:40px auto; background:#ffffff; border-radius:8px;
-                            overflow:hidden; box-shadow:0 2px 8px rgba(0,0,0,0.08);">
-                    
-                    <!-- LOGO HEADER -->
-                    <tr>
-                        <td style="background-color:#ffffff; text-align:center; padding:20px;">
-                            <img src="cid:logo" alt="BRITS Logo" width="150" 
-                                style="display:block; margin:0 auto;" />
-                        </td>
-                    </tr>
+                # HTML email content
+                html_content = render_to_string(
+                    'email/ticket_detail_email.html',  
+                    {
+                        'ticket': ticket,
+                        'comments': comments,
+                        # 'escalations': escalations,
+                        'ticket_url': request.build_absolute_uri(reverse('ticket_detail', args=[ticket.id]))
+                    }
+                )
 
-                    <!-- TITLE BAR -->
-                    <tr>
-                        <td style="background-color:#172d69; text-align:center; padding:15px;">
-                            <h1 style="color:#ffffff; font-size:24px; margin:0;">
-                                📌 New Ticket Assigned
-                            </h1>
-                        </td>
-                    </tr>
-
-                    <!-- BODY -->
-                    <tr>
-                        <td style="padding:30px;">
-                            <p style="font-size:16px; line-height:1.6; margin-bottom:20px;">
-                                Hello <strong>{staff_member.get_full_name() or staff_member.username}</strong>,
-                            </p>
-                            <p style="font-size:16px; line-height:1.6; margin-bottom:20px;">
-                                You have been assigned a new ticket with the following details:
-                            </p>
-
-                            <!-- TICKET DETAILS TABLE -->
-                            <table cellpadding="0" cellspacing="0" width="100%" 
-                                style="margin-bottom:30px; border:1px solid #e0e0e0; border-radius:6px; overflow:hidden;">
-                                <tr>
-                                    <td style="padding:10px; background-color:#f9fafc; border-bottom:1px solid #e0e0e0;">
-                                        <strong>ID:</strong>
-                                    </td>
-                                    <td style="padding:10px; border-bottom:1px solid #e0e0e0;">{ticket.id}</td>
-                                </tr>
-                                <tr>
-                                    <td style="padding:10px; background-color:#f9fafc; border-bottom:1px solid #e0e0e0;">
-                                        <strong>Title:</strong>
-                                    </td>
-                                    <td style="padding:10px; border-bottom:1px solid #e0e0e0;">{ticket.title}</td>
-                                </tr>
-                                <tr>
-                                    <td style="padding:10px; background-color:#f9fafc;">
-                                        <strong>Status:</strong>
-                                    </td>
-                                    <td style="padding:10px;">{ticket.status}</td>
-                                </tr>
-                            </table>
-
-                            <!-- CTA BUTTON -->
-                            <p style="text-align:center; margin-bottom:30px;">
-                                <a href="{request.build_absolute_uri(reverse('ticket_detail', args=[ticket.id]))}"
-                                style="background-color:#007bff; color:#ffffff; text-decoration:none;
-                                        padding:14px 24px; border-radius:6px; display:inline-block;
-                                        font-size:16px; font-weight:bold; box-shadow:0 2px 4px rgba(0,0,0,0.1);">
-                                    View & Resolve Ticket
-                                </a>
-                            </p>
-                        </td>
-                    </tr>
-
-                    <!-- FOOTER -->
-                    <tr>
-                        <td style="background-color:#f0f2f5; padding:15px; text-align:center; font-size:12px; color:#7f8c8d;">
-                            This is an automated message. Please do not reply.<br>
-                            <span style="color:red;">⚠ Urgent tickets must be addressed promptly.</span>
-                        </td>
-                    </tr>
-                </table>
-                </body>
-                </html>
-                """
-
+                # Create the email message
                 msg = EmailMultiAlternatives(
                     subject,
                     text_content,
                     settings.DEFAULT_FROM_EMAIL,
                     [staff_member.email]
                 )
-                msg.mixed_subtype = 'related'
                 msg.attach_alternative(html_content, "text/html")
 
+                # Attach logo if available
                 logo_path = os.path.join(settings.BASE_DIR, 'static', 'icons', 'logo.png')
-                with open(logo_path, 'rb') as f:
-                    logo = MIMEImage(f.read())
-                    logo.add_header('Content-ID', '<logo>')
-                    logo.add_header('Content-Disposition', 'inline; filename="logo.png"')
-                    msg.attach(logo)
+                if os.path.exists(logo_path):
+                    with open(logo_path, 'rb') as f:
+                        logo = MIMEImage(f.read())
+                        logo.add_header('Content-ID', '<logo>')
+                        logo.add_header('Content-Disposition', 'inline; filename="logo.png"')
+                        msg.attach(logo)
 
                 msg.send()
+
                 return redirect('ticket_detail', ticket_id=ticket.id)
 
 
