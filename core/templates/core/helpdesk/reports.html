@@ -98,28 +98,44 @@
       <table class="report-table table table-striped">
         <thead>
           <tr>
-            <th>#</th>
+            <th>NO</th>
+            <th>Problem Category</th>
+            <th>Description</th>
+            <th>Status</th>
+            <th>Assigned to</th>
+            <th>Resolved By</th>
+            <th>Resolution</th>
             <th>Created At</th>
             <th>Updated At</th>
-            <th>Problem Category</th>
-            <th>Status</th>
-            <th>Responsible</th>
-            <th>Description</th>
+            <th>Resolved At</th>
             <th>Comments</th>  
           </tr>
         </thead>
         <tbody>
-          {% for ticket in tickets %}
+           {% for ticket in tickets %}
           <tr>
-            <pre>{{ tickets }}</pre>
-
             <td>{{ forloop.counter }}</td>
+            <td>{{ ticket.problem_category.name }}</td>
+            <td>{{ ticket.description|truncatewords:10 }}</td>
+            <td>{{ ticket.status }}</td>
+            <td>{{ ticket.assigned_to }}</td>
+            <td>
+              {% if ticket.resolved_by %}
+                {{ ticket.resolved_by.username }}
+              {% else %}
+                Not Assigned
+              {% endif %}
+            </td>
+            <td>{{ ticket.resolution|default:"—" }}</td>
             <td>{{ ticket.created_at }}</td>
             <td>{{ ticket.updated_at }}</td>
-            <td>{{ ticket.problem_category.name }}</td>
-            <td>{{ ticket.status }}</td>
-            <td>{{ ticket.responsible }}</td>
-            <td>{{ ticket.description|truncatewords:10 }}</td>
+            <td>
+              {% if ticket.resolved_at %}
+                {{ ticket.resolved_at|date:"Y-m-d H:i" }}
+              {% else %}
+                Not Resolved
+              {% endif %}
+            </td>
             <td>
               {% for comment in ticket.comments.all %}
                 <div>
@@ -132,7 +148,7 @@
             </td>
           </tr>
           {% empty %}
-          <tr><td colspan="7">No tickets found.</td></tr>
+          <tr><td colspan="10">No tickets found.</td></tr>
           {% endfor %}
         </tbody>
       </table>
@@ -146,15 +162,15 @@
             <th>NO</th>
             <th>Customer</th>
             <th>Terminal</th>
-            <th>Created At</th>
-            <th>Updated At</th>
             <th>Problem Category</th>
+            <th>Description</th>
             <th>Status</th>
-            <th>Resolved At</th>
+            <th>Assigned to</th>
             <th>Resolved By</th>
             <th>Resolution</th>
-            <th>Responsible</th>
-            <th>Description</th>
+            <th>Created At</th>
+            <th>Updated At</th>
+            <th>Resolved At</th>
             <th>Comments</th> 
           </tr>
         </thead>
@@ -170,17 +186,10 @@
               {% endif %}
             </td>
             <td>{{ ticket.terminal.branch_name }}</td>
-            <td>{{ ticket.created_at }}</td>
-            <td>{{ ticket.updated_at }}</td>
             <td>{{ ticket.problem_category.name }}</td>
+            <td>{{ ticket.description|truncatewords:10 }}</td>
             <td>{{ ticket.status }}</td>
-            <td>
-              {% if ticket.resolved_at %}
-                {{ ticket.resolved_at|date:"Y-m-d H:i" }}
-              {% else %}
-                Not Resolved
-              {% endif %}
-            </td>
+            <td>{{ ticket.assigned_to }}</td>
             <td>
               {% if ticket.resolved_by %}
                 {{ ticket.resolved_by.username }}
@@ -189,8 +198,15 @@
               {% endif %}
             </td>
             <td>{{ ticket.resolution|default:"—" }}</td>
-            <td>{{ ticket.responsible }}</td>
-            <td>{{ ticket.description|truncatewords:10 }}</td>
+            <td>{{ ticket.created_at }}</td>
+            <td>{{ ticket.updated_at }}</td>
+            <td>
+              {% if ticket.resolved_at %}
+                {{ ticket.resolved_at|date:"Y-m-d H:i" }}
+              {% else %}
+                Not Resolved
+              {% endif %}
+            </td>
             <td>
               {% for comment in ticket.comments.all %}
                 <div>
