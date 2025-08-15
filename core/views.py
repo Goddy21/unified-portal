@@ -1559,31 +1559,32 @@ def create_ticket(request):
     if request.method == 'POST':
         form = TicketForm(request.POST)
         if form.is_valid():
-            print(form.cleaned_data)
             ticket = form.save(commit=False)
+
+            # Prevent using inactive terminal
+            if ticket.terminal and not ticket.terminal.is_active:
+                messages.error(request, f"Terminal '{ticket.terminal.cdm_name}' is disabled. Please enable it before creating a ticket.")
+                return redirect('create_ticket')
+
             category_name = ticket.problem_category.name if ticket.problem_category else 'other'
-            ticket.priority = determine_priority(
-                #ticket.issue_type,
-                category_name,
-                ticket.description
-            )
+            ticket.priority = determine_priority(category_name, ticket.description)
             ticket.created_by = request.user
+
             if ticket.terminal:
                 ticket.customer = ticket.terminal.customer
                 ticket.region = ticket.terminal.region
+
             ticket.save()
             return redirect('create_ticket' if 'create_another' in request.POST else 'tickets')
     else:
-        #form = TicketForm()
-
-        # Get terminal_id from the URL parameters if available
-        terminal_id = request.GET.get('terminal_id')  
+        terminal_id = request.GET.get('terminal_id')
         if terminal_id:
-            form = TicketForm(terminal_id=terminal_id)  
+            form = TicketForm(terminal_id=terminal_id)
         else:
             form = TicketForm()
 
     return render(request, 'core/helpdesk/create_ticket.html', {'form': form})
+
 
 from django.template.loader import render_to_string 
 @login_required
@@ -2169,6 +2170,24 @@ def fetch_tickets(request, terminal_id):
         return JsonResponse({"success": True, "tickets": list(tickets)})
     else:
         return JsonResponse({"success": False, "message": "No tickets found."})
+
+@login_required
+def disable_terminal(request, terminal_id):
+    terminal = get_object_or_404(Terminal, id=terminal_id)
+    if request.method == "POST":
+        terminal.is_active = False  
+        terminal.save()
+        messages.success(request, f"Terminal {terminal.cdm_name} has been disabled.")
+    return redirect('terminals')
+
+@login_required
+def enable_terminal(request, terminal_id):
+    terminal = get_object_or_404(Terminal, id=terminal_id)
+    if request.method == "POST":
+        terminal.is_active = True
+        terminal.save()
+        messages.success(request, f"Terminal {terminal.cdm_name} has been enabled.")
+    return redirect('terminals')
 
 
 @user_passes_test(is_director)

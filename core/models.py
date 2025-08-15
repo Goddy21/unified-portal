@@ -88,6 +88,7 @@ class Terminal(models.Model):
     region = models.ForeignKey('Region', on_delete=models.CASCADE, null=True)
     model = models.CharField(max_length=100, default='ModelX')
     zone = models.ForeignKey('Zone', on_delete=models.SET_NULL, null=True)
+    is_active = models.BooleanField(default=True) 
 
     def __str__(self):
         return f"{self.customer.name if self.customer else 'No Customer'} - {self.branch_name}"

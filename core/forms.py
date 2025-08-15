@@ -85,27 +85,33 @@ class TicketForm(forms.ModelForm):
             'status': forms.Select(attrs={'class': 'form-control'}),
         }
 
-    customer = forms.ModelChoiceField(queryset=Customer.objects.all(), required=True)  # Make it visible
-    region = forms.ModelChoiceField(queryset=Region.objects.all(), required=True)  # Make it visible
+    # Make customer & region visible and required
+    customer = forms.ModelChoiceField(queryset=Customer.objects.all(), required=True)
+    region = forms.ModelChoiceField(queryset=Region.objects.all(), required=True)
 
     def __init__(self, *args, **kwargs):
+        # Pop terminal_id if passed separately
+        terminal_id = kwargs.pop('terminal_id', None)
         super(TicketForm, self).__init__(*args, **kwargs)
 
-        # Automatically populate customer and region if a terminal is specified
-        if 'instance' in kwargs and kwargs['instance'] and kwargs['instance'].terminal:
-            terminal = kwargs['instance'].terminal
+        # Show all terminals in dropdown, including inactive
+        self.fields['terminal'].queryset = Terminal.objects.all()
+        self.fields['terminal'].label_from_instance = lambda obj: (
+            f"{obj.cdm_name} (Inactive)" if not obj.is_active else obj.cdm_name
+        )
+
+        # Auto-fill customer & region if terminal already selected
+        if self.instance and getattr(self.instance, 'terminal', None):
+            terminal = self.instance.terminal
             self.fields['customer'].initial = terminal.customer
             self.fields['region'].initial = terminal.region
-        elif 'terminal_id' in kwargs:  # Handle when creating new tickets and terminal_id is passed
-            terminal_id = kwargs.get('terminal_id')
-            if terminal_id:
-                try:
-                    terminal = Terminal.objects.get(id=terminal_id)
-                    self.fields['customer'].initial = terminal.customer
-                    self.fields['region'].initial = terminal.region
-                except Terminal.DoesNotExist:
-                    pass  # Handle the case where the terminal is not found
-
+        elif terminal_id:
+            try:
+                terminal = Terminal.objects.get(id=terminal_id)
+                self.fields['customer'].initial = terminal.customer
+                self.fields['region'].initial = terminal.region
+            except Terminal.DoesNotExist:
+                pass
 
 class ProblemCategoryForm(forms.ModelForm):
     class Meta:
