@@ -1328,7 +1328,7 @@ def statistics_view(request):
         assigned_customer = Customer.objects.filter(overseer=user).first()
         if assigned_customer:
             print(f"{user.username} is Overseer for {assigned_customer.name}")
-            tickets = tickets.filter(customer=assigned_customer)
+            tickets = tickets.filter(terminal__customer=assigned_customer)
         else:
             tickets = Ticket.objects.none()
     elif user_profile and user_profile.terminal:
@@ -1343,6 +1343,7 @@ def statistics_view(request):
             tickets = Ticket.objects.none()
     else:
         tickets = Ticket.objects.none()
+
 
     print(f"Tickets after initial role-based filtering: {tickets.count()}")
 
@@ -1375,28 +1376,34 @@ def statistics_view(request):
         start_date = today.replace(hour=0, minute=0, second=0, microsecond=0)
         end_date = today.replace(hour=23, minute=59, second=59, microsecond=999999)
 
+    
+
+    # Filter by customer
     if customer_filter not in ['all', '', None]:
-        if user_group == "Overseer" and assigned_customer and str(assigned_customer.id) != customer_filter:
-            tickets = Ticket.objects.none()
-        elif user_group == "Custodian" and assigned_customer and str(assigned_customer.id) != customer_filter:
-            tickets = Ticket.objects.none()
-        else:
-            tickets = tickets.filter(terminal__customer__id=customer_filter)
+        try:
+            tickets = tickets.filter(terminal__customer__id=int(customer_filter))
+        except ValueError:
+            pass
 
+
+    # Filter by terminal
     if terminal_filter not in ['all', '', None]:
-        if user_group == "Custodian" and assigned_terminal and str(assigned_terminal.id) != terminal_filter:
-            tickets = Ticket.objects.none()
-        else:
-            tickets = tickets.filter(terminal__id=terminal_filter)
+        try:
+            tickets = tickets.filter(terminal__id=int(terminal_filter))
+        except ValueError:
+            pass
 
+    # Filter by region
     if region_filter not in ['all', '', None]:
-        if user_group == "Custodian" and assigned_region and str(assigned_region.id) != region_filter:
-            tickets = Ticket.objects.none()
-        else:
-            tickets = tickets.filter(terminal__region__id=region_filter)
+        try:
+            tickets = tickets.filter(terminal__region__id=int(region_filter))
+        except ValueError:
+            pass    
 
+    # Filter by time period
     if time_period != 'all_time' and start_date and end_date:
         tickets = tickets.filter(created_at__range=[start_date, end_date])
+
 
     tickets_list = list(tickets.iterator())
     ticket_statuses = tickets.values('status').annotate(status_count=Count('status'))
@@ -1450,13 +1457,13 @@ def statistics_view(request):
     if user_group == "Internal":
         available_customers = list(Customer.objects.values('id', 'name'))
         available_terminals = list(Terminal.objects.select_related('customer', 'region').values(
-            'id', 'branch_name', 'customer__name', 'region__name'
+            'id', 'branch_name', 'customer__name', 'region__name', 'region__id'
         ))
         available_regions = list(Region.objects.values('id', 'name'))
     elif user_group == "Overseer" and assigned_customer:
         available_customers = [{'id': assigned_customer.id, 'name': assigned_customer.name}]
         available_terminals = list(Terminal.objects.filter(customer=assigned_customer).select_related('customer', 'region').values(
-            'id', 'branch_name', 'customer__name', 'region__name'
+            'id', 'branch_name', 'customer__name', 'region__name', 'region__id'
         ))
         available_regions = list(Region.objects.filter(terminal__customer=assigned_customer).distinct().values('id', 'name'))
     elif user_group == "Custodian" and assigned_terminal:
@@ -1466,15 +1473,18 @@ def statistics_view(request):
             'branch_name': assigned_terminal.branch_name,
             'customer__name': assigned_terminal.customer.name if assigned_terminal.customer else 'N/A',
             'region__name': assigned_terminal.region.name if assigned_terminal.region else 'N/A',
+            'region_id': assigned_terminal.region.id if assigned_terminal.region else None
         }]
         available_regions = [{'id': assigned_region.id, 'name': assigned_region.name}] if assigned_region else []
 
+    
     terminals_for_frontend = [
         {
             'id': t['id'],
             'branch_name': t['branch_name'],
-            'customer_name': t['customer__name'],
-            'region_name': t['region__name'],
+            'customer_name': t['customer__name'] if 'customer__name' in t else t.get('customer_name', 'N/A'), 
+            'region_name': t['region__name'] if 'region__name' in t else t.get('region_name', 'N/A'),  
+            'region_id': t.get('region__id') if 'region__id' in t else t.get('region_id') 
         }
         for t in available_terminals
     ]
@@ -1506,9 +1516,9 @@ def statistics_view(request):
         'terminals': terminals_for_frontend,
         'regions': available_regions,
         "time_period": time_period,
-        'selected_customer': customer_filter,
-        'selected_terminal': terminal_filter,
-        'selected_region': region_filter,
+        'selected_customer': str(customer_filter),
+        'selected_terminal': str(terminal_filter),
+        'selected_region': str(region_filter),
         'data_json': json.dumps(data, ensure_ascii=False),
         "user_group": user_group,
         "assigned_customer": assigned_customer,

@@ -33,7 +33,6 @@
               {% endfor %}
             {% endif %}
           </select>
-          <input type="hidden" name="customer" value="{% if assigned_customer %}{{ assigned_customer.id }}{% else %}""{% endif %}">
         </div>
 
         <div class="col-md-3 mb-2">
@@ -53,7 +52,6 @@
               {% endfor %}
             {% endif %}
           </select>
-          <input type="hidden" name="region" value="{% if assigned_region %}{{ assigned_region.id }}{% else %}""{% endif %}">
         </div>
 
         <div class="col-md-3 mb-2">
@@ -76,7 +74,6 @@
               {% endfor %}
             {% endif %}
           </select>
-          <input type="hidden" name="terminal" value="{% if assigned_terminal %}{{ assigned_terminal.id }}{% else %}""{% endif %}">
         </div>
 
         <div class="col-md-3 mb-2">
@@ -213,6 +210,39 @@
   const data = JSON.parse('{{ data_json|escapejs }}');
   window.initialData = data;  // expose globally
   window.allowAll = {% if user_group == "Internal" %}true{% else %}false{% endif %};
+
+$('#region-filter').change(function() {
+    const selectedRegionId = $(this).val(); 
+    let filteredTerminals = [];
+
+    if (selectedRegionId === "all") {
+        filteredTerminals = window.initialData.terminals;
+    } else {
+        filteredTerminals = window.initialData.terminals.filter(terminal => {
+            return String(terminal.region_id) === selectedRegionId; 
+        });
+    }
+
+    const terminalDropdown = $('#terminal-filter');
+    const previousSelection = terminalDropdown.val(); // preserve previous selection
+    terminalDropdown.empty();
+    terminalDropdown.append('<option value="all">All Terminals</option>');
+
+    filteredTerminals.forEach(term => {
+        terminalDropdown.append(`<option value="${term.id}">${term.branch_name} (${term.customer_name} - ${term.region_name})</option>`);
+    });
+
+    // Restore previous selection if it exists in the filtered list
+    if (previousSelection && filteredTerminals.some(t => String(t.id) === previousSelection)) {
+        terminalDropdown.val(previousSelection);
+    } else {
+        terminalDropdown.val('all');
+    }
+
+    // Trigger chart update
+    terminalDropdown.trigger('change');
+});
+
 </script>
 
 <script src="{% static 'js/ticketing_dashboard.js' %}"></script>
