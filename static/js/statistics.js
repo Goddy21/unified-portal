@@ -1,5 +1,6 @@
 $(document).ready(function() {
-
+    const data = window.initialData;
+    const allowAll = window.allowAll;
     // Declare chart instances outside of updateCharts function
     let dayChart, weekdayChart, hourChart, monthChart, yearChart, statusChart, terminalChart, categoryChart, monthlyChart;
 
@@ -337,21 +338,52 @@ $(document).ready(function() {
     updateTicketStatusBreakdown(data.ticketStatuses.labels, data.ticketStatuses.data);
     
     // Populate Dropdowns
-    function populateDropdown(id, items, idKey, nameKey) {
+    function populateDropdown(id, items, idKey, nameKey, allowAll = true, defaultValue = null) {
         const dropdown = document.getElementById(id);
         dropdown.innerHTML = "";
+
+        // Add "All" if allowed
+        if (allowAll) {
+            const allOption = document.createElement("option");
+            allOption.value = "all";
+            allOption.text = "All";
+            dropdown.appendChild(allOption);
+        }
+
+        // Add the other items
         items.forEach(item => {
             const opt = document.createElement("option");
             opt.value = item[idKey];
             opt.text = item[nameKey];
             dropdown.appendChild(opt);
         });
+
+        // Set default selected value
+        if (defaultValue !== null) {
+            dropdown.value = defaultValue;
+        } else {
+            dropdown.value = allowAll ? "all" : (items[0] ? items[0][idKey] : "all");
+        }
     }
 
     // Apply the initial data
-    populateDropdown("customer-filter", data.customers, "id", "name");
-    populateDropdown("region-filter", data.regions, "id", "name");
-    populateDropdown("terminal-filter", data.terminals, "id", "branch_name");
+    if (userGroup === "Internal") {
+        // Internal: show all options
+        populateDropdown("customer-filter", data.customers, "id", "name", true);
+        populateDropdown("region-filter", data.regions, "id", "name", true);
+        populateDropdown("terminal-filter", data.terminals, "id", "branch_name", true);
+    } else if (userGroup === "Overseer") {
+        // Overseer: assigned customer, others show "All"
+        populateDropdown("customer-filter", data.customers, "id", "name", false, data.assignedCustomerId);
+        populateDropdown("region-filter", data.regions, "id", "name", false, "all");
+        populateDropdown("terminal-filter", data.terminals, "id", "branch_name", false, "all");
+    } else if (userGroup === "Custodian") {
+        // Custodian: assigned customer, region, terminal
+        populateDropdown("customer-filter", data.customers, "id", "name", false, data.assignedCustomerId);
+        populateDropdown("region-filter", data.regions, "id", "name", false, data.assignedRegionId);
+        populateDropdown("terminal-filter", data.terminals, "id", "branch_name", false, data.assignedTerminalId);
+    }
+
 
     // Handle filter changes and update charts dynamically
     $('#time-period, #customer-filter, #terminal-filter, #region-filter').change(function() {

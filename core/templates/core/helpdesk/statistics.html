@@ -15,85 +15,84 @@
 
   <!-- Filter Dropdowns -->
   <form method="get" class="row mb-4">
-    <div class="row mb-4">
-      <div class="col-md-3 mb-2">
-        <select id="time-period" class="form-select custom-select" name="time-period">
-        <option value="all_time" {% if time_period == "all_time" %}selected{% endif %}>All Time</option>
-        <option value="today" {% if time_period == "today" %}selected{% endif %}>Today</option>
-        <option value="yesterday" {% if time_period == "yesterday" %}selected{% endif %}>Yesterday</option>
-        <option value="lastweek" {% if time_period == "lastweek" %}selected{% endif %}>Last Week</option>
-        <option value="lastmonth" {% if time_period == "lastmonth" %}selected{% endif %}>Last Month</option>
-        <option value="lastyear" {% if time_period == "lastyear" %}selected{% endif %}>Last Year</option>
-      </select>
-      </div>
+      <div class="row mb-4">
 
-      <div class="col-md-3 mb-2">
-        <select id="customer-filter" class="form-select custom-select" name="customer" 
-                {% if user_group == "Custodian" or user_group == "Overseer" %}disabled{% endif %}>
-          {% if user_group == "Custodian" or user_group == "Overseer" %}
-            <option value="{{ assigned_customer.id }}" selected>
-              {{ assigned_customer.name }}
-            </option>
-          {% else %}
-            <option value="all" {% if selected_customer == "all" %}selected{% endif %}>All Customers</option>
-            {% for customer in customers %}
-              <option value="{{ customer.id }}" {% if selected_customer == customer.id|stringformat:"s" %}selected{% endif %}>
-                {{ customer.name|default:"Unnamed Customer" }}
+        <div class="col-md-3 mb-2">
+          <select id="customer-filter" class="form-select custom-select" name="customer" 
+                  {% if user_group == "Custodian" or user_group == "Overseer" %}disabled{% endif %}>
+            {% if user_group == "Custodian" or user_group == "Overseer" %}
+              <option value="{{ assigned_customer.id }}" selected>
+                {{ assigned_customer.name }}
               </option>
-            {% endfor %}
-          {% endif %}
-        </select>
-        <input type="hidden" name="customer" value="{% if assigned_customer %}{{ assigned_customer.id }}{% else %}""{% endif %}">
-      </div>
+            {% else %}
+              <option value="all" {% if selected_customer == "all" or not selected_customer %}selected{% endif %}>All Customers</option>
+              {% for customer in customers %}
+                <option value="{{ customer.id }}" {% if selected_customer == customer.id|stringformat:"s" %}selected{% endif %}>
+                  {{ customer.name|default:"Unnamed Customer" }}
+                </option>
+              {% endfor %}
+            {% endif %}
+          </select>
+          <input type="hidden" name="customer" value="{% if assigned_customer %}{{ assigned_customer.id }}{% else %}""{% endif %}">
+        </div>
 
-      <div class="col-md-3 mb-2">
-        <select id="terminal-filter" class="form-select custom-select" name="terminal"
-                {% if user_group == "Custodian" %}disabled{% endif %}>
-          {% if user_group == "Custodian" %}
-            {% for terminal in terminals %}
-              <option value="{% if assigned_terminal %}{{ assigned_terminal.id }}{% else %}""{% endif %}" 
-                      {% if selected_terminal == terminal.id|stringformat:"s" %}selected{% endif %}>
-                {% if assigned_terminal %}{{ assigned_terminal.branch_name }}{% else %}{% endif %} 
-                ({{ terminal.customer_name }} - {{ terminal.region_name }})
+        <div class="col-md-3 mb-2">
+          <select id="region-filter" class="form-select custom-select" name="region"
+                  {% if user_group == "Custodian" %}disabled{% endif %}>
+            {% if user_group == "Custodian" %}
+              <option value="{% if assigned_region %}{{ assigned_region.id }}{% else %}""{% endif %}" 
+                      selected>
+                {% if assigned_region %}{{ assigned_region.name }}{% else %}No Region Assigned{% endif %}
               </option>
-            {% endfor %}
-          {% else %}
-            <option value="all" {% if selected_terminal == "all" %}selected{% endif %}>All Terminals</option>
-            {% for terminal in terminals %}
-              <option value="{{ terminal.id }}" {% if selected_terminal == terminal.id|stringformat:"s" %}selected{% endif %}>
-                {{ terminal.branch_name }} ({{ terminal.customer_name }} - {{ terminal.region_name }})
-              </option>
-            {% endfor %}
-          {% endif %}
-        </select>
-        <input type="hidden" name="terminal" value="{% if assigned_terminal %}{{ assigned_terminal.id }}{% else %}""{% endif %}">
+            {% else %}
+              <option value="all" {% if selected_region == "all" or not selected_region %}selected{% endif %}>All Regions</option>
+              {% for region in regions %}
+                <option value="{{ region.id }}" {% if selected_region == region.id|stringformat:"s" %}selected{% endif %}>
+                  {{ region.name }}
+                </option>
+              {% endfor %}
+            {% endif %}
+          </select>
+          <input type="hidden" name="region" value="{% if assigned_region %}{{ assigned_region.id }}{% else %}""{% endif %}">
+        </div>
+
+        <div class="col-md-3 mb-2">
+          <select id="terminal-filter" class="form-select custom-select" name="terminal"
+                  {% if user_group == "Custodian" %}disabled{% endif %}>
+            {% if user_group == "Custodian" %}
+              {% for terminal in terminals %}
+                <option value="{% if assigned_terminal %}{{ assigned_terminal.id }}{% else %}""{% endif %}" 
+                        {% if selected_terminal == terminal.id|stringformat:"s" %}selected{% endif %}>
+                  {% if assigned_terminal %}{{ assigned_terminal.branch_name }}{% else %}{% endif %} 
+                  ({{ terminal.customer_name }} - {{ terminal.region_name }})
+                </option>
+              {% endfor %}
+            {% else %}
+              <option value="all" {% if selected_terminal == "all" or not selected_terminal %}selected{% endif %}>All Terminals</option>
+              {% for terminal in terminals %}
+                <option value="{{ terminal.id }}" {% if selected_terminal == terminal.id|stringformat:"s" %}selected{% endif %}>
+                  {{ terminal.branch_name }} ({{ terminal.customer_name }} - {{ terminal.region_name }})
+                </option>
+              {% endfor %}
+            {% endif %}
+          </select>
+          <input type="hidden" name="terminal" value="{% if assigned_terminal %}{{ assigned_terminal.id }}{% else %}""{% endif %}">
+        </div>
+
+        <div class="col-md-3 mb-2">
+          <select id="time-period" class="form-select custom-select" name="time-period">
+            <option value="all_time" {% if time_period == "all_time" %}selected{% endif %}>All Time</option>
+            <option value="today" {% if time_period == "today" %}selected{% endif %}>Today</option>
+            <option value="yesterday" {% if time_period == "yesterday" %}selected{% endif %}>Yesterday</option>
+            <option value="lastweek" {% if time_period == "lastweek" %}selected{% endif %}>Last Week</option>
+            <option value="lastmonth" {% if time_period == "lastmonth" %}selected{% endif %}>Last Month</option>
+            <option value="lastyear" {% if time_period == "lastyear" %}selected{% endif %}>Last Year</option>
+          </select>
+        </div>
+
       </div>
-
-
-      <div class="col-md-3 mb-2">
-        <select id="region-filter" class="form-select custom-select" name="region"
-                {% if user_group == "Custodian" %}disabled{% endif %}>
-          {% if user_group == "Custodian" %}
-            <option value="{% if assigned_region %}{{ assigned_region.id }}{% else %}""{% endif %}" 
-                    selected>
-              {% if assigned_region %}{{ assigned_region.name }}{% else %}No Region Assigned{% endif %}
-            </option>
-          {% else %}
-            <option value="all" {% if selected_region == "all" %}selected{% endif %}>All Regions</option>
-            {% for region in regions %}
-              <option value="{{ region.id }}" {% if selected_region == region.id|stringformat:"s" %}selected{% endif %}>
-                {{ region.name }}
-              </option>
-            {% endfor %}
-          {% endif %}
-        </select>
-        <input type="hidden" name="region" value="{% if assigned_region %}{{ assigned_region.id }}{% else %}""{% endif %}">
-      </div>
-
-
-
-    </div>
   </form>
+
 
   <!-- Graphs -->
   <div class="row mb-5">
@@ -212,17 +211,8 @@
 
 <script>
   const data = JSON.parse('{{ data_json|escapejs }}');
-
-  console.log("Data received:", data);
-  console.log(data.customers);  
-  console.log(data.terminals); 
-  console.log(data.regions);   
-  console.log("Filter values:", {
-    timePeriod: $('#time-period').val(),
-    customer: $('#customer-filter').val(),
-    terminal: $('#terminal-filter').val(),
-    region: $('#region-filter').val(),
-});
+  window.initialData = data;  // expose globally
+  window.allowAll = {% if user_group == "Internal" %}true{% else %}false{% endif %};
 </script>
 
 <script src="{% static 'js/ticketing_dashboard.js' %}"></script>

@@ -1,3 +1,5 @@
+from importlib.abc import Loader
+from tkinter.font import Font
 from django.shortcuts import render, get_list_or_404, redirect
 
 from core.signals import assign_director_permissions, assign_manager_permissions, assign_staff_permissions
@@ -46,6 +48,7 @@ from django.views.decorators.http import require_POST
 from core.priority_rules import determine_priority
 from django.conf import settings
 from django.urls import reverse
+from openpyxl.styles import Border, Side
 
 def in_group(user, group_name):
     return user.is_authenticated and (user.is_superuser or user.groups.filter(name=group_name).exists())
@@ -1070,6 +1073,7 @@ def ticketing_dashboard(request):
 
     return render(request, 'core/helpdesk/ticketing_dashboard.html', context)
 
+"""
 @login_required(login_url='login')
 def statistics_view(request):
     today = timezone.now()
@@ -1302,24 +1306,51 @@ def statistics_view(request):
         "assigned_branch": assigned_terminal,
         "assigned_region": assigned_region,
     })
-
-
+"""
 @login_required(login_url='login')
-def export_report(request):
-    # Get the selected filter values from the request
-    time_period = request.GET.get('time-period', 'today')
+def statistics_view(request):
+    today = timezone.now()
+    print(f"timezone.now() in view: {today} (aware: {timezone.is_aware(today)})")
+
+    tickets = Ticket.objects.all()
+    user_group = None
+    assigned_customer = None
+    assigned_terminal = None
+    assigned_region = None
+    user = request.user
+    user_profile = getattr(user, 'profile', None)
+
+    # --- Role-based Filtering ---
+    if user.is_superuser or user.groups.filter(name__in=['Director', 'Manager', 'Staff']).exists():
+        user_group = "Internal"
+    elif Customer.objects.filter(overseer=user).exists():
+        user_group = "Overseer"
+        assigned_customer = Customer.objects.filter(overseer=user).first()
+        if assigned_customer:
+            print(f"{user.username} is Overseer for {assigned_customer.name}")
+            tickets = tickets.filter(customer=assigned_customer)
+        else:
+            tickets = Ticket.objects.none()
+    elif user_profile and user_profile.terminal:
+        if user_profile.terminal.custodian == user:
+            user_group = "Custodian"
+            assigned_terminal = user_profile.terminal
+            assigned_customer = assigned_terminal.customer
+            assigned_region = assigned_terminal.region
+            print(f"{user.username} is Custodian for {assigned_terminal.branch_name}")
+            tickets = tickets.filter(terminal=assigned_terminal)
+        else:
+            tickets = Ticket.objects.none()
+    else:
+        tickets = Ticket.objects.none()
+
+    print(f"Tickets after initial role-based filtering: {tickets.count()}")
+
+    # --- Filters ---
+    time_period = request.GET.get('time-period', "all_time")
     customer_filter = request.GET.get('customer', 'all')
     terminal_filter = request.GET.get('terminal', 'all')
     region_filter = request.GET.get('region', 'all')
-
-    print(f"Export filters: Time period={time_period}, Customer={customer_filter}, Terminal={terminal_filter}, Region={region_filter}")
-
-    # Get the current time (timezone-aware)
-    today = timezone.now()
-
-    # Determine the date range for filtering based on time period
-    start_date = None
-    end_date = None
 
     if time_period == 'today':
         start_date = today.replace(hour=0, minute=0, second=0, microsecond=0)
@@ -1328,162 +1359,337 @@ def export_report(request):
         start_date = (today - timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
         end_date = (today - timedelta(days=1)).replace(hour=23, minute=59, second=59, microsecond=999999)
     elif time_period == 'lastweek':
-        # Calculate start (Monday) and end (Sunday) of the previous full week
-        current_week_start = today - timedelta(days=today.weekday()) # Monday of current week
-        start_date = current_week_start - timedelta(days=7) # Monday of last week
+        start_date = today - timedelta(days=today.weekday() + 7)
         start_date = start_date.replace(hour=0, minute=0, second=0, microsecond=0)
-        end_date = start_date + timedelta(days=6, hours=23, minutes=59, seconds=59, microseconds=999999) # Sunday of last week
+        end_date = start_date + timedelta(days=6, hours=23, minutes=59, seconds=59, microseconds=999999)
     elif time_period == 'lastmonth':
-        # First day of the previous month
-        start_date = (today.replace(day=1) - timedelta(days=1)).replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-        # Last microsecond of the previous month
-        end_date = today.replace(day=1) - timedelta(microseconds=1)
+        end_date = today.replace(day=1, hour=0, minute=0, second=0, microsecond=0) - timedelta(microseconds=1)
+        start_date = end_date.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     elif time_period == 'lastyear':
         start_date = today.replace(year=today.year - 1, month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
         end_date = today.replace(year=today.year - 1, month=12, day=31, hour=23, minute=59, second=59, microsecond=999999)
-    else: # Default to 'today' if no valid time_period is provided
+    elif time_period == 'all_time':
+        start_date = None
+        end_date = None
+    else:
         start_date = today.replace(hour=0, minute=0, second=0, microsecond=0)
         end_date = today.replace(hour=23, minute=59, second=59, microsecond=999999)
-    
-    print(f"Calculated Date Range: Start={start_date}, End={end_date}")
 
-    # --- QuerySet for Main Report Data (filtered by all user selections) ---
-    # This queryset will populate the main rows of the Excel report
+    if customer_filter not in ['all', '', None]:
+        if user_group == "Overseer" and assigned_customer and str(assigned_customer.id) != customer_filter:
+            tickets = Ticket.objects.none()
+        elif user_group == "Custodian" and assigned_customer and str(assigned_customer.id) != customer_filter:
+            tickets = Ticket.objects.none()
+        else:
+            tickets = tickets.filter(terminal__customer__id=customer_filter)
+
+    if terminal_filter not in ['all', '', None]:
+        if user_group == "Custodian" and assigned_terminal and str(assigned_terminal.id) != terminal_filter:
+            tickets = Ticket.objects.none()
+        else:
+            tickets = tickets.filter(terminal__id=terminal_filter)
+
+    if region_filter not in ['all', '', None]:
+        if user_group == "Custodian" and assigned_region and str(assigned_region.id) != region_filter:
+            tickets = Ticket.objects.none()
+        else:
+            tickets = tickets.filter(terminal__region__id=region_filter)
+
+    if time_period != 'all_time' and start_date and end_date:
+        tickets = tickets.filter(created_at__range=[start_date, end_date])
+
+    tickets_list = list(tickets.iterator())
+    ticket_statuses = tickets.values('status').annotate(status_count=Count('status'))
+    status_labels = [status['status'] for status in ticket_statuses]
+    status_counts = [status['status_count'] for status in ticket_statuses]
+
+    days = [today - timedelta(days=i) for i in range(7)]
+    tickets_per_day = [tickets.filter(created_at__date=day.date()).count() for day in days]
+    weekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+    tickets_per_weekday = [tickets.filter(created_at__week_day=(i % 7) + 1).count() for i in range(7)]
+    hours = [f"{i}-{i+1}" for i in range(24)]
+    tickets_per_hour = [tickets.filter(created_at__hour=i).count() for i in range(24)]
+    months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+    tickets_per_month = [tickets.filter(created_at__month=i+1).count() for i in range(12)]
+    years = sorted(list(set(ticket.created_at.year for ticket in tickets_list)))
+    tickets_per_year = [tickets.filter(created_at__year=year).count() for year in years]
+    tickets_per_terminal = tickets.values('terminal__branch_name').annotate(ticket_count=Count('id'))
+    ticket_categories = tickets.values('problem_category__name').annotate(ticket_count=Count('id'))
+
+    if request.GET.get("export") == "excel":
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Statistics"
+
+        headers = ["Terminal", "Ticket Count"]
+        ws.append(headers)
+
+        thin_border = Loader(
+            left=Side(style='thin'),
+            right=Side(style='thin'),
+            top=Side(style='thin'),
+            bottom=Side(style='thin')
+        )
+
+        for entry in tickets_per_terminal:
+            ws.append([entry['terminal__branch_name'], entry['ticket_count']])
+
+        # Apply borders to all cells
+        for row in ws.iter_rows():
+            for cell in row:
+                cell.border = thin_border
+
+        response = HttpResponse(
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        response['Content-Disposition'] = 'attachment; filename="statistics.xlsx"'
+        wb.save(response)
+        return response
+
+    available_customers, available_terminals, available_regions = [], [], []
+    if user_group == "Internal":
+        available_customers = list(Customer.objects.values('id', 'name'))
+        available_terminals = list(Terminal.objects.select_related('customer', 'region').values(
+            'id', 'branch_name', 'customer__name', 'region__name'
+        ))
+        available_regions = list(Region.objects.values('id', 'name'))
+    elif user_group == "Overseer" and assigned_customer:
+        available_customers = [{'id': assigned_customer.id, 'name': assigned_customer.name}]
+        available_terminals = list(Terminal.objects.filter(customer=assigned_customer).select_related('customer', 'region').values(
+            'id', 'branch_name', 'customer__name', 'region__name'
+        ))
+        available_regions = list(Region.objects.filter(terminal__customer=assigned_customer).distinct().values('id', 'name'))
+    elif user_group == "Custodian" and assigned_terminal:
+        available_customers = [{'id': assigned_customer.id, 'name': assigned_customer.name}]
+        available_terminals = [{
+            'id': assigned_terminal.id,
+            'branch_name': assigned_terminal.branch_name,
+            'customer__name': assigned_terminal.customer.name if assigned_terminal.customer else 'N/A',
+            'region__name': assigned_terminal.region.name if assigned_terminal.region else 'N/A',
+        }]
+        available_regions = [{'id': assigned_region.id, 'name': assigned_region.name}] if assigned_region else []
+
+    terminals_for_frontend = [
+        {
+            'id': t['id'],
+            'branch_name': t['branch_name'],
+            'customer_name': t['customer__name'],
+            'region_name': t['region__name'],
+        }
+        for t in available_terminals
+    ]
+
+    data = {
+        'ticketsPerTerminal': [{'branch_name': entry['terminal__branch_name'], 'count': entry['ticket_count']} for entry in tickets_per_terminal],
+        'ticketCategories': {'labels': [entry['problem_category__name'] for entry in ticket_categories], 'data': [entry['ticket_count'] for entry in ticket_categories]},
+        'ticketStatuses': {'labels': status_labels, 'data': status_counts},
+        'days': [day.strftime('%Y-%m-%d') for day in days],
+        'ticketsPerDay': tickets_per_day,
+        'weekdays': weekdays,
+        'ticketsPerWeekday': tickets_per_weekday,
+        'hours': hours,
+        'ticketsPerHour': tickets_per_hour,
+        'months': months,
+        'ticketsPerMonth': tickets_per_month,
+        'years': years,
+        'ticketsPerYear': tickets_per_year,
+        'terminals': terminals_for_frontend,
+        'customers': available_customers,
+        'regions': available_regions,
+    }
+
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return JsonResponse(data, safe=False)
+
+    return render(request, 'core/helpdesk/statistics.html', {
+        'customers': available_customers,
+        'terminals': terminals_for_frontend,
+        'regions': available_regions,
+        "time_period": time_period,
+        'selected_customer': customer_filter,
+        'selected_terminal': terminal_filter,
+        'selected_region': region_filter,
+        'data_json': json.dumps(data, ensure_ascii=False),
+        "user_group": user_group,
+        "assigned_customer": assigned_customer,
+        "assigned_branch": assigned_terminal,
+        "assigned_region": assigned_region,
+    })
+
+@login_required(login_url='login')
+def export_report(request):
+    import openpyxl
+    from openpyxl.styles import Font, Border, Side
+    from django.utils import timezone
+    from datetime import timedelta
+    from django.http import HttpResponse
+    from django.db.models import Count
+
+    today = timezone.now()
+    user = request.user
+    user_profile = getattr(user, 'profile', None)
+
+    # --- Role-based Filtering ---
     tickets = Ticket.objects.all()
+    user_group = None
+    assigned_customer = None
+    assigned_terminal = None
+    assigned_region = None
 
-    # Apply date range filter
+    if user.is_superuser or user.groups.filter(name__in=['Director', 'Manager', 'Staff']).exists():
+        user_group = "Internal"
+    elif Customer.objects.filter(overseer=user).exists():
+        user_group = "Overseer"
+        assigned_customer = Customer.objects.filter(overseer=user).first()
+        if assigned_customer:
+            tickets = tickets.filter(customer=assigned_customer)
+        else:
+            tickets = Ticket.objects.none()
+    elif user_profile and user_profile.terminal:
+        if user_profile.terminal.custodian == user:
+            user_group = "Custodian"
+            assigned_terminal = user_profile.terminal
+            assigned_customer = assigned_terminal.customer
+            assigned_region = assigned_terminal.region
+            tickets = tickets.filter(terminal=assigned_terminal)
+        else:
+            tickets = Ticket.objects.none()
+    else:
+        tickets = Ticket.objects.none()
+
+    # --- Filters ---
+    time_period = request.GET.get('time-period', 'all_time')
+    customer_filter = request.GET.get('customer', 'all')
+    terminal_filter = request.GET.get('terminal', 'all')
+    region_filter = request.GET.get('region', 'all')
+
+    # Date filtering
+    start_date, end_date = None, None
+    if time_period != 'all_time':
+        if time_period == 'today':
+            start_date = today.replace(hour=0, minute=0, second=0, microsecond=0)
+            end_date = today.replace(hour=23, minute=59, second=59, microsecond=999999)
+        elif time_period == 'yesterday':
+            start_date = (today - timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+            end_date = (today - timedelta(days=1)).replace(hour=23, minute=59, second=59, microsecond=999999)
+        elif time_period == 'lastweek':
+            start_date = today - timedelta(days=today.weekday() + 7)
+            start_date = start_date.replace(hour=0, minute=0, second=0, microsecond=0)
+            end_date = start_date + timedelta(days=6, hours=23, minutes=59, seconds=59, microseconds=999999)
+        elif time_period == 'lastmonth':
+            end_date = today.replace(day=1, hour=0, minute=0, second=0, microsecond=0) - timedelta(microseconds=1)
+            start_date = end_date.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        elif time_period == 'lastyear':
+            start_date = today.replace(year=today.year - 1, month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
+            end_date = today.replace(year=today.year - 1, month=12, day=31, hour=23, minute=59, second=59, microsecond=999999)
+
     if start_date and end_date:
         tickets = tickets.filter(created_at__range=[start_date, end_date])
 
-    # Apply customer, terminal, and region filters
-    if customer_filter != 'all':
-        tickets = tickets.filter(terminal__customer__id=customer_filter)
-    if terminal_filter != 'all':
-        tickets = tickets.filter(terminal__id=terminal_filter)
-    if region_filter != 'all':
-        tickets = tickets.filter(terminal__region__id=region_filter)
+    # Customer filter
+    if customer_filter not in ['all', '', None]:
+        if user_group in ['Overseer', 'Custodian'] and assigned_customer and str(assigned_customer.id) != customer_filter:
+            tickets = Ticket.objects.none()
+        else:
+            tickets = tickets.filter(terminal__customer__id=customer_filter)
 
-    print(f"Tickets for main report after all filtering: {tickets.count()}")
+    # Terminal filter
+    if terminal_filter not in ['all', '', None]:
+        if user_group == 'Custodian' and assigned_terminal and str(assigned_terminal.id) != terminal_filter:
+            tickets = Ticket.objects.none()
+        else:
+            tickets = tickets.filter(terminal__id=terminal_filter)
 
-    # Check if tickets exist before proceeding to avoid empty data
-    if tickets.count() == 0:
-        print("No tickets found for the main report after filtering.")
+    # Region filter
+    if region_filter not in ['all', '', None]:
+        if user_group == 'Custodian' and assigned_region and str(assigned_region.id) != region_filter:
+            tickets = Ticket.objects.none()
+        else:
+            tickets = tickets.filter(terminal__region__id=region_filter)
+
+    if not tickets.exists():
         return HttpResponse("No tickets to export matching your criteria.", status=404)
 
-    statistics_base_tickets = Ticket.objects.all()
+    # --- Prepare Aggregated Data for Graphs ---
+    ticket_statuses = tickets.values('status').annotate(status_count=Count('status'))
+    status_labels = [s['status'] for s in ticket_statuses]
+    status_counts = [s['status_count'] for s in ticket_statuses]
 
-    # Apply customer, terminal, and region filters to statistics base
-    if customer_filter != 'all':
-        statistics_base_tickets = statistics_base_tickets.filter(terminal__customer__id=customer_filter)
-    if terminal_filter != 'all':
-        statistics_base_tickets = statistics_base_tickets.filter(terminal__id=terminal_filter)
-    if region_filter != 'all':
-        statistics_base_tickets = statistics_base_tickets.filter(terminal__region__id=region_filter)
+    ticket_categories = tickets.values('problem_category__name').annotate(ticket_count=Count('id'))
+    category_labels = [c['problem_category__name'] for c in ticket_categories]
+    category_counts = [c['ticket_count'] for c in ticket_categories]
 
-    # Apply the same date range filter to the statistics base
-    if start_date and end_date:
-        statistics_base_tickets = statistics_base_tickets.filter(created_at__range=[start_date, end_date])
-    
-    print(f"Tickets for statistics base after filtering: {statistics_base_tickets.count()}")
+    terminals_data = tickets.values('terminal__branch_name').annotate(ticket_count=Count('id'))
+    terminal_labels = [t['terminal__branch_name'] for t in terminals_data]
+    terminal_counts = [t['ticket_count'] for t in terminals_data]
 
-    tickets_per_day = [
-        statistics_base_tickets.filter(created_at__date=today - timedelta(days=i)).count() 
-        for i in range(7)
-    ]
+    days = [today - timedelta(days=i) for i in range(7)]
+    tickets_per_day = [tickets.filter(created_at__date=day.date()).count() for day in days]
 
-    tickets_per_weekday = [
-        statistics_base_tickets.filter(created_at__week_day=i).count() 
-        for i in range(1, 8)
-    ]  
+    hours = [f"{i}-{i+1}" for i in range(24)]
+    tickets_per_hour = [tickets.filter(created_at__hour=i).count() for i in range(24)]
 
-    tickets_per_hour = [
-        statistics_base_tickets.filter(created_at__hour=i).count() 
-        for i in range(24)
-    ]
+    months = list(range(1, 13))
+    tickets_per_month = [tickets.filter(created_at__month=i).count() for i in months]
 
-    tickets_per_month = [
-        statistics_base_tickets.filter(created_at__month=i+1).count() 
-        for i in range(12)
-    ]
-    
-    
-    years = sorted(list(statistics_base_tickets.values_list('created_at__year', flat=True).distinct()))
-    tickets_per_year = [
-        statistics_base_tickets.filter(created_at__year=year).count() 
-        for year in years
-    ]
-    
-    print(f"Tickets per Day (last 7): {tickets_per_day}")
-    print(f"Tickets per Weekday: {tickets_per_weekday}")
-    print(f"Tickets per Hour: {tickets_per_hour}")
-    print(f"Tickets per Month: {tickets_per_month}")
-    print(f"Tickets per Year: {tickets_per_year}")
-
-
-    # Create the Excel file
+    # --- Create Excel Workbook ---
     wb = openpyxl.Workbook()
     ws = wb.active
-    ws.title = "Ticket Statistics"
+    ws.title = "Tickets & Graph Data"
 
-    # Add headers to the sheet for main report data
-    headers = ['Ticket ID', 'Customer', 'Terminal', 'Region', 'Created At']
-    ws.append(headers)
+    bold_font = Font(bold=True)
+    thin_border = Border(left=Side(style='thin'), right=Side(style='thin'),
+                         top=Side(style='thin'), bottom=Side(style='thin'))
 
-    # Add ticket data rows (from 'tickets' queryset)
+    # --- Raw Tickets Sheet ---
+    ws.append(['Ticket ID', 'Customer', 'Terminal', 'Region', 'Created At'])
+    for col in range(1, 6):
+        cell = ws.cell(row=1, column=col)
+        cell.font = bold_font
+        cell.border = thin_border
+
     for ticket in tickets:
-        customer_name = ticket.terminal.customer.name if ticket.terminal and hasattr(ticket.terminal, 'customer') and ticket.terminal.customer else 'No Customer'
-        region_name = ticket.terminal.region.name if ticket.terminal and hasattr(ticket.terminal, 'region') and ticket.terminal.region else 'No Region'
-        
-       
-        created_at_display = ticket.created_at.replace(tzinfo=None) if ticket.created_at else ''
+        ws.append([
+            ticket.id,
+            ticket.terminal.customer.name if ticket.terminal and ticket.terminal.customer else 'No Customer',
+            ticket.terminal.branch_name if ticket.terminal else 'No Terminal',
+            ticket.terminal.region.name if ticket.terminal and ticket.terminal.region else 'No Region',
+            ticket.created_at.replace(tzinfo=None) if ticket.created_at else ''
+        ])
 
-        ws.append([ticket.id, customer_name, ticket.terminal.branch_name, region_name, created_at_display])
+    for row in ws.iter_rows(min_row=1, max_row=ws.max_row, min_col=1, max_col=5):
+        for cell in row:
+            cell.border = thin_border
 
-    ws.append([]) # Blank row for separation
-    ws.append(['--- Statistics Breakdown ---'])
+    # --- Add Graph Data Below ---
+    start_row = ws.max_row + 3
 
-    # Tickets per Day (Last 7 Days)
-    ws.append([])
-    ws.append(['Tickets per Day (Last 7 Days Relative to Today)'])
-    for i in range(7):
-        current_date_for_display = today - timedelta(days=i)
-        count = tickets_per_day[i]
-        ws.append([f"{current_date_for_display.strftime('%Y-%m-%d')}", count])
+    def write_chart_data(title, labels, counts, start_row):
+        ws.cell(row=start_row, column=1, value=title).font = bold_font
+        for i, label in enumerate(labels):
+            ws.cell(row=start_row + 1 + i, column=1, value=label)
+            ws.cell(row=start_row + 1 + i, column=2, value=counts[i])
 
-    # Tickets per Weekday
-    ws.append([])
-    ws.append(['Tickets per Weekday'])
-    
-    weekdays_display_names = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
-    for i in range(len(tickets_per_weekday)): # Loop from 0 to 6
-        ws.append([weekdays_display_names[i], tickets_per_weekday[i]])
+        for r in range(start_row, start_row + 1 + len(labels)):
+            for c in range(1, 3):
+                ws.cell(row=r, column=c).border = thin_border
 
-    # Tickets per Hour
-    ws.append([])
-    ws.append(['Tickets per Hour'])
-    for i, count in enumerate(tickets_per_hour):
-        ws.append([f"{i:02d}:00 - {(i+1):02d}:00", count])
+        return start_row + 2 + len(labels)
 
-    # Tickets per Month
-    ws.append([])
-    ws.append(['Tickets per Month'])
-    months_display_names = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
-    for i, count in enumerate(tickets_per_month):
-        ws.append([months_display_names[i], count])
+    row_pointer = start_row
+    row_pointer = write_chart_data("Tickets per Terminal", terminal_labels, terminal_counts, row_pointer)
+    row_pointer = write_chart_data("Tickets per Status", status_labels, status_counts, row_pointer)
+    row_pointer = write_chart_data("Tickets per Category", category_labels, category_counts, row_pointer)
+    row_pointer = write_chart_data("Tickets per Day (Last 7 Days)", [day.strftime('%Y-%m-%d') for day in days], tickets_per_day, row_pointer)
+    row_pointer = write_chart_data("Tickets per Hour", hours, tickets_per_hour, row_pointer)
+    row_pointer = write_chart_data("Tickets per Month", months, tickets_per_month, row_pointer)
 
-    # Tickets per Year
-    ws.append([])
-    ws.append(['Tickets per Year'])
-    for i, count in enumerate(tickets_per_year):
-        ws.append([years[i], count])
-
-
-    # Create a response with the Excel file
     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     response['Content-Disposition'] = 'attachment; filename="ticket_statistics.xlsx"'
     wb.save(response)
-
     return response
+
+
 
 @login_required(login_url='login')
 def tickets(request):
