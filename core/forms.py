@@ -85,22 +85,22 @@ class TicketForm(forms.ModelForm):
             'status': forms.Select(attrs={'class': 'form-control'}),
         }
 
-    # Make customer & region visible and required
+    # Override to make them required and visible
     customer = forms.ModelChoiceField(queryset=Customer.objects.all(), required=True)
     region = forms.ModelChoiceField(queryset=Region.objects.all(), required=True)
 
     def __init__(self, *args, **kwargs):
-        # Pop terminal_id if passed separately
+        user = kwargs.pop('user', None)  # <- pass request.user when creating the form
         terminal_id = kwargs.pop('terminal_id', None)
-        super(TicketForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
-        # Show all terminals in dropdown, including inactive
+        # Default queryset (all terminals)
         self.fields['terminal'].queryset = Terminal.objects.all()
         self.fields['terminal'].label_from_instance = lambda obj: (
             f"{obj.cdm_name} (Inactive)" if not obj.is_active else obj.cdm_name
         )
 
-        # Auto-fill customer & region if terminal already selected
+        # Autofill if instance has a terminal
         if self.instance and getattr(self.instance, 'terminal', None):
             terminal = self.instance.terminal
             self.fields['customer'].initial = terminal.customer
@@ -112,6 +112,39 @@ class TicketForm(forms.ModelForm):
                 self.fields['region'].initial = terminal.region
             except Terminal.DoesNotExist:
                 pass
+
+        # 🔹 Role-based restrictions
+        if user:
+            profile = getattr(user, "profile", None)
+
+            # If user is custodian → only his terminal, customer, and region
+            if profile and getattr(profile, "terminal", None):
+                assigned_terminal = profile.terminal
+                assigned_customer = assigned_terminal.customer
+                assigned_region = assigned_terminal.region
+
+                self.fields['terminal'].queryset = Terminal.objects.filter(id=assigned_terminal.id)
+                self.fields['customer'].queryset = Customer.objects.filter(id=assigned_customer.id)
+                self.fields['region'].queryset = Region.objects.filter(id=assigned_region.id)
+
+                # lock them
+                self.fields['terminal'].disabled = True
+                self.fields['customer'].disabled = True
+                self.fields['region'].disabled = True
+
+            # If user is overseer → all terminals of his customer, customer locked, region limited
+            elif Customer.objects.filter(overseer=user).exists():
+                assigned_customer = Customer.objects.filter(overseer=user).first()
+
+                self.fields['customer'].queryset = Customer.objects.filter(id=assigned_customer.id)
+                self.fields['terminal'].queryset = Terminal.objects.filter(customer=assigned_customer)
+                self.fields['region'].queryset = Region.objects.filter(
+                    id__in=self.fields['terminal'].queryset.values_list("region_id", flat=True)
+                )
+
+                # lock customer, region/terminal remain selectable
+                self.fields['customer'].disabled = True
+
 
 class ProblemCategoryForm(forms.ModelForm):
     class Meta:

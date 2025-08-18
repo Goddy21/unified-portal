@@ -1550,7 +1550,7 @@ def tickets(request):
 @login_required(login_url='login')
 def create_ticket(request):
     if request.method == 'POST':
-        form = TicketForm(request.POST)
+        form = TicketForm(request.POST, user=request.user)
         if form.is_valid():
             ticket = form.save(commit=False)
 
@@ -1572,9 +1572,9 @@ def create_ticket(request):
     else:
         terminal_id = request.GET.get('terminal_id')
         if terminal_id:
-            form = TicketForm(terminal_id=terminal_id)
+            form = TicketForm(user=request.user, terminal_id=terminal_id)
         else:
-            form = TicketForm()
+            form = TicketForm(user=request.user)
 
     return render(request, 'core/helpdesk/create_ticket.html', {'form': form})
 
