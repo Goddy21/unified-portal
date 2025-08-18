@@ -384,7 +384,7 @@ $(document).ready(function() {
                 labels: ['Resolved', 'Unresolved'],
                 datasets: [{
                     label: 'Ticket Resolution',
-                    data: [data.resolvedTickets, data.unresolvedTickets], // numbers from backend
+                    data: [data.resolvedTickets, data.unresolvedTickets], 
                     backgroundColor: ['#28a745', '#dc3545'],
                 }]
             },

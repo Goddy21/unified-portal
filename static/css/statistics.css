@@ -26,7 +26,6 @@
 }
 
 /* Optional: Dark Mode variables (if you plan to implement) */
-/* Add a class like .dark-mode to your body or html tag to enable */
 body.dark-mode {
   --background-color: #1a1a2e;
   --text-color: #e0e0e0;
@@ -55,8 +54,6 @@ body {
   line-height: 1.6;
   padding-top: 20px; /* Space from top, assuming no fixed navbar */
   transition: background-color var(--transition-speed), color var(--transition-speed); /* Smooth theme transitions */
-
-  /* Subtle background texture */
   background-image: radial-gradient(circle at top left, rgba(0,0,0,0.01) 1px, transparent 1px),
                     radial-gradient(circle at bottom right, rgba(0,0,0,0.01) 1px, transparent 1px);
   background-size: 20px 20px;
@@ -137,15 +134,6 @@ form.row {
   color: var(--header-color);
   margin-bottom: 1.5rem; /* More space below card title */
   transition: color var(--transition-speed);
-}
-
-/* Specific styling for the Ticket Statuses card */
-.card .rounded-lg { /* This class seems redundant given .card border-radius */
-  border-radius: var(--border-radius);
-}
-
-.card-title.text-primary {
-  color: var(--primary-color) !important; /* Ensure primary color override */
 }
 
 /* Canvas styling (charts) */
