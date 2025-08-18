@@ -75,7 +75,7 @@
 .category-form select:focus,
 .inline-form select:focus {
   outline: none;
-  border-color: #007bff;
+  border-color: #123692;
 }
 
 /* Buttons */
@@ -99,12 +99,12 @@
 }
 
 .btn-update {
-  background: #007bff;
+  background: #123692;
   color: white;
 }
 
 .btn-update:hover {
-  background: #0056b3;
+  background: #172d69;
 }
 
 .btn-delete {
@@ -143,10 +143,10 @@
 /* Icon Styling */
 .category-icon-wrapper {
   display: inline-block;
-  max-width: 80px;
-  max-height: 80px;
+  max-width: 50px;
+  max-height: 50px;
   overflow: hidden;
-  border-radius: 8px;
+  border-radius: 6px;
   background-color: #f1f1f1;
   box-shadow: 0 1px 5px rgba(0, 0, 0, 0.1);
   transition: transform 0.3s ease;
@@ -160,11 +160,6 @@
   width: 100%;
   height: auto;
 }
-.large-icon {
-  width: 80px;
-  height: 80px;
-}
-
 
 /* Animations */
 @keyframes fadeIn {

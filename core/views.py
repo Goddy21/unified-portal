@@ -1073,246 +1073,16 @@ def ticketing_dashboard(request):
 
     return render(request, 'core/helpdesk/ticketing_dashboard.html', context)
 
-"""
-@login_required(login_url='login')
-def statistics_view(request):
-    today = timezone.now()
-    print(f"timezone.now() in view: {today} (aware: {timezone.is_aware(today)})")
-    # Initialize tickets query to an empty queryset or all, depending on default access policy
-    # We will build this query based on user role
-    tickets = Ticket.objects.all() # Start with all, then filter down
-    user_group = None # To store the identified role for frontend context
-    assigned_customer = None
-    assigned_terminal = None
-    assigned_region = None
-    user = request.user
-    user_profile = getattr(user, 'profile', None)
-    # --- Role-based Filtering (consistent with your working 'tickets' view) ---
-    # 1. Internal roles (Superusers, Director, Manager, Staff) - See ALL tickets by default
-    if user.is_superuser or user.groups.filter(name__in=['Director', 'Manager', 'Staff']).exists():
-        user_group = "Internal" # A more generic term for admin/staff
-        print("User has internal access (superuser/staff) - viewing all tickets.")
-        # tickets already initialized to Ticket.objects.all()
-    # 2. Overseer role: Filter tickets by customer they oversee
-    elif Customer.objects.filter(overseer=user).exists():
-        user_group = "Overseer"
-        # Get the first customer this user oversees (assuming one-to-one or pick one)
-        assigned_customer = Customer.objects.filter(overseer=user).first()
-        if assigned_customer:
-            print(f"{user.username} is Overseer for {assigned_customer.name}")
-            tickets = tickets.filter(customer=assigned_customer)
-        else:
-            # Should not happen if .exists() was true, but good for safety
-            tickets = Ticket.objects.none()
-            print(f"{user.username} is Overseer but no customer found (unexpected).")
-    # 3. Custodian role: Filter tickets by terminal they are assigned to
-    # Use profile.terminal and check if user is custodian of that terminal
-    elif user_profile and user_profile.terminal:
-        # Verify the user is the actual custodian of the terminal assigned to their profile
-        if user_profile.terminal.custodian == user:
-            user_group = "Custodian"
-            assigned_terminal = user_profile.terminal
-            assigned_customer = assigned_terminal.customer
-            assigned_region = assigned_terminal.region
-            print(f"{user.username} is Custodian for terminal {assigned_terminal.branch_name} under customer {assigned_customer.name}")
-            tickets = tickets.filter(terminal=assigned_terminal)
-        else:
-            # User has a terminal in profile, but is not its assigned custodian
-            tickets = Ticket.objects.none()
-            print(f"{user.username} has terminal in profile but is not its custodian. Returning no tickets.")
-    else:
-        # Default for users who don't match any of the above roles (e.g., standard users, or those with misconfigured profiles)
-        # They should see no tickets by default, or only tickets they created (if that's a general user role)
-        tickets = Ticket.objects.none()
-        print(f"User {user.username} does not match any specific access role. Returning no tickets.")
-    # --- End Role-based Filtering ---
-    print(f"Tickets after initial role-based filtering: {tickets.count()}")
-    # Get the selected filter values from the request
-    time_period = request.GET.get('time-period', "all_time")
-    customer_filter = request.GET.get('customer', 'all')
-    terminal_filter = request.GET.get('terminal', 'all')
-    region_filter = request.GET.get('region', 'all')
-    # Determine the date range for filtering based on time period
-    # Ensure all dates are timezone-aware if today is
-    if time_period == 'today':
-        start_date = today.replace(hour=0, minute=0, second=0, microsecond=0)
-        end_date = today.replace(hour=23, minute=59, second=59, microsecond=999999)
-    elif time_period == 'yesterday':
-        start_date = (today - timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
-        end_date = (today - timedelta(days=1)).replace(hour=23, minute=59, second=59, microsecond=999999)
-    elif time_period == 'lastweek':
-        # This calculates last full week (Sunday to Saturday) relative to today.
-        # If today is e.g. Tuesday, it goes back to Sunday of the week before last.
-        # For last 7 days including today: start_date = today - timedelta(days=6)
-        start_date = today - timedelta(days=today.weekday() + 7) # Monday is 0, Sunday is 6. so add 7 to get to the previous Monday.
-        start_date = start_date.replace(hour=0, minute=0, second=0, microsecond=0)
-        end_date = start_date + timedelta(days=6, hours=23, minutes=59, seconds=59, microseconds=999999)
-        # This will get the 7 day period ending yesterday
-        # start_date = (today - timedelta(days=7)).replace(hour=0, minute=0, second=0, microsecond=0)
-        # end_date = (today - timedelta(days=1)).replace(hour=23, minute=59, second=59, microsecond=999999)
-    elif time_period == 'lastmonth':
-        # Go back to the first day of the current month, then subtract one day to get to the end of last month
-        end_date = today.replace(day=1, hour=0, minute=0, second=0, microsecond=0) - timedelta(microseconds=1)
-        # Get the first day of last month
-        start_date = end_date.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-    elif time_period == 'lastyear':
-        start_date = today.replace(year=today.year - 1, month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
-        end_date = today.replace(year=today.year - 1, month=12, day=31, hour=23, minute=59, second=59, microsecond=999999)
-    elif time_period == 'all_time':
-        start_date = None
-        end_date = None
-    else: # Default if time_period is invalid
-        start_date = today.replace(hour=0, minute=0, second=0, microsecond=0)
-        end_date = today.replace(hour=23, minute=59, second=59, microsecond=999999)
-    # Apply additional filters based on selected values (customer_filter, terminal_filter, region_filter)
-    # IMPORTANT: Ensure these filters don't override the role-based filters in unintended ways.
-    # For example, an Overseer should only see *their* customer's data. If customer_filter is applied
-    # it must be *within* the scope of the Overseer's assigned customer.
-    if customer_filter != 'all':
-        # If user is Overseer, ensure customer_filter is within their assigned customer
-        # If user is Custodian, their customer is already implicitly filtered
-        if user_group == "Overseer" and assigned_customer and str(assigned_customer.id) != customer_filter:
-            # If an Overseer tries to filter by a customer they don't oversee, return no tickets
-            tickets = Ticket.objects.none()
-        elif user_group == "Custodian" and assigned_customer and str(assigned_customer.id) != customer_filter:
-             # If a Custodian tries to filter by a customer they don't oversee, return no tickets
-            tickets = Ticket.objects.none()
-        else:
-            tickets = tickets.filter(terminal__customer__id=customer_filter)
-    if terminal_filter != 'all':
-        # If user is Custodian, ensure terminal_filter matches their assigned terminal
-        if user_group == "Custodian" and assigned_terminal and str(assigned_terminal.id) != terminal_filter:
-            tickets = Ticket.objects.none()
-        else:
-            tickets = tickets.filter(terminal__id=terminal_filter)
-    if region_filter != 'all':
-        # For Custodians, their region is already implicitly filtered via terminal.
-        # For Overseers, if a region filter is applied, it must be within their customer's regions.
-        if user_group == "Custodian" and assigned_region and str(assigned_region.id) != region_filter:
-            tickets = Ticket.objects.none()
-        else:
-            tickets = tickets.filter(terminal__region__id=region_filter)
-    if time_period != 'all_time':
-        tickets = tickets.filter(created_at__range=[start_date, end_date])
-    # Ensure query is executed before doing in-memory filtering for distinct years etc.
-    tickets_list = list(tickets.iterator()) # Convert to list to avoid re-querying for each aggregation
-    # Calculate ticket statuses
-    # Use the filtered 'tickets' queryset directly
-    ticket_statuses = tickets.values('status').annotate(status_count=Count('status'))
-    status_labels = [status['status'] for status in ticket_statuses]
-    status_counts = [status['status_count'] for status in ticket_statuses]
-    # Data aggregation for different timeframes
-    # Ensure these aggregations use the already filtered 'tickets' queryset
-    days = [today - timedelta(days=i) for i in range(7)]  # Last 7 days including today
-    tickets_per_day = [tickets.filter(created_at__date=day.date()).count() for day in days]
-    weekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
-    # Adjust for Django's week_day (1=Sunday, 7=Saturday)
-    tickets_per_weekday = [tickets.filter(created_at__week_day=(i % 7) + 1).count() for i in range(7)] # Ensure correct mapping
-    hours = [f"{i}-{i+1}" for i in range(24)]
-    tickets_per_hour = [tickets.filter(created_at__hour=i).count() for i in range(24)]
-    months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
-    tickets_per_month = [tickets.filter(created_at__month=i+1).count() for i in range(12)]
-    # Collect distinct years from the already filtered tickets
-    years = sorted(list(set(ticket.created_at.year for ticket in tickets_list))) # Use tickets_list
-    tickets_per_year = [tickets.filter(created_at__year=year).count() for year in years]
-    tickets_per_terminal = tickets.values('terminal__branch_name').annotate(ticket_count=Count('id'))
-    ticket_categories = tickets.values('problem_category__name').annotate(ticket_count=Count('id')) # Use __name for category name
-    # Fetch terminals, customers, and regions for the filter options
-    # These should be filtered based on the user's access
-    available_customers = []
-    available_terminals = []
-    available_regions = []
-    if user_group == "Internal":
-        available_customers = list(Customer.objects.values('id', 'name'))
-        available_terminals = list(Terminal.objects.select_related('customer', 'region').values(
-            'id', 'branch_name', 'customer__name', 'region__name'
-        ))
-        available_regions = list(Region.objects.values('id', 'name'))
-    elif user_group == "Overseer" and assigned_customer:
-        available_customers = [{'id': assigned_customer.id, 'name': assigned_customer.name}]
-        available_terminals = list(Terminal.objects.filter(customer=assigned_customer).select_related('customer', 'region').values(
-            'id', 'branch_name', 'customer__name', 'region__name'
-        ))
-        available_regions = list(Region.objects.filter(terminal__customer=assigned_customer).distinct().values('id', 'name'))
-    elif user_group == "Custodian" and assigned_terminal:
-        available_customers = [{'id': assigned_customer.id, 'name': assigned_customer.name}]
-        available_terminals = [{
-            'id': assigned_terminal.id,
-            'branch_name': assigned_terminal.branch_name,
-            'customer__name': assigned_terminal.customer.name if assigned_terminal.customer else 'N/A',
-            'region__name': assigned_terminal.region.name if assigned_terminal.region else 'N/A',
-        }]
-        available_regions = [{'id': assigned_region.id, 'name': assigned_region.name}] if assigned_region else []
-    else:
-        # For users with no specific access, they see no filter options
-        available_customers = []
-        available_terminals = []
-        available_regions = []
-    # Map the fetched data to the required format for the frontend
-    terminals_for_frontend = [
-        {
-            'id': t['id'],
-            'branch_name': t['branch_name'],
-            'customer_name': t['customer__name'],
-            'region_name': t['region__name'],
-        }
-        for t in available_terminals
-    ]
-    # Pack data for the frontend
-    data = {
-        'ticketsPerTerminal': [
-            {
-                'branch_name': entry['terminal__branch_name'],
-                'count': entry['ticket_count']
-            }
-            for entry in tickets_per_terminal
-        ],
-        'ticketCategories': {
-            'labels': [entry['problem_category__name'] for entry in ticket_categories], 
-            'data': [entry['ticket_count'] for entry in ticket_categories]
-        },
-        'ticketStatuses': {
-            'labels': status_labels,
-            'data': status_counts,
-        },
-        'days': [day.strftime('%Y-%m-%d') for day in days],
-        'ticketsPerDay': tickets_per_day,
-        'weekdays': weekdays,
-        'ticketsPerWeekday': tickets_per_weekday,
-        'hours': hours,
-        'ticketsPerHour': tickets_per_hour,
-        'months': months,
-        'ticketsPerMonth': tickets_per_month,
-        'years': years,
-        'ticketsPerYear': tickets_per_year,
-        'terminals': terminals_for_frontend, 
-        'customers': available_customers,     
-        'regions': available_regions,         
-    }
-    # Check if the request is AJAX
-    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-        return JsonResponse(data, safe=False)
-    return render(request, 'core/helpdesk/statistics.html', {
-        'customers': available_customers, 
-        'terminals': terminals_for_frontend, 
-        'regions': available_regions,     
-        "time_period": time_period,
-        'selected_customer': customer_filter,
-        'selected_terminal': terminal_filter,
-        'selected_region': region_filter,
-        'data_json': json.dumps(data, ensure_ascii=False),
-        "user_group": user_group,
-        "assigned_customer": assigned_customer, 
-        "assigned_branch": assigned_terminal,
-        "assigned_region": assigned_region,
-    })
-"""
 @login_required(login_url='login')
 def statistics_view(request):
     today = timezone.now()
     print(f"timezone.now() in view: {today} (aware: {timezone.is_aware(today)})")
 
     tickets = Ticket.objects.all()
+    customer_id = request.GET.get("customer")
+    region_id = request.GET.get("region")
+    terminal_id = request.GET.get("terminal")
+
     user_group = None
     assigned_customer = None
     assigned_terminal = None
@@ -1488,6 +1258,12 @@ def statistics_view(request):
         }
         for t in available_terminals
     ]
+    print(f"Customer filter: {customer_filter}, Tickets after filter: {tickets.count()}")
+    print(f"Region filter: {region_filter}, Tickets after filter: {tickets.count()}")
+    print(f"Terminal filter: {terminal_filter}, Tickets after filter: {tickets.count()}")
+    print(f"Time filter: {time_period}, Tickets after filter: {tickets.count()}")
+    print("Filters received:", time_period, customer_id, terminal_id, region_id)
+
 
     data = {
         'ticketsPerTerminal': [{'branch_name': entry['terminal__branch_name'], 'count': entry['ticket_count']} for entry in tickets_per_terminal],
@@ -1512,6 +1288,7 @@ def statistics_view(request):
         return JsonResponse(data, safe=False)
 
     return render(request, 'core/helpdesk/statistics.html', {
+        "user_group": user_group,
         'customers': available_customers,
         'terminals': terminals_for_frontend,
         'regions': available_regions,

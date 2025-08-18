@@ -84,8 +84,8 @@
 .sidebar a.active {
   background-color: #d4e9ff;
   font-weight: 600;
-  color: #0056b3;
-  box-shadow: inset 4px 0 0 #007bff;
+  color: #172d69;
+  box-shadow: inset 4px 0 0 #123692;
 }
 
 /* Mobile Responsive */

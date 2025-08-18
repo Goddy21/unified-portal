@@ -101,14 +101,14 @@
 }
 
 .comment-form textarea.form-control:focus {
-  border-color: #007bff;
+  border-color: #123692;
   box-shadow: 0 0 0 0.15rem rgba(0, 123, 255, 0.25), 0 2px 8px rgba(0, 123, 255, 0.1);
   transform: translateY(-2px);
 }
 
 .comment-submit-btn {
-  background-color: #007bff;
-  border-color: #007bff;
+  background-color: #123692;
+  border-color: #123692;
   color: #fff;
   padding: 0.75rem 1.5rem;
   border-radius: 8px;
@@ -118,8 +118,8 @@
 }
 
 .comment-submit-btn:hover {
-  background-color: #0056b3;
-  border-color: #0056b3;
+  background-color: #172d69;
+  border-color: #172d69;
   transform: translateY(-2px) scale(1.02);
   box-shadow: 0 6px 15px rgba(0, 123, 255, 0.3);
 }

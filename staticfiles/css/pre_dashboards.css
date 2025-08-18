@@ -174,7 +174,7 @@ h1 {
 }
 
 .admin-btn:hover {
-  background: linear-gradient(91deg, #0056b3 60%, #d17572 120%);
+  background: linear-gradient(91deg, #172d69 60%, #d17572 120%);
   transform: scale(1.08) rotate(-2deg);
 }
 

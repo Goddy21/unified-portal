@@ -1,5 +1,5 @@
 :root {
-  --primary-color: #007bff;
+  --primary-color: #123692;
   --secondary-color: #6c757d;
   --accent-color: #f7bb10;
   --background-color: #f8f9fa;
@@ -51,7 +51,7 @@
   max-width: 100%;
 }
 .ticket-actions .btn:hover {
-  background-color: #0056b3;
+  background-color: #172d69;
 }
 .ticket-actions .ticket-search {
   padding: 8px 15px;

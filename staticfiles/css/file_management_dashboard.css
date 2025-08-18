@@ -1,5 +1,5 @@
 :root {
-  --primary-color: #007bff;
+  --primary-color: #123692;
   --secondary-color: #6c757d;
   --background-color: #f8f9fa;
   --card-background: #ffffff;
@@ -398,7 +398,7 @@ body {
 }
 
 .category-card .view-files-link:hover {
-  color: #0056b3;
+  color: #172d69;
 }
 
 .category-card h4 {

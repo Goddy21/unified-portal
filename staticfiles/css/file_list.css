@@ -37,7 +37,7 @@ body {
 .category-nav a {
   padding: 0.5rem 1.1rem;
   background-color: #e9ecef;
-  color: #007bff;
+  color: #123692;
   border-radius: 999px;
   font-size: 0.9rem;
   text-decoration: none;
@@ -46,12 +46,12 @@ body {
 }
 
 .category-nav a:hover {
-  background-color: #007bff;
+  background-color: #123692;
   color: #fff;
 }
 
 .category-nav .active {
-  background-color: #007bff;
+  background-color: #123692;
   color: #fff;
 }
 
@@ -251,12 +251,12 @@ body {
 }
 
 .pagination a:hover {
-  background-color: #007bff;
+  background-color: #123692;
   color: white;
 }
 
 .pagination .current {
-  background-color: #007bff;
+  background-color: #123692;
   color: #fff;
   font-weight: bold;
 }

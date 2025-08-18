@@ -208,7 +208,9 @@
 
 <script>
   const data = JSON.parse('{{ data_json|escapejs }}');
-  window.initialData = data;  // expose globally
+  var userGroup = "{{ user_group|default:'' }}";
+  window.userGroup = "{{ request.user.groups.first.name|default:'Internal' }}";
+  window.initialData = data;  
   window.allowAll = {% if user_group == "Internal" %}true{% else %}false{% endif %};
 
 $('#region-filter').change(function() {

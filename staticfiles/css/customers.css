@@ -28,7 +28,7 @@
 }
 
 .upload-form .btn {
-  background-color: #007bff;
+  background-color: #123692;
   color: white;
   padding: 8px 16px;
   border: none;
@@ -37,7 +37,7 @@
 }
 
 .upload-form .btn:hover {
-  background-color: #0056b3;
+  background-color: #172d69;
 }
 
 .table-responsive {
@@ -87,11 +87,11 @@
 }
 
 .page-header-actions .btn-primary {
-  background-color: #007bff;
+  background-color: #123692;
 }
 
 .page-header-actions .btn-primary:hover {
-  background-color: #0056b3;
+  background-color: #172d69;
 }
 
 .page-header-actions .btn-danger {
@@ -102,12 +102,12 @@
   background-color: #c82333;
 }
 .view-link {
-  color: #007bff;
+  color: #123692;
   text-decoration: underline;
   cursor: pointer;
 }
 .view-link:hover {
-  color: #0056b3;
+  color: #172d69;
 }
 /* Pagination Controls */
 .pagination {
