@@ -1,13 +1,13 @@
 from importlib.abc import Loader
 from tkinter.font import Font
 from django.shortcuts import render, get_list_or_404, redirect
-
+from django.core.serializers.json import DjangoJSONEncoder
 from core.signals import assign_director_permissions, assign_manager_permissions, assign_staff_permissions
 from .models import File, FileAccessLog, EscalationHistory
 from django.http import FileResponse, JsonResponse, HttpResponse
 from .forms import FileUploadForm, ProblemCategoryForm, TicketForm
 from django.contrib.auth.decorators import login_required, permission_required, user_passes_test
-from django.db.models import Count, Q, Prefetch
+from django.db.models import Count, Q, Prefetch, F
 from django.utils.timezone import now
 from django.db.models.functions import TruncMonth
 from core.models import FileCategory
@@ -1252,18 +1252,105 @@ def statistics_view(request):
         {
             'id': t['id'],
             'branch_name': t['branch_name'],
-            'customer_name': t['customer__name'] if 'customer__name' in t else t.get('customer_name', 'N/A'), 
-            'region_name': t['region__name'] if 'region__name' in t else t.get('region_name', 'N/A'),  
-            'region_id': t.get('region__id') if 'region__id' in t else t.get('region_id') 
+            'customer_name': t.get('customer__name') or getattr(t.get('customer'), 'name', 'N/A'),
+            'region_name': t.get('region__name') or getattr(t.get('region'), 'name', 'N/A'),
+            'region_id': t.get('region__id') or getattr(t.get('region'), 'id', None)
         }
         for t in available_terminals
     ]
+
     print(f"Customer filter: {customer_filter}, Tickets after filter: {tickets.count()}")
     print(f"Region filter: {region_filter}, Tickets after filter: {tickets.count()}")
     print(f"Terminal filter: {terminal_filter}, Tickets after filter: {tickets.count()}")
     print(f"Time filter: {time_period}, Tickets after filter: {tickets.count()}")
     print("Filters received:", time_period, customer_id, terminal_id, region_id)
 
+
+    stats = {}
+
+    # 1. Open vs Closed by category
+    stats["status_by_category"] = list(
+        tickets.values("problem_category__name", "status")
+        .annotate(count=Count("id"))
+        .order_by("problem_category__name")
+    )
+
+    # 2. SLA compliance (your SLA code looks good already)
+
+    # 3. Problem category distribution
+    stats["problems_by_category"] = list(
+        tickets.values("problem_category__name")
+        .annotate(total=Count("id"))
+        .order_by("-total")
+    )
+
+    # 4. User contributions (keep as-is)
+
+    # 5. Key issues (top 5 categories with most open tickets)
+    stats["top_open_issues"] = list(
+        tickets.filter(status="Open")
+        .values("problem_category__name")
+        .annotate(total=Count("id"))
+        .order_by("-total")[:5]
+    )
+
+    # SLA Breaches
+    sla_breaches = tickets.filter(resolved_at__isnull=False, due_date__isnull=False, resolved_at__gt=F("due_date")).count()
+    sla_met = tickets.filter(resolved_at__isnull=False, due_date__isnull=False, resolved_at__lte=F("due_date")).count()
+
+
+    # Problem Categories
+    categories = tickets.values("problem_category__name").annotate(
+        count=Count("id")
+    ).order_by("-count")
+
+    # Created by (users)
+    created_by_stats = tickets.values("created_by__username").annotate(
+        count=Count("id")
+    )
+
+    # Tickets assigned to
+    assignee_stats = (
+        tickets.values("assigned_to__username")
+        .annotate(count=Count("id"))
+        .order_by("-count")
+    )
+
+    resolved_assignee_stats = (
+        tickets.filter(status__iexact="Closed")  
+        .values("assigned_to__username")
+        .annotate(count=Count("id"))
+        .order_by("-count")
+    )
+
+    resolved_by_stats = (
+        tickets.filter(status__iexact="Closed")
+        .values("resolved_by__username")
+        .annotate(count=Count("id"))
+        .order_by("-count")
+    )
+
+    unresolved_stats = tickets.filter(status__in=["Open", "Pending", "New", "In Progress"]) \
+    .values("assigned_to__username") \
+    .annotate(count=Count("id")) \
+    .order_by("-count")
+
+    # Replace None values with "Unassigned"
+    unresolved_stats = [
+        {**item, 'assigned_to__username': item.get('assigned_to__username') or 'Unassigned'}
+        for item in unresolved_stats
+    ]
+
+    print("Unresolved Stats:", unresolved_stats)
+
+
+
+
+    print("SLA Met:", sla_met, "SLA Breaches:", sla_breaches)
+    print("Unresolved stats:", list(unresolved_stats))
+
+
+    data_json = json.dumps(stats, cls=DjangoJSONEncoder)
 
     data = {
         'ticketsPerTerminal': [{'branch_name': entry['terminal__branch_name'], 'count': entry['ticket_count']} for entry in tickets_per_terminal],
@@ -1282,6 +1369,44 @@ def statistics_view(request):
         'terminals': terminals_for_frontend,
         'customers': available_customers,
         'regions': available_regions,
+        'data_json': data_json,
+        # SLA stats
+        "slaStats": {
+            "labels": ["Met SLA", "Breached SLA"],
+            "data": [sla_met, sla_breaches],
+        },
+
+        # Problem categories
+        "ticketCategories": {
+            "labels": [c["problem_category__name"] for c in categories],
+            "data": [c["count"] for c in categories],
+        },
+
+        # Tickets by creator
+        "ticketsByCreator": {
+            "labels": [c["created_by__username"] for c in created_by_stats],
+            "data": [c["count"] for c in created_by_stats],
+        },
+        "ticketsByAssignee": {
+            "labels": [a.get("assigned_to__username") or "Unassigned" for a in assignee_stats],
+            "data": [a["count"] for a in assignee_stats],
+        },
+        "ticketsByResolver": {
+            "labels": [r.get("resolved_by__username") or "Unresolved" for r in resolved_by_stats],
+            "data": [r["count"] for r in resolved_by_stats],
+        },
+        "unresolvedByAssignee": {
+            "labels": [u.get("assigned_to__username") or "Unassigned" for u in unresolved_stats],
+            "data": [u["count"] for u in unresolved_stats],
+        },
+        "resolvedByAssignee": {
+            "labels": [r.get("assigned_to__username") or "Unassigned" for r in resolved_assignee_stats],
+            "data": [r["count"] for r in resolved_assignee_stats],
+        },
+        "resolvedByResolver": {
+            "labels": [r.get("resolved_by__username") or "Unresolved" for r in resolved_by_stats],
+            "data": [r["count"] for r in resolved_by_stats],
+        },
     }
 
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
