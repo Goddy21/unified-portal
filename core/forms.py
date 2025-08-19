@@ -69,7 +69,14 @@ class UserUpdateForm(forms.ModelForm):
 class ProfileUpdateForm(forms.ModelForm):
     class Meta:
         model = Profile
-        fields = ['avatar']
+        fields = ['avatar', 'phone_number', 'role', 'customer', 'terminal']
+
+    # Customize widgets for better UI
+    phone_number = forms.CharField(widget=forms.TextInput(attrs={'class': 'form-control'}))
+    role = forms.CharField(widget=forms.TextInput(attrs={'class': 'form-control'}))
+    customer = forms.ModelChoiceField(queryset=Customer.objects.all(), required=False, widget=forms.Select(attrs={'class': 'form-control'}))
+    terminal = forms.ModelChoiceField(queryset=Terminal.objects.all(), required=False, widget=forms.Select(attrs={'class': 'form-control'}))
+    id_number = forms.CharField(widget=forms.TextInput(attrs={'class': 'form-control'})) 
 
 class TicketForm(forms.ModelForm):
     class Meta:

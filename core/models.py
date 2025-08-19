@@ -3,6 +3,7 @@ from django.contrib.auth.models import User
 from django.utils import timezone
 from datetime import timedelta
 
+
 class EmailOTP(models.Model):
         user = models.OneToOneField(User, on_delete=models.CASCADE)
         otp = models.CharField(max_length=6)
@@ -63,12 +64,15 @@ def user_directory_path(instance, filename):
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     avatar = models.ImageField(upload_to=user_directory_path, blank=True, null=True)
+    phone_number = models.CharField(max_length=15, blank=True, null=True)  
+    id_number = models.CharField(max_length=20, blank=True, null=True) 
+    role = models.CharField(max_length=100, blank=True, null=True) 
     customer = models.ForeignKey('Customer', on_delete=models.CASCADE, null=True, blank=True)
     terminal = models.ForeignKey('Terminal', on_delete=models.SET_NULL, null=True, blank=True)
 
-
     def __str__(self):
         return self.user.username
+
 
 
 # Help desk models
@@ -104,6 +108,7 @@ class SystemUser(models.Model):
     username = models.CharField(max_length=100, unique=True)
     email = models.EmailField()
     role = models.CharField(max_length=50)
+    phone_number = models.CharField(max_length=15, blank=True, null=True) 
 
     def __str__(self):
         return self.username

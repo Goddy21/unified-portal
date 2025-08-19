@@ -894,7 +894,6 @@ def profile_view(request):
     return render(request, 'accounts/profile.html', context)
 
 
-@method_decorator(login_required, name='dispatch')
 class SettingsView(View):
     def get(self, request):
         user_form = UserUpdateForm(instance=request.user)
@@ -917,6 +916,7 @@ class SettingsView(View):
             'user_form': user_form,
             'profile_form': profile_form
         })
+
 
 
 @login_required(login_url='login')

@@ -10,11 +10,33 @@
 </head>
 <body>
     <div class="profile-container fade-in">
+        <div class="logo-container">
+            <img src="{% static 'icons/favicon.ico' %}" alt="Site Logo" class="site-logo">
+        </div>
         <h1>{{ user.get_full_name|default:user.username }}'s Profile</h1>
 
         <div class="profile-details">
+            <p><strong>First Name:</strong> {{ user.first_name }}</p>
+            <p><strong>Last Name:</strong> {{ user.last_name }}</p>
             <p><strong>Username:</strong> {{ user.username }}</p>
             <p><strong>Email:</strong> {{ user.email }}</p>
+            <p><strong>Phone Number:</strong> {{ user.profile.phone_number }}</p> 
+            <p><strong>ID Number:</strong> {{ user.profile.id_number }}</p> 
+
+            <p><strong>Role:</strong> {{ user.profile.role }}</p> 
+            
+            {% if user.profile.customer %}
+                <p><strong>Customer:</strong> {{ user.profile.customer.name }}</p> 
+            {% else %}
+                <p><strong>Customer:</strong> No customer assigned</p>
+            {% endif %}
+            
+            {% if user.profile.terminal %}
+                <p><strong>Terminal:</strong> {{ user.profile.terminal.cdm_name }}</p> 
+            {% else %}
+                <p><strong>Terminal:</strong> No terminal assigned</p>
+            {% endif %}
+
             <p><strong>Date joined:</strong> {{ user.date_joined|date:"M d, Y" }}</p>
 
             {% if user.profile.avatar %}
