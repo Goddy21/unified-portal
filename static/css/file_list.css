@@ -318,68 +318,107 @@ body {
 }
   /* Modal Styles */
 .passcode-modal {
-  display: none;
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent background */
-  z-index: 1000;
-  justify-content: center;
-  align-items: center;
-  transition: all 0.3s ease-in-out; /* Smooth transition */
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent overlay */
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+    transition: opacity 0.3s ease; /* Smooth fade-in */
 }
 
 .passcode-modal-content {
-  background-color: white;
-  padding: 2rem;
-  border-radius: 8px;
-  width: 300px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    background-color: #fff;
+    padding: 2rem;
+    border-radius: 8px;
+    width: 100%;
+    max-width: 400px; /* Increased max-width */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    transform: translateY(-10px);
+    animation: slideIn 0.4s ease-out;
+}
+
+@keyframes slideIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 .passcode-modal h3 {
-  text-align: center;
-  font-size: 1.2rem;
-  margin-bottom: 1rem;
+    text-align: center;
+    font-size: 1.2rem;
+    color: #333;
+    margin-bottom: 1rem;
 }
 
 .passcode-modal input {
-  width: 100%;
-  padding: 0.8rem;
-  font-size: 1rem;
-  margin-bottom: 1rem;
-  border: 1px solid #ccc;
-  border-radius: 5px;
+    width: 100%;
+    padding: 0.8rem;
+    font-size: 1rem;
+    margin-bottom: 1rem;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    transition: border-color 0.3s ease;
+}
+
+.passcode-modal input:focus {
+    border-color: #007bff; /* Blue focus border */
+    outline: none;
 }
 
 .passcode-modal button {
-  width: 100%;
-  padding: 0.8rem;
-  background-color: #007bff;
-  color: white;
-  border: none;
-  border-radius: 5px;
-  font-size: 1rem;
-  cursor: pointer;
+    width: 100%;
+    padding: 0.8rem;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
 }
 
 .passcode-modal button:hover {
-  background-color: #0056b3;
+    background-color: #0056b3; /* Darker blue */
 }
 
 .passcode-modal .close {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  font-size: 1.5rem;
-  color: #aaa;
-  cursor: pointer;
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    font-size: 1.6rem;
+    color: #aaa;
+    cursor: pointer;
+    transition: color 0.3s ease;
 }
 
 .passcode-modal .close:hover {
-  color: #333;
+    color: #333;
+}
+
+/* Add a subtle fade-in effect for the modal when it's shown */
+.passcode-modal.show {
+    display: flex;
+    opacity: 1;
+}
+
+/* Adding additional styling to the buttons */
+.passcode-modal button,
+.passcode-modal .close {
+    transition: all 0.3s ease-in-out;
+}
+
+/* Button Hover Effects */
+.passcode-modal button:hover {
+    transform: scale(1.05);
+}
+
+.passcode-modal .close:hover {
+    transform: rotate(45deg);
+    color: #333;
 }
 
 /* ===== Responsive Adjustments ===== */
@@ -415,6 +454,10 @@ body {
   .file-actions {
     justify-content: flex-start;
   }
+  .passcode-modal-content {
+        width: 90%;
+        max-width: 350px;
+  }
 }
 
 @media (max-width: 640px) {
@@ -429,3 +472,18 @@ body {
   }
 }
 
+@media (max-width: 480px) {
+    .passcode-modal-content {
+        width: 100%;
+        padding: 1.5rem;
+    }
+
+    .passcode-modal h3 {
+        font-size: 1rem;
+    }
+
+    .passcode-modal input,
+    .passcode-modal button {
+        font-size: 0.9rem;
+    }
+}

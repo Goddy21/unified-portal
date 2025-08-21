@@ -71,7 +71,10 @@ def setup_groups_and_permissions(sender, **kwargs):
     manager_group.permissions.add(file_access_log_permission)
 
     # Superusers should already have access to all permissions, but you can explicitly assign it
-    User.objects.filter(is_superuser=True).update(user_permissions=[file_access_log_permission])
+    superusers = User.objects.filter(is_superuser=True)
+    for user in superusers:
+        user.user_permissions.add(file_access_log_permission)  
+
 
 
 @receiver(post_save, sender=User)

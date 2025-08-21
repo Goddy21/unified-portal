@@ -40,7 +40,9 @@ class File(models.Model):
     is_deleted = models.BooleanField(default=False)
     authorized_users = models.ManyToManyField(User, blank=True, related_name='authorized_files')
     access_level = models.CharField(max_length=20, choices=ACCESS_LEVEL_CHOICES, default='public')
-    passcode = models.CharField(max_length=255, blank=True, null=True)  # Add passcode field
+    passcode = models.CharField(max_length=50, blank=True, null=True)  
+    allow_preview = models.BooleanField(default=True)
+    allow_download = models.BooleanField(default=True)
 
     def can_user_access(self, user, passcode=None):
         if self.access_level == 'public':

@@ -37,7 +37,7 @@ class CustomUserCreationForm(forms.ModelForm):
 class FileUploadForm(forms.ModelForm):
     class Meta:
         model = File
-        fields = ['title', 'description', 'category', 'access_level', 'file', 'passcode']
+        fields = ['title', 'description', 'category', 'access_level', 'file', 'passcode', 'allow_preview', 'allow_download']
         widgets = {
             'title': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter file title'}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'placeholder': 'Enter a brief description', 'rows': 3}),

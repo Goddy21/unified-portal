@@ -69,48 +69,43 @@
 
         {% if file.access_level == 'restricted' and file.id %}
           <!-- Modal for passcode -->
-          <div id="passcode-modal-{{ file.id }}" class="passcode-modal" style="display:none;">
+          <div id="passcode-modal-{{ file.id }}" class="passcode-modal">
             <div class="passcode-modal-content">
-              <!-- prevent browser auto-fill -->
               <form autocomplete="off" onsubmit="return false;">
                 <span class="close" onclick="closePasscodeModal({{ file.id }})">&times;</span>
                 <h3>Enter Passcode to Access File</h3>
+                <input type="password" name="passcode" id="passcode-{{ file.id }}" placeholder="Enter Passcode" autocomplete="off" />
+                
+                {% if file.uploaded_by == request.user %}
+                <div class="form-group">
+                    <label>Allowed Actions:</label><br>
+                    <label><input type="checkbox" id="allow_preview_{{ file.id }}" {% if file.allow_preview %}checked{% endif %}> Preview</label>
+                    <label><input type="checkbox" id="allow_download_{{ file.id }}" {% if file.allow_download %}checked{% endif %}> Download</label>
+                </div>
+                <button type="button" onclick="updatePasscode({{ file.id }})">Set / Reset Passcode</button>
+                {% endif %}
 
-                <input
-                  type="password"
-                  name="passcode"
-                  id="passcode-{{ file.id }}"
-                  placeholder="Enter Passcode"
-                  autocomplete="off"
-                />
-
-                <!-- make this a button, not a submit -->
-                <button
-                  type="button"
-                  onclick="checkPasscode({{ file.id }})"
-                >
-                  Submit
-                </button>
-
-                <p id="passcode-error-{{ file.id }}" style="color: red; display:none;">
-                  Incorrect passcode
-                </p>
+                <button type="button" onclick="checkPasscode({{ file.id }})">Submit</button>
+                <p id="passcode-error-{{ file.id }}" style="color:red; display:none;">Incorrect passcode</p>
               </form>
             </div>
           </div>
         {% endif %}
 
-        {% if file.id %}
-          <div>
+        <div>
+          {% if file.id %}
             <a href="#" onclick="showPasscodeModal({{ file.id }}, '{% url 'preview_file' file.id %}', 'preview'); return false;" class="btn preview-link">Preview</a>
-          </div>
-          <div>
-            <a href="#" onclick="showPasscodeModal({{ file.id }}, '{% url 'download_file' file.id %}', 'download'); return false;" class="btn download-link">Download</a>
-          </div>
-        {% else %}
-          <div><span style="color:#999;">No Preview</span></div>
-          <div><span style="color:#999;">No Download</span></div>
-        {% endif %}
+          {% else %}
+            <span>Preview Unavailable</span>
+          {% endif %}
+        </div>
+        <div>
+            {% if file.id %}
+                  <a href="#" onclick="showPasscodeModal({{ file.id }}, '{% url 'download_file' file.id %}', 'download'); return false;" class="btn download-link">Download</a>
+            {% else %}
+              <span>Download Unavailable</span>
+            {% endif %}
+        </div>
 
         {% if file.uploaded_by == request.user or request.user.is_superuser %}
         <div>
@@ -120,9 +115,7 @@
           </form>
         </div>
         {% else %}
-        <div>
-          <span style="color: #999; font-size: 0.8rem;">Not allowed</span>
-        </div>
+        <div><span style="color:#999; font-size:0.8rem;">Not allowed</span></div>
         {% endif %}
       </div>
     {% empty %}
@@ -137,104 +130,83 @@
       <a href="?page=1{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}">&laquo; first</a>
       <a href="?page={{ files.previous_page_number }}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}">previous</a>
     {% endif %}
-
-    <span class="current">
-      Page {{ files.number }} of {{ files.paginator.num_pages }}.
-    </span>
-
+    <span class="current">Page {{ files.number }} of {{ files.paginator.num_pages }}.</span>
     {% if files.has_next %}
       <a href="?page={{ files.next_page_number }}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}">next</a>
       <a href="?page={{ files.paginator.num_pages }}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}">last &raquo;</a>
     {% endif %}
   </span>
 </div>
-
 {% endblock %}
 
 {% block extra_js %}
 <script>
- // 1) CSRF helper—must be defined before you call it:
-  function getCookie(name) {
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-      const cookies = document.cookie.split(';');
-      for (let cookie of cookies) {
-        cookie = cookie.trim();
-        if (cookie.startsWith(name + '=')) {
-          cookieValue = decodeURIComponent(cookie.slice(name.length + 1));
-          break;
-        }
-      }
-    }
-    return cookieValue;
-  }
-  // 2) Already‐unlocked files this session
-  const validatedFiles = {{ validated_files|default:"[]"|safe }};
-  let pendingRedirect = null;
-  function showPasscodeModal(fileId, targetUrl, action) {
-    // Check if file is already validated
-    if (validatedFiles.includes(fileId)) {
-      // Redirect based on the action (either preview or download)
-      if (action === 'preview') {
-        window.location.href = targetUrl;
-      } else if (action === 'download') {
-        window.location.href = targetUrl;
-      }
-      return false;
-    }
+const validatedFiles = {{ validated_files|default:"[]"|safe }};
+let pendingRedirect = null;
 
-    const modal = document.getElementById('passcode-modal-' + fileId);
-    if (!modal) {
-      window.location.href = targetUrl;
-      return false;
-    }
-
-    modal.style.display = 'flex';
-    pendingRedirect = { fileId, targetUrl, action }; // Store action (preview or download)
-    return false;
+function getCookie(name) {
+  let cookieValue = null;
+  if (document.cookie && document.cookie !== '') {
+    document.cookie.split(';').forEach(cookie => {
+      cookie = cookie.trim();
+      if (cookie.startsWith(name + '=')) cookieValue = decodeURIComponent(cookie.slice(name.length + 1));
+    });
   }
+  return cookieValue;
+}
 
-  function closePasscodeModal(fileId) {
-    document.getElementById('passcode-modal-' + fileId).style.display = 'none';
-    pendingRedirect = null;
-  }
-  function checkPasscode(fileId) {
+function showPasscodeModal(fileId, targetUrl, action) {
+  if (validatedFiles.includes(fileId)) { window.location.href = targetUrl; return false; }
+  const modal = document.getElementById('passcode-modal-' + fileId);
+  if (!modal) { window.location.href = targetUrl; return false; }
+  modal.style.display = 'flex';
+  pendingRedirect = { fileId, targetUrl, action };
+  return false;
+}
+
+function closePasscodeModal(fileId) {
+  document.getElementById('passcode-modal-' + fileId).style.display = 'none';
+  pendingRedirect = null;
+}
+
+function checkPasscode(fileId) {
   const passcode = document.getElementById(`passcode-${fileId}`).value;
   const errorElement = document.getElementById(`passcode-error-${fileId}`);
   const csrftoken = getCookie('csrftoken');
 
   fetch(`/validate-passcode/${fileId}/`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-      'X-CSRFToken': csrftoken
-    },
+    headers: { 'Content-Type':'application/x-www-form-urlencoded','X-CSRFToken': csrftoken },
     body: new URLSearchParams({ passcode })
   })
-  .then(r => r.json())
-  .then(data => {
-    if (!data.success) {
-      errorElement.style.display = 'block';
-      return;
-    }
-
-    // Immediately unlock and redirect:
+  .then(r=>r.json())
+  .then(data=>{
+    if(!data.success){ errorElement.style.display='block'; return; }
     validatedFiles.push(fileId);
-    const { fileId: pendingFileId, targetUrl, action } = pendingRedirect;
-
+    const { targetUrl, action } = pendingRedirect;
     closePasscodeModal(fileId);
-
-    // Redirect based on action (preview or download)
-    if (action === 'preview') {
-      window.location.href = targetUrl;
-    } else if (action === 'download') {
-      window.location.href = targetUrl;
-    }
+    window.location.href = targetUrl;
   })
-  .catch(err => {
-    console.error(err);
-    alert('❌ Failed to validate passcode. Check console for details.');
-  });
+  .catch(err=>{ console.error(err); alert('❌ Failed to validate passcode'); });
+}
+
+function updatePasscode(fileId){
+  const passcode = document.getElementById(`passcode-${fileId}`).value;
+  const allowPreview = document.getElementById(`allow_preview_${fileId}`).checked;
+  const allowDownload = document.getElementById(`allow_download_${fileId}`).checked;
+  const csrftoken = getCookie('csrftoken');
+
+  fetch(`/update-passcode/${fileId}/`, {
+    method:'POST',
+    headers:{ 'Content-Type':'application/x-www-form-urlencoded','X-CSRFToken': csrftoken },
+    body: new URLSearchParams({ passcode, allow_preview: allowPreview, allow_download: allowDownload })
+  })
+  .then(r=>r.json())
+  .then(data=>{
+    if(data.success){ alert('✅ Passcode & permissions updated'); closePasscodeModal(fileId); } 
+    else alert('❌ Failed to update passcode/permissions');
+  })
+  .catch(err=>{ console.error(err); alert('❌ Failed to update passcode'); });
 }
 </script>
 {% endblock %}

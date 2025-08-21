@@ -844,10 +844,9 @@ def preview_file(request, file_id):
     if file.access_level == 'restricted' and file.id not in validated_files:
         raise PermissionDenied("Passcode required for restricted file.")
 
-    
     # Continue with the access control based on file access level
     if file.access_level == 'public':
-        pass  
+        pass  # Public files have no restriction
     elif file.access_level == 'restricted':
         if not file.can_user_access(request.user):
             raise PermissionDenied("Access denied.")
@@ -868,6 +867,7 @@ def preview_file(request, file_id):
     # Unsupported type
     return render(request, 'core/file_management/unsupported_preview.html', {'file': file})
 
+
 @login_required
 def download_file(request, file_id):
     file = get_object_or_404(File, id=file_id, is_deleted=False)
@@ -877,9 +877,9 @@ def download_file(request, file_id):
     if file.access_level == 'restricted' and file.id not in validated_files:
         raise PermissionDenied("Passcode required for restricted file.")
 
-    # Access control
+    # Access control based on access level
     if file.access_level == 'public':
-        pass  
+        pass  # Public files can be freely downloaded
     elif file.access_level == 'restricted':
         if not file.can_user_access(request.user):
             raise PermissionDenied("Access denied.")
@@ -896,6 +896,7 @@ def download_file(request, file_id):
     response = FileResponse(file.file.open('rb'))
     response['Content-Disposition'] = f'attachment; filename="{file.file.name.split("/")[-1]}"'
     return response
+
 
 
 
@@ -952,7 +953,7 @@ def upload_file_view(request):
             file_instance.uploaded_by = request.user
             file_instance.save()
 
-            # Return file id to frontend for AJAX passcode update
+            # Return file ID to frontend for AJAX passcode update
             if request.headers.get("x-requested-with") == "XMLHttpRequest":
                 return JsonResponse({"file_id": file_instance.id, "success": True})
 
@@ -960,23 +961,32 @@ def upload_file_view(request):
             return redirect('file_list')
     else:
         form = FileUploadForm()
-    
+
     return render(request, 'core/file_management/upload_file.html', {'form': form})
 
 
 @login_required
 def update_passcode_view(request, file_id):
     file = get_object_or_404(File, id=file_id)
-    
+
     if request.method == 'POST':
+        # Ensure the user is the owner or superuser
+        if file.uploaded_by != request.user and not request.user.is_superuser:
+            return JsonResponse({"success": False, "error": "You do not have permission to update the passcode."}, status=403)
+
         passcode = request.POST.get('passcode')
         if passcode:
             file.passcode = passcode
+            # Additional logic for controlling file actions (Preview/Download)
+            file.allow_preview = request.POST.get('allow_preview', False) == 'true'
+            file.allow_download = request.POST.get('allow_download', False) == 'true'
             file.save()
             return JsonResponse({"success": True})
+
         return JsonResponse({"success": False, "error": "No passcode provided"}, status=400)
 
     return JsonResponse({"success": False, "error": "Invalid request"}, status=400)
+
 
 
 @login_required
