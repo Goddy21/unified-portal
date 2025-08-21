@@ -773,6 +773,7 @@ def file_management_dashboard(request):
 def file_list_view(request, category_name=None):
     user = request.user
     files = File.objects.filter(is_deleted=False)
+    validated_files = request.session.get("validated_files", [])
 
     visible_files = []
 
@@ -815,6 +816,7 @@ def file_list_view(request, category_name=None):
         'files': paginated_files,
         'categories': categories,
         'active_category': category_name,
+        'validated_files': validated_files,
     })
 
 
@@ -832,7 +834,6 @@ def search(request):
         'users': users,
     }
     return render(request, 'core/file_management/search_result.html', context)
-
 
 @login_required
 def preview_file(request, file_id):
@@ -876,8 +877,7 @@ def download_file(request, file_id):
     if file.access_level == 'restricted' and file.id not in validated_files:
         raise PermissionDenied("Passcode required for restricted file.")
 
-    
-    # Continue with the access control based on file access level
+    # Access control
     if file.access_level == 'public':
         pass  
     elif file.access_level == 'restricted':
@@ -889,12 +889,14 @@ def download_file(request, file_id):
     else:
         raise PermissionDenied("Unknown access level.")
 
-    # Log access (Download)
+    # Log download
     FileAccessLog.objects.create(file=file, accessed_by=request.user, action='download')
 
-    # Serve the file for download
+    # Serve file for download
     response = FileResponse(file.file.open('rb'))
+    response['Content-Disposition'] = f'attachment; filename="{file.file.name.split("/")[-1]}"'
     return response
+
 
 
 @login_required

@@ -71,21 +71,41 @@
           <!-- Modal for passcode -->
           <div id="passcode-modal-{{ file.id }}" class="passcode-modal" style="display:none;">
             <div class="passcode-modal-content">
-              <span class="close" onclick="closePasscodeModal({{ file.id }})">&times;</span>
-              <h3>Enter Passcode to Access File</h3>
-              <input type="password" name="passcode" id="passcode-{{ file.id }}" placeholder="Enter Passcode">
-              <button onclick="checkPasscode({{ file.id }})">Submit</button>
-              <p id="passcode-error-{{ file.id }}" style="color: red; display:none;">Incorrect passcode</p>
+              <!-- prevent browser auto-fill -->
+              <form autocomplete="off" onsubmit="return false;">
+                <span class="close" onclick="closePasscodeModal({{ file.id }})">&times;</span>
+                <h3>Enter Passcode to Access File</h3>
+
+                <input
+                  type="password"
+                  name="passcode"
+                  id="passcode-{{ file.id }}"
+                  placeholder="Enter Passcode"
+                  autocomplete="off"
+                />
+
+                <!-- make this a button, not a submit -->
+                <button
+                  type="button"
+                  onclick="checkPasscode({{ file.id }})"
+                >
+                  Submit
+                </button>
+
+                <p id="passcode-error-{{ file.id }}" style="color: red; display:none;">
+                  Incorrect passcode
+                </p>
+              </form>
             </div>
           </div>
         {% endif %}
 
         {% if file.id %}
           <div>
-            <a href="#" onclick="showPasscodeModal({{ file.id }}, '{% url 'preview_file' file.id %}'); return false;" class="btn preview-link">Preview</a>
+            <a href="#" onclick="showPasscodeModal({{ file.id }}, '{% url 'preview_file' file.id %}', 'preview'); return false;" class="btn preview-link">Preview</a>
           </div>
           <div>
-            <a href="#" onclick="showPasscodeModal({{ file.id }}, '{% url 'download_file' file.id %}'); return false;" class="btn download-link">Download</a>
+            <a href="#" onclick="showPasscodeModal({{ file.id }}, '{% url 'download_file' file.id %}', 'download'); return false;" class="btn download-link">Download</a>
           </div>
         {% else %}
           <div><span style="color:#999;">No Preview</span></div>
@@ -133,67 +153,88 @@
 
 {% block extra_js %}
 <script>
-let pendingRedirect = null;
-
-function showPasscodeModal(fileId, targetUrl) {
-  const modal = document.getElementById('passcode-modal-' + fileId);
-  if (!modal) { 
-    window.location.href = targetUrl; 
-    return false; 
-  } 
-  modal.style.display = 'flex';
-  pendingRedirect = targetUrl;
-  return false;
-}
-
-function closePasscodeModal(fileId) {
-  const modal = document.getElementById('passcode-modal-' + fileId);
-  modal.style.display = 'none';
-  pendingRedirect = null;
-}
-
-function checkPasscode(fileId) {
-    var passcode = document.getElementById('passcode-' + fileId).value;
-    var errorElement = document.getElementById('passcode-error-' + fileId);
-
-    // Grab CSRF from cookie instead of template
-    function getCookie(name) {
-        let cookieValue = null;
-        if (document.cookie && document.cookie !== '') {
-            const cookies = document.cookie.split(';');
-            for (let i = 0; i < cookies.length; i++) {
-                const cookie = cookies[i].trim();
-                if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                    break;
-                }
-            }
+ // 1) CSRF helper—must be defined before you call it:
+  function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+      const cookies = document.cookie.split(';');
+      for (let cookie of cookies) {
+        cookie = cookie.trim();
+        if (cookie.startsWith(name + '=')) {
+          cookieValue = decodeURIComponent(cookie.slice(name.length + 1));
+          break;
         }
-        return cookieValue;
+      }
     }
-    const csrftoken = getCookie('csrftoken');
+    return cookieValue;
+  }
+  // 2) Already‐unlocked files this session
+  const validatedFiles = {{ validated_files|default:"[]"|safe }};
+  let pendingRedirect = null;
+  function showPasscodeModal(fileId, targetUrl, action) {
+    // Check if file is already validated
+    if (validatedFiles.includes(fileId)) {
+      // Redirect based on the action (either preview or download)
+      if (action === 'preview') {
+        window.location.href = targetUrl;
+      } else if (action === 'download') {
+        window.location.href = targetUrl;
+      }
+      return false;
+    }
 
-    fetch(`/validate-passcode/${fileId}/`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'X-CSRFToken': csrftoken
-        },
-        body: new URLSearchParams({ passcode: passcode })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            closePasscodeModal(fileId);
-            if (pendingRedirect) window.location.href = pendingRedirect;
-        } else {
-            errorElement.style.display = 'block';
-        }
-    })
-    .catch(err => {
-        console.error(err);
-        alert('❌ Failed to validate passcode. Check console for details.');
-    });
+    const modal = document.getElementById('passcode-modal-' + fileId);
+    if (!modal) {
+      window.location.href = targetUrl;
+      return false;
+    }
+
+    modal.style.display = 'flex';
+    pendingRedirect = { fileId, targetUrl, action }; // Store action (preview or download)
+    return false;
+  }
+
+  function closePasscodeModal(fileId) {
+    document.getElementById('passcode-modal-' + fileId).style.display = 'none';
+    pendingRedirect = null;
+  }
+  function checkPasscode(fileId) {
+  const passcode = document.getElementById(`passcode-${fileId}`).value;
+  const errorElement = document.getElementById(`passcode-error-${fileId}`);
+  const csrftoken = getCookie('csrftoken');
+
+  fetch(`/validate-passcode/${fileId}/`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'X-CSRFToken': csrftoken
+    },
+    body: new URLSearchParams({ passcode })
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (!data.success) {
+      errorElement.style.display = 'block';
+      return;
+    }
+
+    // Immediately unlock and redirect:
+    validatedFiles.push(fileId);
+    const { fileId: pendingFileId, targetUrl, action } = pendingRedirect;
+
+    closePasscodeModal(fileId);
+
+    // Redirect based on action (preview or download)
+    if (action === 'preview') {
+      window.location.href = targetUrl;
+    } else if (action === 'download') {
+      window.location.href = targetUrl;
+    }
+  })
+  .catch(err => {
+    console.error(err);
+    alert('❌ Failed to validate passcode. Check console for details.');
+  });
 }
 </script>
 {% endblock %}
