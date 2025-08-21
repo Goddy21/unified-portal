@@ -1,26 +1,96 @@
 {% extends "files_base.html" %}
 {% load static %}
 
-{% block title %}Upload File{% endblock %}
-
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/upload_file.css' %}">
 {% endblock %}
 
+{% block title %}Upload File{% endblock %} 
+
 {% block content %}
 {% if perms.core.add_file %}
 <div class="upload-container">
-  <h2>📁 Upload a New File</h2>
+    <h2>📁 Upload a New File</h2>
 
-  <form method="post" enctype="multipart/form-data">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <input type="submit" value="Upload File">
-  </form>
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="form-group">
+            <label for="id_title">Title</label>
+            {{ form.title }}
+        </div>
+        <div class="form-group">
+            <label for="id_description">Description</label>
+            {{ form.description }}
+        </div>
+        <div class="form-group">
+            <label for="id_category">Category</label>
+            {{ form.category }}
+        </div>
+        <div class="form-group">
+            <label for="id_access_level">Access Level</label>
+            {{ form.access_level }}
+        </div>
+        <div class="form-group">
+            <label for="id_file">File</label>
+            {{ form.file }}
+        </div>
+
+        <input type="submit" value="Upload File" class="btn btn-primary">
+    </form>
 </div>
+
+<!-- Passcode modal -->
+<div id="passcode-modal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeModal()">&times;</span>
+        <h2>Set Passcode for Restricted File</h2>
+
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="form-group">
+                <label for="id_passcode">Passcode</label>
+                {{ form.passcode }}
+            </div>
+            <input type="submit" value="Set Passcode" class="btn btn-primary">
+        </form>
+    </div>
+</div>
+
 {% else %}
-  <div class="alert alert-warning">
-    🚫 You do not have permission to upload files.
-  </div>
+    <div class="alert alert-warning">
+        🚫 You do not have permission to upload files.
+    </div>
 {% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const accessLevelSelect = document.getElementById("id_access_level");
+    const modal = document.getElementById('passcode-modal');
+    const loadingLabel = modal.querySelector('.loading');  
+
+    // Hide the modal and the loading label initially
+    modal.style.display = 'none';
+    if (loadingLabel) {
+        loadingLabel.style.display = 'none';
+    }
+
+    // Check the initial value of the access level on page load
+    if (accessLevelSelect.value === "restricted") {
+        modal.style.display = 'flex';  
+    } else {
+        modal.style.display = 'none';  
+    }
+
+    accessLevelSelect.addEventListener("change", function() {
+        if (this.value === "restricted") {
+            modal.style.display = 'flex';  
+        } else {
+            modal.style.display = 'none';  
+        }
+    });
+});
+</script>
 {% endblock %}

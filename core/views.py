@@ -5,7 +5,7 @@ from django.core.serializers.json import DjangoJSONEncoder
 from core.signals import assign_director_permissions, assign_manager_permissions, assign_staff_permissions
 from .models import File, FileAccessLog, EscalationHistory
 from django.http import FileResponse, JsonResponse, HttpResponse
-from .forms import FileUploadForm, ProblemCategoryForm, TicketForm
+from .forms import FilePasscodeForm, FileUploadForm, ProblemCategoryForm, TicketForm
 from django.contrib.auth.decorators import login_required, permission_required, user_passes_test
 from django.db.models import Count, Q, Prefetch, F
 from django.utils.timezone import now
@@ -777,17 +777,23 @@ def file_list_view(request, category_name=None):
     for file in files:
         if file.can_user_access(user):
             visible_files.append(file)
+        else:
+            # If file is restricted and user doesn't have access
+            visible_files.append({
+                'file': file,
+                'requires_passcode': True
+            })
 
     # Filter by category if provided
     if category_name:
-        visible_files = [file for file in visible_files if file.category.name.lower() == category_name.lower()]
+        visible_files = [file for file in visible_files if isinstance(file, dict) and file['file'].category.name.lower() == category_name.lower() or isinstance(file, File) and file.category.name.lower() == category_name.lower()]
 
     # Sort files
     sort_option = request.GET.get('sort')
     if sort_option == 'recent':
-        visible_files.sort(key=lambda f: f.upload_date, reverse=True)
+        visible_files.sort(key=lambda f: f['file'].upload_date if isinstance(f, dict) else f.upload_date, reverse=True)
     else:
-        visible_files.sort(key=lambda f: f.title)
+        visible_files.sort(key=lambda f: f['file'].title if isinstance(f, dict) else f.title)
 
     # Paginate files
     paginator = Paginator(visible_files, 10)
@@ -809,6 +815,7 @@ def file_list_view(request, category_name=None):
     })
 
 
+
 def search(request):
     query = request.GET.get('q', '')
     files = File.objects.filter(title__icontains=query, is_deleted=False)
@@ -828,7 +835,7 @@ def search(request):
 def preview_file(request, file_id):
     file = get_object_or_404(File, id=file_id, is_deleted=False)
 
-    # Access control
+    # Access control based on file access level
     if file.access_level == 'public':
         pass  
     elif file.access_level == 'restricted':
@@ -840,8 +847,8 @@ def preview_file(request, file_id):
     else:
         raise PermissionDenied("Unknown access level.")
 
-    # Log access regardless of type
-    FileAccessLog.objects.create(file=file, accessed_by=request.user)
+    # Log access regardless of type (Preview)
+    FileAccessLog.objects.create(file=file, accessed_by=request.user, action='preview')
 
     # Serve file if it's previewable
     mime_type, _ = guess_type(file.file.name)
@@ -851,6 +858,58 @@ def preview_file(request, file_id):
     # Unsupported type
     return render(request, 'core/file_management/unsupported_preview.html', {'file': file})
 
+@login_required
+def download_file(request, file_id):
+    file = get_object_or_404(File, id=file_id, is_deleted=False)
+
+    # Access control based on file access level
+    if file.access_level == 'public':
+        pass  
+    elif file.access_level == 'restricted':
+        if not file.can_user_access(request.user):
+            raise PermissionDenied("Access denied.")
+    elif file.access_level == 'confidential':
+        if request.user != file.uploaded_by and not request.user.is_superuser:
+            raise PermissionDenied("Access denied for confidential file.")
+    else:
+        raise PermissionDenied("Unknown access level.")
+
+    # Log access (Download)
+    FileAccessLog.objects.create(file=file, accessed_by=request.user, action='download')
+
+    # Serve the file for download
+    response = FileResponse(file.file.open('rb'))
+    return response
+
+@login_required
+def file_access_logs(request):
+    search_query = request.GET.get('search', '')
+    logs = FileAccessLog.objects.all().order_by('-access_time')
+
+    if search_query:
+        logs = logs.filter(
+            Q(file__title__icontains=search_query) | 
+            Q(accessed_by__username__icontains=search_query)
+        )
+
+    # Pagination
+    paginator = Paginator(logs, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    # Check if user has the required permissions
+    can_view_logs = (
+        request.user.is_superuser or
+        request.user.groups.filter(name='Director').exists() or
+        request.user.groups.filter(name='Manager').exists()
+    )
+
+    return render(request, 'core/file_management/file_access_logs.html', {
+        'page_obj': page_obj,
+        'can_view_logs': can_view_logs
+    })
+
+    
 @login_required
 def delete_file(request, file_id):
     if not request.user.has_perm('core.delete_file'):
@@ -873,12 +932,40 @@ def upload_file_view(request):
         if form.is_valid():
             file_instance = form.save(commit=False)
             file_instance.uploaded_by = request.user
-            file_instance.save()
-            return redirect('file_list')
+            if file_instance.access_level == 'restricted' and not file_instance.passcode:
+                form.add_error('passcode', 'A passcode is required for restricted files.')
+            else:
+                file_instance.save()
+                messages.success(request, 'File uploaded successfully!')
+                return redirect('file_list') 
     else:
         form = FileUploadForm()
     
     return render(request, 'core/file_management/upload_file.html', {'form': form})
+
+def update_passcode_view(request, file_id):
+    file = get_object_or_404(File, id=file_id)
+    
+    if request.method == 'POST':
+        form = FilePasscodeForm(request.POST, instance=file)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Passcode updated successfully!')
+            return redirect('file_list')  # Redirect to the file list after update
+    else:
+        form = FilePasscodeForm(instance=file)
+    
+    return render(request, 'core/file_management/update_passcode.html', {'form': form, 'file': file})
+
+@login_required
+def validate_passcode(request, file_id):
+    file = get_object_or_404(File, id=file_id)
+    passcode = request.POST.get('passcode')
+
+    if file.passcode == passcode:
+        return JsonResponse({'success': True})
+    else:
+        return JsonResponse({'success': False}, status=400)
 
 #@user_passes_test(is_staff)
 def profile_view(request):

@@ -37,26 +37,34 @@ class CustomUserCreationForm(forms.ModelForm):
 class FileUploadForm(forms.ModelForm):
     class Meta:
         model = File
-        fields = ['title', 'description', 'category', 'access_level', 'file']
+        fields = ['title', 'description', 'category', 'access_level', 'file', 'passcode']
         widgets = {
-            'title': forms.TextInput(attrs={
+            'title': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter file title'}),
+            'description': forms.Textarea(attrs={'class': 'form-control', 'placeholder': 'Enter a brief description', 'rows': 3}),
+            'category': forms.Select(attrs={'class': 'form-control'}),
+            'access_level': forms.Select(attrs={'class': 'form-control'}),
+            'file': forms.ClearableFileInput(attrs={'class': 'form-control-file'}),
+            'passcode': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Set a passcode for restricted access'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance and self.instance.access_level != 'restricted':
+            self.fields['passcode'].required = False  
+        else:
+            self.fields['passcode'].required = True
+
+
+
+class FilePasscodeForm(forms.ModelForm):
+    class Meta:
+        model = File
+        fields = ['passcode']
+        widgets = {
+            'passcode': forms.TextInput(attrs={
                 'class': 'form-control',
-                'placeholder': 'Enter file title'
-            }),
-            'description': forms.Textarea(attrs={
-                'class': 'form-control',
-                'placeholder': 'Enter a brief description',
-                'rows': 3
-            }),
-            'category': forms.Select(attrs={
-                'class': 'form-control'
-            }),
-            'access_level': forms.Select(attrs={
-                'class': 'form-control'
-            }),
-            'file': forms.ClearableFileInput(attrs={
-                'class': 'form-control-file'
-            }),
+                'placeholder': 'Enter new passcode'
+            })
         }
 
 class UserUpdateForm(forms.ModelForm):
@@ -90,6 +98,7 @@ class TicketForm(forms.ModelForm):
             'terminal': forms.Select(attrs={'class': 'form-control'}),
             'priority': forms.Select(attrs={'class': 'form-control'}),
             'status': forms.Select(attrs={'class': 'form-control'}),
+            'responsible': forms.Select(attrs={'class': 'form-control'})
         }
 
     # Override to make them required and visible

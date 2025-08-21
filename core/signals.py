@@ -2,7 +2,7 @@ from django.db.models.signals import post_migrate, post_save
 from django.dispatch import receiver
 from django.contrib.auth.models import User, Group, Permission
 from django.contrib.contenttypes.models import ContentType
-from core.models import File, Profile
+from core.models import File, FileAccessLog, Profile
 from django.core.exceptions import ObjectDoesNotExist
 
 
@@ -58,6 +58,20 @@ def setup_groups_and_permissions(sender, **kwargs):
     ])
 
     customer_group.permissions.set([view_file, view_user])
+
+    # Add permission for file access logs view
+    file_access_log_permission, created = Permission.objects.get_or_create(
+        codename='view_fileaccesslog',
+        name='Can view file access logs',
+        content_type=ContentType.objects.get_for_model(FileAccessLog)
+    )
+
+    # Assign the permission to the appropriate groups
+    director_group.permissions.add(file_access_log_permission)
+    manager_group.permissions.add(file_access_log_permission)
+
+    # Superusers should already have access to all permissions, but you can explicitly assign it
+    User.objects.filter(is_superuser=True).update(user_permissions=[file_access_log_permission])
 
 
 @receiver(post_save, sender=User)

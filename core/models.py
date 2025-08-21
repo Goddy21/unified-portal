@@ -39,24 +39,32 @@ class File(models.Model):
     upload_date = models.DateTimeField(auto_now_add=True)
     is_deleted = models.BooleanField(default=False)
     authorized_users = models.ManyToManyField(User, blank=True, related_name='authorized_files')
-    access_level = models.CharField(max_length=20, choices=ACCESS_LEVEL_CHOICES, default='restricted')
+    access_level = models.CharField(max_length=20, choices=ACCESS_LEVEL_CHOICES, default='public')
+    passcode = models.CharField(max_length=255, blank=True, null=True)  # Add passcode field
 
-    def can_user_access(self, user):
+    def can_user_access(self, user, passcode=None):
         if self.access_level == 'public':
             return True
         if self.access_level == 'restricted':
-            return user in self.authorized_users.all() or user.has_perm('core.view_file')
+            if user in self.authorized_users.all() or user.has_perm('core.view_file'):
+                return True
+            # Check passcode for restricted files
+            if passcode and passcode == self.passcode:
+                return True
+            return False
         if self.access_level == 'confidential':
             return self.uploaded_by == user or user.is_superuser
         return False
-    
-    def __str__(self):
-        return self.title
+
 
 class FileAccessLog(models.Model):
     file = models.ForeignKey(File, on_delete=models.CASCADE)
     accessed_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     access_time = models.DateTimeField(auto_now_add=True)
+    action = models.CharField(max_length=50, choices=[('preview', 'Preview'), ('download', 'Download')], null=True)
+
+    def __str__(self):
+        return f"{self.accessed_by} {self.action}d {self.file.title} at {self.access_time}"
 
 def user_directory_path(instance, filename):
     return f'user_{instance.user.id}/{filename}'
@@ -202,7 +210,7 @@ class Ticket(models.Model):
         ('low', 'Low'),
         ('medium', 'Medium'),
         ('high', 'High'),
-        ('urgent', 'Urgent'),
+        ('critical', 'Critical'),
     ]
 
     ESCALATION_LEVELS = [

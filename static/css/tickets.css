@@ -87,9 +87,10 @@
 .badge-closed { background-color: #6c757d; }
 .badge-pending { background-color: #ffc107; color: #212529; }
 
-.badge-high { background-color: #dc3545; }
-.badge-medium { background-color: #ffc107; color: #212529; }
-.badge-low { background-color: #17a2b8; }
+.badge-critical { background-color: #e74c3c;}
+.badge-high { background-color: #dc9c35; }
+.badge-medium { background-color: #14b7db; color: #212529; }
+.badge-low { background-color: #17b845; }
 
 .view-link {
   color: var(--primary-color);

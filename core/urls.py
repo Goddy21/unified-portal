@@ -46,9 +46,10 @@ urlpatterns = [
     path('files-management/', views.file_management_dashboard, name='file_management_dashboard'),
     path('dashboard/', views.file_management_dashboard, name='dashboard'),
     path('files-management/', views.file_management_dashboard, name='dashboard'),
+    path('validate-passcode/<int:file_id>/', views.validate_passcode, name='validate_passcode'),
     path('file-categories/', manage_file_categories, name='manage_file_categories'),
 
-     path('search/', views.search, name='search'),
+    path('search/', views.search, name='search'),
 
     path('profile/', views.profile_view, name='profile_view'),
     path('settings/', SettingsView.as_view(), name='settings'),
@@ -61,7 +62,9 @@ urlpatterns = [
     path('files/category/<str:category_name>/', views.file_list_view, name="file_list_by_category"),
     path('files/upload/', views.upload_file_view, name='upload_file'),
     path('files/preview/<int:file_id>/', views.preview_file, name='preview_file'),
+    path('download/<int:file_id>/', views.download_file, name='download_file'),
     path('files/delete/<int:file_id>/', views.delete_file, name='delete_file'),
+    path('files-management/file-access-logs/', views.file_access_logs, name='file_access_logs'),
 
 
     path('ticketing/', views.ticketing_dashboard, name='ticketing_dashboard'),

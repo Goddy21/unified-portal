@@ -60,19 +60,33 @@
             <img src="{% static 'icons/file.png' %}" alt="File Icon" />
           {% endif %}
           <div class="file-title-group">
-            <span class="file-title">{{ file.title }}</span>
+            <span class="file-title">{{ file.title|default:"No title available" }}</span>
             <small class="file-description">{{ file.description|truncatechars:60 }}</small>
           </div>
         </div>
         <div>{{ file.file.size|filesizeformat }}</div>
         <div><span class="tag {% if file.access_level == 'confidential' %}private{% else %}{{ file.access_level }}{% endif %}">{{ file.access_level|title }}</span></div>
+
+        {% if file.access_level == 'restricted' %}
+          <!-- Modal for passcode -->
+          <div id="passcode-modal-{{ file.id }}" class="passcode-modal">
+            <div class="passcode-modal-content">
+              <span class="close" onclick="closePasscodeModal({{ file.id }})">&times;</span>
+              <h3>Enter Passcode to Access File</h3>
+              <input type="password" id="passcode-{{ file.id }}" placeholder="Enter Passcode">
+              <button onclick="checkPasscode({{ file.id }})">Submit</button>
+              <p id="passcode-error-{{ file.id }}" style="color: red; display:none;">Incorrect passcode</p>
+            </div>
+          </div>
+        {% endif %}
+
         <div>
-          <a href="{% url 'preview_file' file.id %}" class="btn preview-link" target="_blank">Preview</a>
+          <a href="{% url 'preview_file' file.id %}" onclick="showPasscodeModal({{ file.id }})" class="btn preview-link">Preview</a>
         </div>
         <div>
-          <a href="{{ file.file.url }}" class="btn download-link" download>Download</a>
+          <a href="{% url 'download_file' file.id %}" onclick="showPasscodeModal({{ file.id }})" class="btn download-link">Download</a>
         </div>
-        {% if file.uploaded_by == request.user or request.user.is_superuser%}
+        {% if file.uploaded_by == request.user or request.user.is_superuser %}
         <div>
           <form method="post" action="{% url 'delete_file' file.id %}" onsubmit="return confirm('Are you sure you want to delete this file?');">
             {% csrf_token %}
@@ -108,4 +122,43 @@
     {% endif %}
   </span>
 </div>
+
 {% endblock %}
+
+{% block extra_js %}
+<script>
+    function showPasscodeModal(fileId) {
+    const modal = document.getElementById('passcode-modal-' + fileId);
+    modal.style.display = 'flex';  // Use flex to center the modal
+  }
+
+  function closePasscodeModal(fileId) {
+    const modal = document.getElementById('passcode-modal-' + fileId);
+    modal.style.display = 'none';
+  }
+
+  function checkPasscode(fileId) {
+    var passcode = document.getElementById('passcode-' + fileId).value;
+    var errorElement = document.getElementById('passcode-error-' + fileId);
+
+    fetch(`/validate-passcode/${fileId}/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': '{{ csrf_token }}'
+      },
+      body: JSON.stringify({ passcode: passcode })
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        closePasscodeModal(fileId);
+        window.location.href = fileId;  
+      } else {
+        errorElement.style.display = 'block';
+      }
+    });
+  }
+</script>
+{% endblock %}
+
