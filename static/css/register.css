@@ -231,6 +231,20 @@ background: linear-gradient(to bottom right, #ffffff, #e74c3c, #3498db);
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
+/* Same styles for phone number input */
+.login-form input[type="tel"] {
+  padding: 12px 15px;
+  margin-bottom: 15px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 15px;
+  transition: border 0.3s ease;
+}
+
+.login-form input[type="tel"]:focus {
+  border-color: #1a1f3d;
+  outline: none;
+}
 
 
 /* Responsive */

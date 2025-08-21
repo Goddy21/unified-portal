@@ -40,6 +40,7 @@
     {% for file in files %}
       <div class="file-row">
         <div class="file-name">
+          <input type="hidden" id="file-uploaded-by-{{ file.id }}" value="{{ file.uploaded_by.id }}">
           {% if ".pdf" in file.file.name|lower %}
             <img src="{% static 'icons/pdf.png' %}" alt="PDF Icon" />
           {% elif ".docx" in file.file.name|lower %}
@@ -74,18 +75,24 @@
               <form autocomplete="off" onsubmit="return false;">
                 <span class="close" onclick="closePasscodeModal({{ file.id }})">&times;</span>
                 <h3>Enter Passcode to Access File</h3>
+                
+                <!-- Passcode input -->
                 <input type="password" name="passcode" id="passcode-{{ file.id }}" placeholder="Enter Passcode" autocomplete="off" />
                 
+                <!-- Conditional section for file owner actions -->
                 {% if file.uploaded_by == request.user %}
                 <div class="form-group">
-                    <label>Allowed Actions:</label><br>
-                    <label><input type="checkbox" id="allow_preview_{{ file.id }}" {% if file.allow_preview %}checked{% endif %}> Preview</label>
-                    <label><input type="checkbox" id="allow_download_{{ file.id }}" {% if file.allow_download %}checked{% endif %}> Download</label>
+                  <label>Allowed Actions:</label><br>
+                  <label><input type="checkbox" id="allow_preview_{{ file.id }}" {% if file.allow_preview %}checked{% endif %}> Preview</label>
+                  <label><input type="checkbox" id="allow_download_{{ file.id }}" {% if file.allow_download %}checked{% endif %}> Download</label>
                 </div>
                 <button type="button" onclick="updatePasscode({{ file.id }})">Set / Reset Passcode</button>
                 {% endif %}
-
+                
+                <!-- Submit button for the passcode -->
                 <button type="button" onclick="checkPasscode({{ file.id }})">Submit</button>
+                
+                <!-- Error message -->
                 <p id="passcode-error-{{ file.id }}" style="color:red; display:none;">Incorrect passcode</p>
               </form>
             </div>
@@ -156,13 +163,58 @@ function getCookie(name) {
 }
 
 function showPasscodeModal(fileId, targetUrl, action) {
-  if (validatedFiles.includes(fileId)) { window.location.href = targetUrl; return false; }
+  // Ensure the element exists before accessing its value
+  const uploaderElement = document.getElementById(`file-uploaded-by-${fileId}`);
+  if (!uploaderElement) {
+    console.error("Uploader element not found for file ID:", fileId);
+    return false; // Exit if the element is missing
+  }
+
+  const isUploader = uploaderElement.value === '{{ request.user.id }}';
+
+  // Always show the modal to the uploader
+  if (isUploader) {
+    const modal = document.getElementById('passcode-modal-' + fileId);
+    modal.style.display = 'flex';
+    pendingRedirect = { fileId, targetUrl, action };
+    return false;
+  }
+
+  // Check for preview or download permission
+  const allowPreviewCheckbox = document.getElementById(`allow_preview_${fileId}`);
+  const allowDownloadCheckbox = document.getElementById(`allow_download_${fileId}`);
+
+  if (allowPreviewCheckbox && allowDownloadCheckbox) {
+    const allowPreview = allowPreviewCheckbox.checked;
+    const allowDownload = allowDownloadCheckbox.checked;
+
+    if (action === 'preview' && !allowPreview) {
+      alert("This file cannot be previewed.");
+      return false;
+    }
+
+    if (action === 'download' && !allowDownload) {
+      alert("This file cannot be downloaded.");
+      return false;
+    }
+  }
+
+  if (validatedFiles.includes(fileId)) {
+    window.location.href = targetUrl;
+    return false;
+  }
+
   const modal = document.getElementById('passcode-modal-' + fileId);
-  if (!modal) { window.location.href = targetUrl; return false; }
+  if (!modal) {
+    window.location.href = targetUrl;
+    return false;
+  }
+
   modal.style.display = 'flex';
   pendingRedirect = { fileId, targetUrl, action };
   return false;
 }
+
 
 function closePasscodeModal(fileId) {
   document.getElementById('passcode-modal-' + fileId).style.display = 'none';

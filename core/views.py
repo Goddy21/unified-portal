@@ -65,7 +65,8 @@ def is_staff(user):
 @login_required(login_url='login')    
 def admin_dashboard(request):
     query = request.GET.get('q', '').strip()
-    users_qs = User.objects.all()
+    #users_qs = User.objects.all()
+    users_qs = User.objects.select_related('profile')
     customers_qs = Customer.objects.all()
     terminals_qs = Terminal.objects.select_related('custodian').all()
 
@@ -74,7 +75,9 @@ def admin_dashboard(request):
             Q(username__icontains=query) |
             Q(email__icontains=query) |
             Q(first_name__icontains=query) |
-            Q(last_name__icontains=query)
+            Q(last_name__icontains=query)|
+            Q(profile__phone_number__icontains=query)|
+            Q(profile__id_number__icontains=query)
         )
         customers_qs = customers_qs.filter(
             Q(name__icontains=query)
@@ -371,11 +374,15 @@ def register_view(request):
     if request.method == 'POST':
         form = CustomUserCreationForm(request.POST)
         if form.is_valid():
-            form.save()
+            user = form.save()
+            print(f"User {user.username} created successfully.")
             return redirect('login')
+        else:
+            print(f"Form errors: {form.errors}")
     else:
         form = CustomUserCreationForm()
     return render(request, 'accounts/register.html', {'form': form})
+
 
 
 def login_view(request):
@@ -672,13 +679,17 @@ def pre_dashboards(request):
 
 
 
-#@user_passes_test(is_viewer)
+@login_required
 def user_list_view(request):
-    users = User.objects.all().order_by('username')
+    # Filter users based on groups excluding the 'Customer' group
+    users = User.objects.exclude(groups__name='Customer').order_by('username')
+    
     paginator = Paginator(users, 10)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
+    
     return render(request, 'core/file_management/user_list.html', {'page_obj': page_obj})
+
 
 @user_passes_test(is_staff)
 def user_detail(request, user_id):
@@ -844,9 +855,13 @@ def preview_file(request, file_id):
     if file.access_level == 'restricted' and file.id not in validated_files:
         raise PermissionDenied("Passcode required for restricted file.")
 
-    # Continue with the access control based on file access level
+    # Ensure the uploader has allowed preview
+    if file.access_level == 'restricted' and not file.allow_preview:
+        raise PermissionDenied("Preview not allowed for this file.")
+
+    # Access control based on access level
     if file.access_level == 'public':
-        pass  # Public files have no restriction
+        pass  # Public files can be freely previewed
     elif file.access_level == 'restricted':
         if not file.can_user_access(request.user):
             raise PermissionDenied("Access denied.")
@@ -856,7 +871,7 @@ def preview_file(request, file_id):
     else:
         raise PermissionDenied("Unknown access level.")
 
-    # Log access regardless of type (Preview)
+    # Log access (preview)
     FileAccessLog.objects.create(file=file, accessed_by=request.user, action='preview')
 
     # Serve the file if it's previewable
@@ -868,6 +883,7 @@ def preview_file(request, file_id):
     return render(request, 'core/file_management/unsupported_preview.html', {'file': file})
 
 
+
 @login_required
 def download_file(request, file_id):
     file = get_object_or_404(File, id=file_id, is_deleted=False)
@@ -876,6 +892,10 @@ def download_file(request, file_id):
     validated_files = request.session.get("validated_files", [])
     if file.access_level == 'restricted' and file.id not in validated_files:
         raise PermissionDenied("Passcode required for restricted file.")
+
+    # Ensure the uploader has allowed download
+    if file.access_level == 'restricted' and not file.allow_download:
+        raise PermissionDenied("Download not allowed for this file.")
 
     # Access control based on access level
     if file.access_level == 'public':

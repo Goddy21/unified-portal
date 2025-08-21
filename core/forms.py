@@ -10,10 +10,16 @@ class LoginForm(forms.Form):
 
 class OTPForm(forms.Form):
     otp = forms.CharField(max_length=6)
-    
+
+from django import forms
+from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError
+
 class CustomUserCreationForm(forms.ModelForm):
     password = forms.CharField(label='Password', widget=forms.PasswordInput)
     password2 = forms.CharField(label='Confirm Password', widget=forms.PasswordInput)
+    phone = forms.CharField(max_length=15, required=True, widget=forms.TextInput(attrs={'placeholder': 'Phone Number'}))
+    id_number = forms.CharField(max_length=20, required=True, widget=forms.TextInput(attrs={'placeholder': 'ID Number'}))
 
     class Meta:
         model = User
@@ -27,12 +33,34 @@ class CustomUserCreationForm(forms.ModelForm):
             raise forms.ValidationError("Passwords don’t match.")
         return password2
 
+    def clean_username(self):
+        username = self.cleaned_data.get('username')
+        if User.objects.filter(username=username).exists():
+            raise ValidationError("A user with that username already exists.")
+        return username
+
     def save(self, commit=True):
+        # Save the user without committing to the database
         user = super().save(commit=False)
         user.set_password(self.cleaned_data['password'])
+
+        # Commit and save the user
         if commit:
             user.save()
+
+        # Create profile if not exists
+        profile, created = Profile.objects.get_or_create(user=user)
+        if created:
+            profile.phone_number = self.cleaned_data['phone']
+            profile.id_number = self.cleaned_data['id_number']
+            profile.save()
+
         return user
+
+
+
+
+
     
 class FileUploadForm(forms.ModelForm):
     class Meta:

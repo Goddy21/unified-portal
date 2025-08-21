@@ -92,8 +92,10 @@
       <table class="user-table">
         <thead>
           <tr>
+            <th>ID NO</th>
             <th>Username</th>
             <th>Email</th>
+            <th>Phone Number</th>
             <th>Current Role</th>
             <th>Change Role /Remove Assignment/Delete</th>
           </tr>
@@ -101,8 +103,10 @@
         <tbody>
           {% for user in users %}
             <tr>
+              <td>{{user.profile.id_number}}</td>
               <td>{{ user.username }}</td>
               <td>{{ user.email }}</td>
+              <td>{{ user.profile.phone_number }}</td>
               <td>
                 {% if user.groups.first %}
                   {{ user.groups.first.name }}
@@ -152,6 +156,8 @@
         <input type="text" name="last_name" placeholder="Last Name" required>
         <input type="text" name="username" placeholder="Username" required>
         <input type="email" name="email" placeholder="Email" required>
+        <input type="phone" name="phone" placeholder="Phone" required>
+        <input type="id" name="id" placeholder="ID NO" required>
         <input type="password" name="password" placeholder="Password" required>
         <select name="role">
           <option value="">Select Role</option>
