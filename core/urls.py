@@ -47,6 +47,7 @@ urlpatterns = [
     path('dashboard/', views.file_management_dashboard, name='dashboard'),
     path('files-management/', views.file_management_dashboard, name='dashboard'),
     path('validate-passcode/<int:file_id>/', views.validate_passcode, name='validate_passcode'),
+    path('update-passcode/<int:file_id>/', views.update_passcode_view, name='update_passcode'),
     path('file-categories/', manage_file_categories, name='manage_file_categories'),
 
     path('search/', views.search, name='search'),

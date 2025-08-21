@@ -3,6 +3,38 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/upload_file.css' %}">
+<style>
+/* Simple modal styling */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0; top: 0;
+    width: 100%; height: 100%;
+    background-color: rgba(0,0,0,0.6);
+}
+.modal.show {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.modal-content {
+    background: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    width: 400px;
+    max-width: 90%;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+.modal-content h2 {
+    margin-top: 0;
+}
+.modal .close {
+    float: right;
+    font-size: 20px;
+    cursor: pointer;
+}
+</style>
 {% endblock %}
 
 {% block title %}Upload File{% endblock %} 
@@ -12,7 +44,7 @@
 <div class="upload-container">
     <h2>📁 Upload a New File</h2>
 
-    <form method="post" enctype="multipart/form-data">
+    <form id="upload-form" method="post" enctype="multipart/form-data">
         {% csrf_token %}
         <div class="form-group">
             <label for="id_title">Title</label>
@@ -45,50 +77,106 @@
         <span class="close" onclick="closeModal()">&times;</span>
         <h2>Set Passcode for Restricted File</h2>
 
-        <form method="post" enctype="multipart/form-data">
+        <form id="passcode-form">
             {% csrf_token %}
             <div class="form-group">
                 <label for="id_passcode">Passcode</label>
                 {{ form.passcode }}
             </div>
-            <input type="submit" value="Set Passcode" class="btn btn-primary">
+            <button type="button" class="btn btn-primary" onclick="submitPasscode()">Set Passcode</button>
         </form>
     </div>
 </div>
 
 {% else %}
-    <div class="alert alert-warning">
-        🚫 You do not have permission to upload files.
-    </div>
+<div class="alert alert-warning">
+    🚫 You do not have permission to upload files.
+</div>
 {% endif %}
-
 {% endblock %}
 
 {% block extra_js %}
 <script>
 document.addEventListener("DOMContentLoaded", function() {
+    const uploadForm = document.getElementById("upload-form");
     const accessLevelSelect = document.getElementById("id_access_level");
-    const modal = document.getElementById('passcode-modal');
-    const loadingLabel = modal.querySelector('.loading');  
+    const modal = document.getElementById("passcode-modal");
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    let uploadedFileId = null;
 
-    // Hide the modal and the loading label initially
-    modal.style.display = 'none';
-    if (loadingLabel) {
-        loadingLabel.style.display = 'none';
+    modal.classList.remove("show");
+
+    // AJAX upload
+    uploadForm.addEventListener("submit", function(event) {
+        event.preventDefault();
+        const formData = new FormData(uploadForm);
+
+        fetch(uploadForm.action || window.location.href, {
+            method: "POST",
+            headers: { "X-CSRFToken": csrfToken, "X-Requested-With": "XMLHttpRequest" },
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                uploadedFileId = data.file_id;
+                if (accessLevelSelect.value === "restricted") {
+                    modal.classList.add("show");
+                } else {
+                    alert("✅ File uploaded successfully!");
+                    window.location.href = "{% url 'file_list' %}";
+                }
+            } else {
+                alert("❌ Upload failed.");
+            }
+        })
+        .catch(error => {
+            console.error(error);
+            alert("❌ Error uploading file.");
+        });
+    });
+
+    // Passcode AJAX submit
+    window.submitPasscode = function() {
+        const passcode = document.getElementById("id_passcode").value;
+
+        fetch(`/update-passcode/${uploadedFileId}/`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+                "X-CSRFToken": csrfToken,
+            },
+            body: "passcode=" + encodeURIComponent(passcode)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert("✅ Passcode set successfully!");
+                closeModal();
+                window.location.href = "{% url 'file_list' %}";
+            } else {
+                alert("❌ Failed to set passcode.");
+            }
+        })
+        .catch(error => {
+            console.error(error);
+            alert("❌ Error updating passcode.");
+        });
     }
 
-    // Check the initial value of the access level on page load
-    if (accessLevelSelect.value === "restricted") {
-        modal.style.display = 'flex';  
-    } else {
-        modal.style.display = 'none';  
-    }
+    // Close modal
+    window.closeModal = function() {
+        modal.classList.remove("show");
+    };
 
-    accessLevelSelect.addEventListener("change", function() {
-        if (this.value === "restricted") {
-            modal.style.display = 'flex';  
-        } else {
-            modal.style.display = 'none';  
+    // Prevent accidental close if restricted
+    window.addEventListener("click", function(event) {
+        if (event.target === modal) {
+            if (accessLevelSelect.value === "restricted") {
+                alert("⚠️ Passcode required for restricted files.");
+            } else {
+                modal.classList.remove("show");
+            }
         }
     });
 });

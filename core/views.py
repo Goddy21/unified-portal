@@ -582,12 +582,15 @@ def login_view(request):
                 email.attach_alternative(html_content, "text/html")
 
                 # Attach the logo as an inline image using MIMEImage
+                """
                 with open('static/icons/logo.png', 'rb') as logo_file:
                     logo_data = logo_file.read()
                     logo = MIMEImage(logo_data, name='logo.png')
                     logo.add_header('Content-ID', '<logo>')  
 
-                    email.attach(logo) 
+                    email.attach(logo) """
+                
+                print("Generated otp:", otp)
 
                 email.send()
                 return JsonResponse({'status': 'otp_sent'})
@@ -835,7 +838,13 @@ def search(request):
 def preview_file(request, file_id):
     file = get_object_or_404(File, id=file_id, is_deleted=False)
 
-    # Access control based on file access level
+    # Check if file access has been validated
+    validated_files = request.session.get("validated_files", [])
+    if file.access_level == 'restricted' and file.id not in validated_files:
+        raise PermissionDenied("Passcode required for restricted file.")
+
+    
+    # Continue with the access control based on file access level
     if file.access_level == 'public':
         pass  
     elif file.access_level == 'restricted':
@@ -850,7 +859,7 @@ def preview_file(request, file_id):
     # Log access regardless of type (Preview)
     FileAccessLog.objects.create(file=file, accessed_by=request.user, action='preview')
 
-    # Serve file if it's previewable
+    # Serve the file if it's previewable
     mime_type, _ = guess_type(file.file.name)
     if mime_type in ['application/pdf', 'image/jpeg', 'image/png', 'image/gif']:
         return FileResponse(file.file.open('rb'), content_type=mime_type)
@@ -862,7 +871,13 @@ def preview_file(request, file_id):
 def download_file(request, file_id):
     file = get_object_or_404(File, id=file_id, is_deleted=False)
 
-    # Access control based on file access level
+    # Check if file access has been validated
+    validated_files = request.session.get("validated_files", [])
+    if file.access_level == 'restricted' and file.id not in validated_files:
+        raise PermissionDenied("Passcode required for restricted file.")
+
+    
+    # Continue with the access control based on file access level
     if file.access_level == 'public':
         pass  
     elif file.access_level == 'restricted':
@@ -880,6 +895,7 @@ def download_file(request, file_id):
     # Serve the file for download
     response = FileResponse(file.file.open('rb'))
     return response
+
 
 @login_required
 def file_access_logs(request):
@@ -932,40 +948,56 @@ def upload_file_view(request):
         if form.is_valid():
             file_instance = form.save(commit=False)
             file_instance.uploaded_by = request.user
-            if file_instance.access_level == 'restricted' and not file_instance.passcode:
-                form.add_error('passcode', 'A passcode is required for restricted files.')
-            else:
-                file_instance.save()
-                messages.success(request, 'File uploaded successfully!')
-                return redirect('file_list') 
+            file_instance.save()
+
+            # Return file id to frontend for AJAX passcode update
+            if request.headers.get("x-requested-with") == "XMLHttpRequest":
+                return JsonResponse({"file_id": file_instance.id, "success": True})
+
+            messages.success(request, 'File uploaded successfully!')
+            return redirect('file_list')
     else:
         form = FileUploadForm()
     
     return render(request, 'core/file_management/upload_file.html', {'form': form})
 
+
+@login_required
 def update_passcode_view(request, file_id):
     file = get_object_or_404(File, id=file_id)
     
     if request.method == 'POST':
-        form = FilePasscodeForm(request.POST, instance=file)
-        if form.is_valid():
-            form.save()
-            messages.success(request, 'Passcode updated successfully!')
-            return redirect('file_list')  # Redirect to the file list after update
-    else:
-        form = FilePasscodeForm(instance=file)
-    
-    return render(request, 'core/file_management/update_passcode.html', {'form': form, 'file': file})
+        passcode = request.POST.get('passcode')
+        if passcode:
+            file.passcode = passcode
+            file.save()
+            return JsonResponse({"success": True})
+        return JsonResponse({"success": False, "error": "No passcode provided"}, status=400)
+
+    return JsonResponse({"success": False, "error": "Invalid request"}, status=400)
+
 
 @login_required
 def validate_passcode(request, file_id):
     file = get_object_or_404(File, id=file_id)
     passcode = request.POST.get('passcode')
 
+    print(f"Passcode from frontend: {passcode}, Stored passcode: {file.passcode}")
+
+    # Check if the passcode matches
     if file.passcode == passcode:
+        # Ensure the validated file ID is saved in the session
+        validated_files = request.session.get("validated_files", [])
+        if file.id not in validated_files:
+            validated_files.append(file.id)
+            request.session["validated_files"] = validated_files
+            request.session.modified = True  # Force session save to reflect changes
+
         return JsonResponse({'success': True})
     else:
         return JsonResponse({'success': False}, status=400)
+
+
 
 #@user_passes_test(is_staff)
 def profile_view(request):
