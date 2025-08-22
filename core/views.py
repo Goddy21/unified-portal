@@ -4,7 +4,7 @@ from tkinter.font import Font
 from django.shortcuts import render, get_list_or_404, redirect
 from django.core.serializers.json import DjangoJSONEncoder
 from core.signals import assign_director_permissions, assign_manager_permissions, assign_staff_permissions
-from .models import ISSUE_MAPPING, File, FileAccessLog, EscalationHistory
+from .models import ISSUE_MAPPING, ActivityLog, File, FileAccessLog, EscalationHistory
 from django.http import FileResponse, JsonResponse, HttpResponse
 from .forms import FilePasscodeForm, FileUploadForm, ProblemCategoryForm, TicketForm
 from django.contrib.auth.decorators import login_required, permission_required, user_passes_test
@@ -2014,6 +2014,10 @@ def notify_group(level, ticket):
         fail_silently=False
     )
 
+def ticket_activity_log(request, ticket_id):
+    logs = ActivityLog.objects.filter(ticket_id=ticket_id).order_by('-timestamp')
+    return render(request, 'core/helpdesk/ticket_activity_logs.html', {'logs': logs})
+
 @login_required(login_url='login')
 def get_terminal_details(request, terminal_id):
     try:
@@ -2050,7 +2054,34 @@ def ticket_detail(request, ticket_id):
         elif 'edit_ticket' in request.POST:
             form = TicketEditForm(request.POST, instance=ticket)
             if form.is_valid():
-                form.save()
+                old_ticket = Ticket.objects.get(id=ticket.id)
+                ticket = form.save(commit=False)
+                ticket.updated_by = request.user  # Track who updated the ticket
+
+                #comment_summary,, 'resolution'
+
+                changes = []
+                watch_fields = [
+                    'brts_unit', 'problem_category', 'title', 'terminal', 'description',
+                    'customer', 'region', 'assigned_to', 'responsible', 'status',
+                    'priority', 'is_escalated','current_escalation_level'
+                ]
+
+                for field in watch_fields:
+                    old_value = getattr(old_ticket, field)
+                    new_value = getattr(ticket, field)
+                    if old_value != new_value:
+                        changes.append((field, old_value, new_value))
+
+                ticket.save()
+                # Log the changes to the activity log
+                if changes:
+                    change_summary = "; ".join([f"{field}: {old} → {new}" for field, old, new in changes])
+                    ActivityLog.objects.create(
+                        ticket=ticket,
+                        action=f"Ticket updated: {change_summary}",
+                        user=request.user
+                    )
                 return redirect('ticket_detail', ticket_id=ticket.id)
 
         elif 'assign_ticket' in request.POST and is_manager:
@@ -2063,11 +2094,20 @@ def ticket_detail(request, ticket_id):
                     groups__name__in=['Staff', 'Manager', 'Director']
                 )
                 ticket.assigned_to = staff_member
+                ticket.updated_by = request.user
                 ticket.save()
 
                 # Load related objects
                 comments = ticket.comments.select_related('created_by').order_by('created_at')
                 # escalations = ticket.escalations.select_related('escalated_by').order_by('-escalated_at')
+
+                # Log the assignment change
+                if old_assigned_to != staff_member:
+                    ActivityLog.objects.create(
+                        ticket=ticket,
+                        action=f"Ticket assigned: {old_assigned_to} → {staff_member}",
+                        user=request.user
+                    )
 
                 # Email subject & plain text content
                 subject = f"🎫 Ticket #{ticket.id} Assigned to You"

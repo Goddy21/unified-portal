@@ -363,3 +363,13 @@ class TicketComment(models.Model):
 
     def __str__(self):
         return f"{self.ticket.id}" - {self.created_by} 
+    
+class ActivityLog(models.Model):
+    ticket = models.ForeignKey(Ticket, on_delete=models.CASCADE)
+    action = models.CharField(max_length=200)  
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)  
+    timestamp = models.DateTimeField(auto_now_add=True)
+    #details = models.TextField(null=True, blank=True)  # Extra details, e.g. the comment added
+
+    def __str__(self):
+        return f'{self.ticket} - {self.action}'   
