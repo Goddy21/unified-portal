@@ -3,6 +3,8 @@ from django.contrib.auth.models import User
 from django.utils import timezone
 from datetime import timedelta
 
+from core.priority_rules import determine_priority
+
 
 class EmailOTP(models.Model):
         user = models.OneToOneField(User, on_delete=models.CASCADE)
@@ -143,13 +145,72 @@ class Region(models.Model):
     def __str__(self):
         return self.name
 
+# ---- ISSUE mappimg ---- #
+ISSUE_MAPPING = {
+    "Hardware Related": [
+        "Note rejects",
+        "Hardware Error",
+        "Broken part",
+        "Note jams pathway",
+        "Note jams Escrow",
+    ],
+    "Software Related": [
+        "Out of Service",
+        "Account validation failing",
+        "Application offline",
+        "Application Unresponsive",
+        "Application Update",
+        "Front screen unavailable",
+        "Failed Transactions on terminal",
+        "Server Update",
+        "E journal not uploading",
+        "Template Update",
+        "Firmware update",
+    ],
+    "Cash Reconciliation": [
+        "Excess cash",
+        "Cash shortage",
+    ],
+    "Power and Network": [
+        "System off",
+        "System Offline",
+        "Faulty UPS/No clean Power",
+    ],
+    "De-/Installation /Maintenance": [
+        "Relocation",
+        "Configuration",
+        "Quarterly PM",
+        "Re-imaging of the terminal",
+    ],
+    "Safe": [
+        "Lock/Key jam",
+        "Door jam",
+    ],
+    "SLA Related": [
+        "General Complaint",
+    ],
+}
+
+CATEGORY_CHOICES = [(cat, cat) for cat in ISSUE_MAPPING.keys()]
+
+
+# Problem category now stores a specific issue (choice from ISSUE_CHOICES)
+class ProblemCategory(models.Model):
+    brts_unit = models.ForeignKey(Unit, on_delete=models.CASCADE, null=True,
+      blank=True)
+    name = models.CharField(max_length=100, choices=CATEGORY_CHOICES)
+
+    def __str__(self):
+        return self.name
+"""
 class ProblemCategory(models.Model):
     brts_unit = models.ForeignKey(Unit, on_delete=models.CASCADE)
     name = models.CharField(max_length=100)
 
     def __str__(self):
         return f"{self.name} ({self.brts_unit.name})"
-    
+"""
+
 class VersionControl(models.Model):
 
     MANUFACTURER_CHOICES = [
@@ -222,7 +283,8 @@ class Ticket(models.Model):
         ('Tier 4', 'Tier 4'),
     ]
 
-    title = models.CharField(max_length=255, null=True)
+    #title = models.CharField(max_length=255, null=True)
+    title = models.CharField(max_length=255, default="Unknown Issue")
     brts_unit = models.ForeignKey(Unit, on_delete=models.SET_NULL, null=True)
     problem_category = models.ForeignKey(ProblemCategory, on_delete=models.SET_NULL, null=True)
     terminal = models.ForeignKey(Terminal, on_delete=models.CASCADE, null=True, blank=True)
@@ -251,8 +313,16 @@ class Ticket(models.Model):
     escalation_reason = models.TextField(null=True, blank=True)
     current_escalation_level = models.CharField(max_length=20, choices=ESCALATION_LEVELS, blank=True, null=True)
 
-    created_at = models.DateTimeField(auto_now_add=True)
+    #created_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
+    updated_by = models.ForeignKey(
+        User,
+        null=True,
+        blank=True,
+        related_name='updated_tickets',
+        on_delete=models.SET_NULL
+    )
     
     class Meta:
         permissions = [
@@ -262,6 +332,12 @@ class Ticket(models.Model):
 
     def __str__(self):
         return self.title
+    
+    def save(self, *args, **kwargs):
+        if not self.priority:  
+            self.priority = determine_priority(self.problem_category.name if self.problem_category else "", self.title, self.description)
+        
+        super().save(*args, **kwargs) 
 
 class EscalationHistory(models.Model):
         

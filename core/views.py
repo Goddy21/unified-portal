@@ -4,7 +4,7 @@ from tkinter.font import Font
 from django.shortcuts import render, get_list_or_404, redirect
 from django.core.serializers.json import DjangoJSONEncoder
 from core.signals import assign_director_permissions, assign_manager_permissions, assign_staff_permissions
-from .models import File, FileAccessLog, EscalationHistory
+from .models import ISSUE_MAPPING, File, FileAccessLog, EscalationHistory
 from django.http import FileResponse, JsonResponse, HttpResponse
 from .forms import FilePasscodeForm, FileUploadForm, ProblemCategoryForm, TicketForm
 from django.contrib.auth.decorators import login_required, permission_required, user_passes_test
@@ -1880,6 +1880,16 @@ def tickets(request):
 
 @login_required(login_url='login')
 def create_ticket(request):
+    user_group = None
+    allowed_roles = []
+    if request.user.groups.exists():
+        user_group = request.user.groups.first().name
+    if user_group == 'Admin':
+        allowed_roles = ['Admin', 'Manager']
+    elif user_group == 'Manager':
+        allowed_roles = ['Manager', 'Staff']
+    else:
+        allowed_roles = ['Staff']
     if request.method == 'POST':
         form = TicketForm(request.POST, user=request.user)
         if form.is_valid():
@@ -1890,9 +1900,12 @@ def create_ticket(request):
                 messages.error(request, f"Terminal '{ticket.terminal.cdm_name}' is disabled. Please enable it before creating a ticket.")
                 return redirect('create_ticket')
 
-            category_name = ticket.problem_category.name if ticket.problem_category else 'other'
-            ticket.priority = determine_priority(category_name, ticket.description)
+            #category_name = ticket.problem_category.name if ticket.problem_category else 'other'
+            #ticket.priority = determine_priority(category_name, ticket.description)
             ticket.created_by = request.user
+            custom_date = form.cleaned_data.get('custom_created_at')
+            if custom_date:
+                ticket.created_at = custom_date
 
             if ticket.terminal:
                 ticket.customer = ticket.terminal.customer
@@ -1907,7 +1920,13 @@ def create_ticket(request):
         else:
             form = TicketForm(user=request.user)
 
-    return render(request, 'core/helpdesk/create_ticket.html', {'form': form})
+    cats = ProblemCategory.objects.all()
+    js_mapping = { str(cat.pk): ISSUE_MAPPING.get(cat.name, []) for cat in cats }
+    return render(request, 'core/helpdesk/create_ticket.html', {
+        'form': form,
+        'issue_mapping': json.dumps(js_mapping),
+        'user_group': user_group,
+        'allowed_roles': allowed_roles})
 
 
 from django.template.loader import render_to_string 
@@ -2272,6 +2291,27 @@ def problem_category(request):
         'search_query': query,
     })
 
+"""
+@user_passes_test(is_director)
+def create_problem_category(request):
+    if request.method == 'POST':
+        print("POST received:", request.POST) 
+        form = ProblemCategoryForm(request.POST)
+        if form.is_valid():
+            category = form.save()
+            print("Category saved!")
+
+            # Redirect based on which button was clicked
+            if 'create_another' in request.POST:
+                return redirect('create_problem_category')
+            return redirect('problem_category')  
+        else:
+            print("Form errors:", form.errors)
+    else:
+        form = ProblemCategoryForm()
+
+    return render(request, 'core/helpdesk/create_problem_category.html', {'form': form})
+"""
 @user_passes_test(is_director)
 def create_problem_category(request):
     if request.method == 'POST':

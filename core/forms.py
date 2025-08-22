@@ -1,8 +1,9 @@
 # forms.py
 from django import forms
-from .models import File, ProblemCategory, Ticket,TicketComment, Customer, Region
+from .models import File, ProblemCategory, Ticket,TicketComment, Customer, Region, ISSUE_MAPPING, CATEGORY_CHOICES
 from django.contrib.auth.models import User
 from .models import Profile, Terminal, VersionControl
+from core.priority_rules import determine_priority
 
 class LoginForm(forms.Form):
     username = forms.CharField()
@@ -123,8 +124,36 @@ class ProfileUpdateForm(forms.ModelForm):
     id_number = forms.CharField(widget=forms.TextInput(attrs={'class': 'form-control'})) 
 
 class TicketForm(forms.ModelForm):
+    problem_category = forms.ModelChoiceField(
+        queryset=ProblemCategory.objects.all(),
+        empty_label="Select Category",
+        required=False,
+        widget=forms.Select(attrs={"class": "form-control"})
+    )
+    title = forms.ChoiceField(
+        choices=[("", "Select Issue")],
+        required=False,
+        widget=forms.Select(attrs={"class": "form-control"})
+    )
+    custom_created_at = forms.DateTimeField(
+        required=False,
+        widget=forms.DateTimeInput(attrs={
+            'type': 'datetime-local',
+            'class': 'form-control'
+        })
+    )
     class Meta:
         model = Ticket
+        fields = [
+            "brts_unit",
+            "problem_category",
+            "title",
+            "terminal",
+            "customer",
+            "region",
+            "description",
+            "status",
+        ] 
         exclude = ['created_by', 'assigned_to', 'created_at', 'updated_at']
         widgets = {
             'title': forms.TextInput(attrs={'class': 'form-control'}),
@@ -132,11 +161,10 @@ class TicketForm(forms.ModelForm):
             'brts_unit': forms.Select(attrs={'class': 'form-control'}),
             'problem_category': forms.Select(attrs={'class': 'form-control'}),
             'terminal': forms.Select(attrs={'class': 'form-control'}),
-            'priority': forms.Select(attrs={'class': 'form-control'}),
+            #'priority': forms.Select(attrs={'class': 'form-control'}),
             'status': forms.Select(attrs={'class': 'form-control'}),
             'responsible': forms.Select(attrs={'class': 'form-control'})
         }
-
     # Override to make them required and visible
     customer = forms.ModelChoiceField(queryset=Customer.objects.all(), required=True)
     region = forms.ModelChoiceField(queryset=Region.objects.all(), required=True)
@@ -164,6 +192,19 @@ class TicketForm(forms.ModelForm):
                 self.fields['region'].initial = terminal.region
             except Terminal.DoesNotExist:
                 pass
+
+         # Populate issue choices based on selected category
+        selected = self.data.get("problem_category") or self.initial.get("problem_category")
+        if selected:
+            try:
+                cat = ProblemCategory.objects.get(pk=selected)
+                issues = ISSUE_MAPPING.get(cat.name, [])
+                self.fields["title"].choices = [("", "Select Issue")] + [(i, i) for i in issues]
+                self.fields["title"].widget.attrs.pop("disabled", None)
+            except ProblemCategory.DoesNotExist:
+                self.fields["title"].widget.attrs["disabled"] = True
+        else:
+            self.fields["title"].widget.attrs["disabled"] = True
 
         # 🔹 Role-based restrictions
         if user:
@@ -196,6 +237,21 @@ class TicketForm(forms.ModelForm):
 
                 # lock customer, region/terminal remain selectable
                 self.fields['customer'].disabled = True
+
+    def save(self, commit=True):
+        # Always compute priority here (never included on the form)
+        ticket = super().save(commit=False)
+        cat = self.cleaned_data.get("problem_category")
+        issue = self.cleaned_data.get("title") or ""
+        desc = self.cleaned_data.get("description") or ""
+        ticket.priority = determine_priority(
+            cat.name if cat else "",
+            issue,
+            desc
+        )
+        if commit:
+            ticket.save()
+        return ticket
 
 
 class ProblemCategoryForm(forms.ModelForm):
