@@ -23,7 +23,7 @@ class CustomUserCreationForm(forms.ModelForm):
 
     class Meta:
         model = User
-        fields = ['first_name', 'last_name', 'username', 'email']
+        fields = ['first_name', 'last_name', 'username', 'email', 'phone', 'id_number']
 
     def clean_password2(self):
         password = self.cleaned_data.get('password')
@@ -43,20 +43,28 @@ class CustomUserCreationForm(forms.ModelForm):
         # Save the user without committing to the database
         user = super().save(commit=False)
         user.set_password(self.cleaned_data['password'])
-
+        
         # Commit and save the user
         if commit:
             user.save()
 
-        # Create profile if not exists
+        # Get or create the profile
         profile, created = Profile.objects.get_or_create(user=user)
+        
+        # If the profile is created, set phone_number and id_number
         if created:
+            print(f"Profile Created: {profile}")
+            profile.phone_number = self.cleaned_data['phone']
+            profile.id_number = self.cleaned_data['id_number']
+            profile.save()
+        else:
+            # If profile exists, just update phone and id number
+            print(f"Updating Profile: {profile}")
             profile.phone_number = self.cleaned_data['phone']
             profile.id_number = self.cleaned_data['id_number']
             profile.save()
 
         return user
-
 
 
 

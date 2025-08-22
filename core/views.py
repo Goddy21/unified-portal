@@ -1,4 +1,5 @@
 from importlib.abc import Loader
+import re
 from tkinter.font import Font
 from django.shortcuts import render, get_list_or_404, redirect
 from django.core.serializers.json import DjangoJSONEncoder
@@ -338,9 +339,28 @@ def create_user(request):
         first_name = request.POST.get('first_name') 
         last_name = request.POST.get('last_name') 
         email = request.POST.get('email')
+        phone = request.POST.get('phone')
+        id_number = request.POST.get('id_number')
         password = request.POST.get('password')
+        confirm_password = request.POST.get('confirm_password')
         role = request.POST.get('role')
 
+        # Check if passwords match
+        if password != confirm_password:
+            messages.error(request, 'Passwords do not match.')
+            return redirect('create_user')
+
+        # Validate Kenyan phone number (e.g., +254711234567 or 0711234567)
+        if not re.match(r"^(?:\+254|07)\d{8}$", phone):
+            messages.error(request, 'Invalid phone number format. Please enter a valid Kenyan phone number.')
+            return redirect('create_user')
+
+        # Validate ID number length (at least 8 characters)
+        if len(id_number) < 8:
+            messages.error(request, 'ID number must be at least 8 characters long.')
+            return redirect('create_user')
+
+        # Check if username already exists
         if User.objects.filter(username=username).exists():
             messages.error(request, 'Username already exists.')
             return redirect('create_user')
@@ -355,13 +375,48 @@ def create_user(request):
         user.last_name = last_name
         user.save()
 
+        # Create or update the profile with phone and id_number
+        profile, created = Profile.objects.get_or_create(user=user)
+        profile.phone_number = phone
+        profile.id_number = id_number
+        profile.save()
+
+        # Add user to the appropriate role group
         group, _ = Group.objects.get_or_create(name=role)
         user.groups.add(group)
 
         messages.success(request, f"{role} user created successfully.")
         return redirect('admin_dashboard')
 
-    return render(request, 'accounts/create_user.html')
+    return render(request, 'accounts/admin_dashboard.html')
+
+@login_required
+def update_user(request):
+    if request.method == 'POST':
+        user_id = request.POST.get('user_id')
+        first_name = request.POST.get('first_name')
+        last_name = request.POST.get('last_name')
+        email = request.POST.get('email')
+        phone = request.POST.get('phone')
+        id_number = request.POST.get('id_number')
+
+        # Get the user object and update their details
+        user = get_object_or_404(User, id=user_id)
+        user.first_name = first_name
+        user.last_name = last_name
+        user.email = email
+        user.save()
+
+        # Update the profile information
+        profile = user.profile
+        profile.phone_number = phone
+        profile.id_number = id_number
+        profile.save()
+
+        messages.success(request, f"User {user.username} updated successfully.")
+        return redirect('admin_dashboard')
+
+    return redirect('admin_dashboard')
 
 class RegistrationForm(forms.ModelForm):
     password = forms.CharField(widget=forms.PasswordInput)
