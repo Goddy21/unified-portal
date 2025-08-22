@@ -2003,8 +2003,7 @@ def get_email_for_level(level):
     return settings.ESCALATION_LEVEL_EMAILS.get(level, [])
 
 def notify_group(level, ticket):
-    # Example: Notify the next escalation level via email
-    email_recipient = get_email_for_level(level)  # Define how to get the right email for the group
+    email_recipient = get_email_for_level(level)  
     
     send_mail(
         f'Ticket #{ticket.id} has been escalated to {level}',
@@ -2017,18 +2016,6 @@ def notify_group(level, ticket):
 def ticket_activity_log(request, ticket_id):
     logs = ActivityLog.objects.filter(ticket_id=ticket_id).order_by('-timestamp')
     return render(request, 'core/helpdesk/ticket_activity_logs.html', {'logs': logs})
-
-@login_required(login_url='login')
-def get_terminal_details(request, terminal_id):
-    try:
-        terminal = Terminal.objects.get(id=terminal_id)
-        response_data = {
-            'customer_id': terminal.customer.id if terminal.customer else None,
-            'region_id': terminal.region.id if terminal.region else None,
-        }
-        return JsonResponse(response_data)
-    except Terminal.DoesNotExist:
-        return JsonResponse({'error': 'Terminal not found'}, status=404)
 
 def ticket_detail(request, ticket_id):
     ticket = get_object_or_404(Ticket, id=ticket_id)
@@ -2093,15 +2080,15 @@ def ticket_detail(request, ticket_id):
                     id=staff_id,
                     groups__name__in=['Staff', 'Manager', 'Director']
                 )
+                
+                # Save the old assigned user before making changes
+                old_assigned_to = ticket.assigned_to
+
                 ticket.assigned_to = staff_member
                 ticket.updated_by = request.user
                 ticket.save()
 
-                # Load related objects
-                comments = ticket.comments.select_related('created_by').order_by('created_at')
-                # escalations = ticket.escalations.select_related('escalated_by').order_by('-escalated_at')
-
-                # Log the assignment change
+                # Log the assignment change if necessary
                 if old_assigned_to != staff_member:
                     ActivityLog.objects.create(
                         ticket=ticket,
@@ -2125,7 +2112,6 @@ def ticket_detail(request, ticket_id):
                     {
                         'ticket': ticket,
                         'comments': comments,
-                        # 'escalations': escalations,
                         'ticket_url': request.build_absolute_uri(reverse('ticket_detail', args=[ticket.id]))
                     }
                 )
@@ -2152,7 +2138,6 @@ def ticket_detail(request, ticket_id):
 
                 return redirect('ticket_detail', ticket_id=ticket.id)
 
-
     context = {
         'ticket': ticket,
         'form': form,
@@ -2166,6 +2151,17 @@ def ticket_detail(request, ticket_id):
     }
 
     return render(request, 'core/helpdesk/ticket_detail.html', context)
+
+def get_terminal_details(request, terminal_id):
+    try:
+        terminal = Terminal.objects.get(id=terminal_id)
+        response_data = {
+            'customer_id': terminal.customer.id if terminal.customer else None,
+            'region_id': terminal.region.id if terminal.region else None,
+        }
+        return JsonResponse(response_data)
+    except Terminal.DoesNotExist:
+        return JsonResponse({'error': 'Terminal not found'}, status=404)
 
 @login_required
 def edit_comment(request, comment_id):
