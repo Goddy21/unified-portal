@@ -313,6 +313,9 @@ class Ticket(models.Model):
     escalation_reason = models.TextField(null=True, blank=True)
     current_escalation_level = models.CharField(max_length=20, choices=ESCALATION_LEVELS, blank=True, null=True)
 
+    escalation_action = models.TextField(null=True, blank=True)
+    escalation_type = models.CharField(max_length=100, null=True, blank=True)
+
     #created_at = models.DateTimeField(auto_now_add=True)
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
@@ -334,6 +337,13 @@ class Ticket(models.Model):
         return self.title
     
     def save(self, *args, **kwargs):
+        if self.problem_category and self.priority:
+            from core.utilss.escalation import get_escalation_guidance
+            guidance = get_escalation_guidance(self.problem_category.name, self.priority)
+            self.escalation_type = guidance['escalation_type']
+            self.escalation_action = guidance['escalation_action']
+            self.current_escalation_level = guidance['escalation_tier']
+            
         if not self.priority:  
             self.priority = determine_priority(self.problem_category.name if self.problem_category else "", self.title, self.description)
         

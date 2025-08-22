@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -40,6 +41,7 @@ INSTALLED_APPS = [
     "crispy_forms",
     'core.apps.CoreConfig',
     'widget_tweaks',
+    'channels',
 ]
 
 MIDDLEWARE = [
@@ -72,6 +74,16 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "unified_portal.wsgi.application"
 
+ASGI_APPLICATION = 'unified_portal.asgi.application'
+
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            'hosts': [('127.0.0.1', 6379)],
+        },
+    },
+}
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
@@ -159,3 +171,18 @@ MEDIA_ROOT = BASE_DIR / 'media'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", "redis://127.0.0.1:6379/0")
+CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", "redis://127.0.0.1:6379/1")
+CELERY_TIMEZONE = "Africa/Nairobi"
+CELERY_TASK_TRACK_STARTED = True
+CELERY_TASK_ALWAYS_EAGER = True  # ensure async in prod
+
+from celery.schedules import crontab
+
+CELERY_BEAT_SCHEDULE = {
+    "auto_escalation_every_minute": {
+        "task": "core.tasks.run_auto_escalation",
+        "schedule": 60.0,  # every 60 seconds
+    },
+}

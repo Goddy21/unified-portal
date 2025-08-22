@@ -10,11 +10,27 @@
 
   <div class="logo">BRITS Helpdesk</div>
 
-  <!--<div class="nav-items" id="navItems">
-    <div class="search-bar">
+  <div class="nav-items" id="navItems">
+    <!--<div class="search-bar">
       <i class="fas fa-search"></i>
       <input type="text" id="navbarSearchInput" placeholder="Search dashboard...">
     </div>-->
+    <!-- Notification Bell -->
+    <div class="notifications" id="notificationBell">
+      <i class="fas fa-bell"></i>
+      <span class="badge" id="notificationCount" style="display: none;">0</span>
+
+      <!-- Dropdown for escalated tickets -->
+      <div class="dropdown-menu notifications-dropdown" id="notificationsDropdown">
+        <div id="notificationsList">
+          <p class="empty">No escalated tickets</p>
+        </div>
+        <div class="view-all">
+          <a href="{% url 'escalated_tickets_list' %}">View all</a>
+        </div>
+      </div>
+    </div>
+
 
     <div class="user-profile" id="userProfile">
       <div class="profile-trigger">
@@ -36,5 +52,91 @@
 
 <script>
   const profileViewUrl = "{% url 'profile_view' %}";
+
+// Declare the WebSocket connection outside the IIFE to make it accessible globally
+let escalationSocket;
+
+(function() {
+    const wsScheme = window.location.protocol === "https:" ? "wss" : "ws";
+    const url = `${wsScheme}://${window.location.host}/ws/escalations/`;
+    console.log("Connecting to WebSocket at:", url);  
+    escalationSocket = new WebSocket(url);
+})();
+
+function renderEscalations(tickets) {
+  const countEl = document.getElementById("notificationCount");
+  const listEl  = document.getElementById("notificationsList");
+
+  if (!countEl || !listEl) return; // navbar not present on this page
+
+  countEl.textContent = tickets.length;
+  countEl.style.display = tickets.length > 0 ? "inline-block" : "none";
+
+  listEl.innerHTML = "";
+  if (tickets.length === 0) {
+    listEl.innerHTML = `<li class="dropdown-item text-muted">No escalations</li>`;
+    return;
+  }
+
+  tickets.forEach(t => {
+    const div = document.createElement("div");
+    div.classList.add("notification-item");
+    div.innerHTML = `
+      <a class="dropdown-item" href="/tickets/${t.id}/">
+        #${t.id} - ${t.title}<br>
+        <small>${t.priority} | ${t.escalated_at}</small>
+      </a>
+    `;
+    listEl.appendChild(div);
+  });
+}
+
+escalationSocket.onmessage = (e) => {
+  const data = JSON.parse(e.data);
+
+  // Case 1: full tickets list
+  if (data.tickets) {
+    renderEscalations(data.tickets);
+  }
+
+  // Case 2: single escalation event
+  if (data.type === "escalation") {
+    const countEl = document.getElementById("notificationCount");
+    const listEl  = document.getElementById("notificationsList");
+
+    if (!countEl || !listEl) return;
+
+    let current = parseInt(countEl.textContent || "0");
+    countEl.textContent = current + 1;
+    countEl.style.display = "inline-block";
+
+    // remove "No escalations" placeholder if present
+    const emptyMsg = listEl.querySelector(".empty");
+    if (emptyMsg) emptyMsg.remove();
+
+    const div = document.createElement("div");
+    div.classList.add("notification-item");
+    div.innerHTML = `
+      <a class="dropdown-item" href="/tickets/${data.ticket_id}/">
+        #${data.ticket_id} - ${data.title}<br>
+        <small>${data.priority} | ${data.escalated_at}</small>
+      </a>
+    `;
+    listEl.preprend(div);
+  }
+};
+
+escalationSocket.onclose = () => {
+  console.error("WebSocket closed unexpectedly");
+};
+
+// Simple dropdown toggle
+const bell = document.getElementById("notificationBell");
+const menu = document.getElementById("notificationsDropdown");
+if (bell && menu) {
+  bell.addEventListener("click", () => {
+    menu.classList.toggle("show"); // make sure your CSS shows .show
+  });
+}
 </script>
 <script src="{% static 'js/files_navbar.js' %}"></script>

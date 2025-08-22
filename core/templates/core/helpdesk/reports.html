@@ -100,6 +100,7 @@
           <tr>
             <th>NO</th>
             <th>Problem Category</th>
+            <th>Issue</th>
             <th>Description</th>
             <th>Status</th>
             <th>Assigned to</th>
@@ -116,6 +117,7 @@
           <tr>
             <td>{{ forloop.counter }}</td>
             <td>{{ ticket.problem_category.name }}</td>
+            <td>{{ ticket.title }}</td>
             <td>{{ ticket.description|truncatewords:10 }}</td>
             <td>{{ ticket.status }}</td>
             <td>{{ ticket.assigned_to }}</td>
@@ -163,6 +165,7 @@
             <th>Customer</th>
             <th>Terminal</th>
             <th>Problem Category</th>
+            <th>Issue</th>
             <th>Description</th>
             <th>Status</th>
             <th>Assigned to</th>
@@ -187,6 +190,7 @@
             </td>
             <td>{{ ticket.terminal.branch_name }}</td>
             <td>{{ ticket.problem_category.name }}</td>
+            <td>{{ ticket.title }}</td>
             <td>{{ ticket.description|truncatewords:10 }}</td>
             <td>{{ ticket.status }}</td>
             <td>{{ ticket.assigned_to }}</td>

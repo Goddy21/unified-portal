@@ -1976,14 +1976,29 @@ def escalate_ticket(request, ticket_id):
                 'note': note,
                 'next_level': next_level
             })
+
+            channel_layer = get_channel_layer()
+            async_to_sync(channel_layer.group_send)(
+                "escalations",
+                {"type": "escalation.update"}  
+            )
             
             send_mail(
-                subject=subject,
-                message="This is an HTML email. Please view it in an HTML-compatible email client.",
+                subject=f"Ticket #{ticket.id} Escalated to {ticket.current_escalation_level}",
+                message=f"""
+                Ticket ID: {ticket.id}
+                Title: {ticket.title}
+                Escalated By: {ticket.escalated_by}
+                Escalation Level: {ticket.current_escalation_level}
+                Reason: {ticket.escalation_reason}
+                
+
+                View Ticket: http://127.0.0.1:8000/tickets/{ticket.id}
+
+                """,
                 from_email="godblessodhiambo@gmail.com",
-                recipient_list=get_email_for_level(next_level),
+                recipient_list=get_email_for_level(next_level),  
                 fail_silently=False,
-                html_message=html_message
             )
 
             messages.success(request, f"Ticket has been escalated to {next_level}.")
@@ -2012,6 +2027,30 @@ def notify_group(level, ticket):
         [email_recipient],
         fail_silently=False
     )
+
+def get_escalated_tickets(request):
+    # Filter tickets that are escalated
+    escalated_tickets = Ticket.objects.filter(is_escalated=True).order_by('-escalated_at')
+
+    # Return JSON for AJAX
+    data = {
+        "count": escalated_tickets.count(),
+        "tickets": [
+            {
+                "id": t.id,
+                "title": t.title,
+                "escalated_at": t.escalated_at.strftime('%Y-%m-%d %H:%M'),
+                "level": t.current_escalation_level
+            }
+            for t in escalated_tickets
+        ]
+    }
+    return JsonResponse(data)
+
+def escalated_tickets_page(request):
+    tickets = Ticket.objects.filter(is_escalated=True).order_by('-escalated_at')
+    return render(request, "core/helpdesk/escalated_list.html", {"tickets": tickets})
+
 
 def ticket_activity_log(request, ticket_id):
     logs = ActivityLog.objects.filter(ticket_id=ticket_id).order_by('-timestamp')
@@ -2803,7 +2842,7 @@ def export_tickets_to_excel(tickets, customer_name=None, terminal_name=None, pro
 
     # Define headers
     headers = [
-        'Customer', 'Terminal', 'Problem Category', 'Description', 'Status',
+        'Customer', 'Terminal', 'Problem Category', 'title', 'Description', 'Status',
         'Assigned To', 'Resolved By', 'Resolution', 'Created At', 'Updated At',
         'Resolved At', 'Comments'
     ]
@@ -2829,6 +2868,7 @@ def export_tickets_to_excel(tickets, customer_name=None, terminal_name=None, pro
             ticket.terminal.branch_name if ticket.terminal else "",
             str(ticket.problem_category) if ticket.problem_category else "",
             ticket.description or "",
+            ticket.title or "",
             ticket.status or "",
             str(ticket.assigned_to) if ticket.assigned_to else "",
             str(ticket.resolved_by) if hasattr(ticket, 'resolved_by') and ticket.resolved_by else "",

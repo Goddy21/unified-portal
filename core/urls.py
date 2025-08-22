@@ -121,4 +121,8 @@ urlpatterns = [
     path('versions/<int:pk>/', views.version_detail, name='version_detail'),
     path('versions/<int:pk>/edit/', views.edit_version, name='edit_version'),
     path('versions/<int:pk>/delete/', views.delete_version, name='delete_version'),
+
+    path('tickets/<int:ticket_id>/escalate/', views.escalate_ticket, name='escalate_ticket'),
+    path('notifications/escalated/', views.get_escalated_tickets, name='get_escalated_tickets'),
+    path('tickets/escalated/', views.escalated_tickets_page, name='escalated_tickets_list'),
 ]+ static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
