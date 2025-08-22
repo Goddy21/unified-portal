@@ -193,7 +193,7 @@ class TicketForm(forms.ModelForm):
             except Terminal.DoesNotExist:
                 pass
 
-         # Populate issue choices based on selected category
+        # Populate issue choices based on selected category
         selected = self.data.get("problem_category") or self.initial.get("problem_category")
         if selected:
             try:
@@ -206,7 +206,7 @@ class TicketForm(forms.ModelForm):
         else:
             self.fields["title"].widget.attrs["disabled"] = True
 
-        # 🔹 Role-based restrictions
+        # Role-based restrictions
         if user:
             profile = getattr(user, "profile", None)
 
@@ -220,7 +220,9 @@ class TicketForm(forms.ModelForm):
                 self.fields['customer'].queryset = Customer.objects.filter(id=assigned_customer.id)
                 self.fields['region'].queryset = Region.objects.filter(id=assigned_region.id)
 
-                # lock them
+                # Lock customer and region fields (but don't disable them)
+                self.fields['customer'].initial = assigned_customer
+                self.fields['region'].initial = assigned_region
                 self.fields['terminal'].disabled = True
                 self.fields['customer'].disabled = True
                 self.fields['region'].disabled = True
@@ -235,8 +237,10 @@ class TicketForm(forms.ModelForm):
                     id__in=self.fields['terminal'].queryset.values_list("region_id", flat=True)
                 )
 
-                # lock customer, region/terminal remain selectable
+                # Lock customer, region/terminal remain selectable
+                self.fields['customer'].initial = assigned_customer
                 self.fields['customer'].disabled = True
+
 
     def save(self, commit=True):
         # Always compute priority here (never included on the form)
