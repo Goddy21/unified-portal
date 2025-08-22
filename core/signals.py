@@ -39,7 +39,7 @@ def setup_groups_and_permissions(sender, **kwargs):
     director_group, _ = Group.objects.get_or_create(name='Director')
     manager_group, _ = Group.objects.get_or_create(name='Manager')
     staff_group, _ = Group.objects.get_or_create(name='Staff')
-    customer_group, _ = Group.objects.get_or_create(name='Customer') 
+    customer_group, _ = Group.objects.get_or_create(name='Customer')
 
     # Assign permissions to groups
     director_group.permissions.set([
@@ -70,10 +70,10 @@ def setup_groups_and_permissions(sender, **kwargs):
     director_group.permissions.add(file_access_log_permission)
     manager_group.permissions.add(file_access_log_permission)
 
-    # Superusers should already have access to all permissions, but you can explicitly assign it
+    # Explicitly assign this permission to all superusers
     superusers = User.objects.filter(is_superuser=True)
     for user in superusers:
-        user.user_permissions.add(file_access_log_permission)  
+        user.user_permissions.add(file_access_log_permission)
 
 
 
