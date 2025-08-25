@@ -170,7 +170,7 @@ class TicketForm(forms.ModelForm):
     region = forms.ModelChoiceField(queryset=Region.objects.all(), required=True)
 
     def __init__(self, *args, **kwargs):
-        user = kwargs.pop('user', None)  # <- pass request.user when creating the form
+        self.user = kwargs.pop('user', None)  
         terminal_id = kwargs.pop('terminal_id', None)
         super().__init__(*args, **kwargs)
 
@@ -207,8 +207,8 @@ class TicketForm(forms.ModelForm):
             self.fields["title"].widget.attrs["disabled"] = True
 
         # Role-based restrictions
-        if user:
-            profile = getattr(user, "profile", None)
+        if self.user:
+            profile = getattr(self.user, "profile", None)
 
             # If user is custodian → only his terminal, customer, and region
             if profile and getattr(profile, "terminal", None):
@@ -228,8 +228,8 @@ class TicketForm(forms.ModelForm):
                 self.fields['region'].disabled = True
 
             # If user is overseer → all terminals of his customer, customer locked, region limited
-            elif Customer.objects.filter(overseer=user).exists():
-                assigned_customer = Customer.objects.filter(overseer=user).first()
+            elif Customer.objects.filter(overseer=self.user).exists():
+                assigned_customer = Customer.objects.filter(overseer=self.user).first()
 
                 self.fields['customer'].queryset = Customer.objects.filter(id=assigned_customer.id)
                 self.fields['terminal'].queryset = Terminal.objects.filter(customer=assigned_customer)
@@ -253,6 +253,14 @@ class TicketForm(forms.ModelForm):
             issue,
             desc
         )
+
+        if hasattr(self, 'user') and hasattr(self.user, 'profile'):
+            profile = self.user.profile
+            if profile.terminal:
+                ticket.terminal = profile.terminal
+                ticket.customer = profile.terminal.customer
+                ticket.region = profile.terminal.region
+                
         if commit:
             ticket.save()
         return ticket

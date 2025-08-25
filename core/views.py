@@ -2804,17 +2804,24 @@ def reports(request):
     except EmptyPage:
         tickets_page = paginator.page(paginator.num_pages)
 
+    selected_customer = None
+    if user_group == "Custodian" and customers.exists():
+        selected_customer = customers.first()
+    elif user_group == "Overseer" and customers.exists():
+        selected_customer = customers.first()
+
     # Context to be passed to the template
     context = {
         'tickets': tickets_page,
         'page_obj': tickets_page,
         'customers': customers,
+        "selected_customer": selected_customer,
         'terminals': terminals,
         'regions': Region.objects.all(),
         'categories': ProblemCategory.objects.all(),
         'filter_by_customer': filter_by_customer,
         'filter_by_terminal': filter_by_terminal,
-        'user_group': user_group,  # Pass user group for conditionally disabling filters
+        'user_group': user_group,  
     }
 
     return render(request, 'core/helpdesk/reports.html', context)

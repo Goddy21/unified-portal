@@ -30,10 +30,14 @@
       <div class="filter-grid">
         <div class="filter-group">
           <label for="customer-select">Customer:</label>
-          <select id="customer-select" name="customer" class="form-control" {% if user_group == 'Custodian' or user_group == 'Overseer' %}disabled{% endif %}>
-            <option value="All">All Customers</option>
+          <select id="customer-select" name="customer" class="form-control"
+            {% if user_group == 'Custodian' or user_group == 'Overseer' %}disabled{% endif %}>
+            {% if not selected_customer %}
+              <option value="All">All Customers</option>
+            {% endif %}
             {% for customer in customers %}
-              <option value="{{ customer.id }}" {% if request.GET.customer == customer.id|stringformat:"s" %}selected{% endif %}>
+              <option value="{{ customer.id }}"
+                {% if selected_customer and selected_customer.id == customer.id %}selected{% endif %}>
                 {{ customer.name }}
               </option>
             {% endfor %}
