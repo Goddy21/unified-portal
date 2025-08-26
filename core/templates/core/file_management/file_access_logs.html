@@ -21,6 +21,10 @@
         </form>
     </div>
 
+    {% if can_view_logs %}
+        <a href="{% url 'clear_all_logs' %}" class="clear-all-btn">Clear All Logs</a>
+    {% endif %}
+
     <div class="table-container">
         <table>
             <thead>
@@ -29,6 +33,7 @@
                     <th>Accessed By</th>
                     <th>Action</th>
                     <th>Access Time</th>
+                    <th>Delete Log</th>
                 </tr>
             </thead>
             <tbody>
@@ -38,10 +43,15 @@
                         <td>{{ log.accessed_by.username }}</td>
                         <td><span class="log-action {% if log.action == 'preview' %}preview{% elif log.action == 'download' %}download{% else %}none{% endif %}">{{ log.get_action_display }}</span></td>
                         <td>{{ log.access_time|date:"F d, Y H:i" }}</td>
+                        <td>
+                            {% if can_view_logs %}
+                                <a href="{% url 'delete_log' log.id %}" class="delete-btn">Delete</a>
+                            {% endif %}
+                        </td>
                     </tr>
                 {% empty %}
                     <tr class="no-logs">
-                        <td colspan="4">No access logs available.</td>
+                        <td colspan="5">No access logs available.</td>
                     </tr>
                 {% endfor %}
             </tbody>

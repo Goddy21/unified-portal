@@ -67,6 +67,8 @@ urlpatterns = [
     path('download/<int:file_id>/', views.download_file, name='download_file'),
     path('files/delete/<int:file_id>/', views.delete_file, name='delete_file'),
     path('files-management/file-access-logs/', views.file_access_logs, name='file_access_logs'),
+    path('delete-log/<int:log_id>/', views.delete_log, name='delete_log'),  
+    path('clear-all-logs/', views.clear_all_logs, name='clear_all_logs'), 
 
 
     path('ticketing/', views.ticketing_dashboard, name='ticketing_dashboard'),

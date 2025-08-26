@@ -50,3 +50,36 @@ class EscalationConsumer(AsyncWebsocketConsumer):
                 }
             }
         )
+
+class TicketNotificationConsumer(AsyncWebsocketConsumer):
+    async def connect(self):
+        self.group_name = "ticket_notifications"
+        
+        # Join group
+        await self.channel_layer.group_add(
+            self.group_name,
+            self.channel_name
+        )
+        await self.accept()
+
+    async def disconnect(self, close_code):
+        # Leave group
+        await self.channel_layer.group_discard(
+            self.group_name,
+            self.channel_name
+        )
+
+    # Receive message from WebSocket (in this case it's not needed, only sending)
+    async def receive(self, text_data):
+        pass
+
+    # Send message to WebSocket
+    async def send_ticket_notification(self, event):
+        # Send new ticket notification
+        await self.send(text_data=json.dumps({
+            'type': 'new_ticket',
+            'ticket_id': event['ticket_id'],
+            'title': event['title'],
+            'priority': event['priority'],
+            'created_at': event['created_at']
+        }))

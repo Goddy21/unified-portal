@@ -2,7 +2,7 @@ $(document).ready(function() {
     const data = window.initialData;
     const allowAll = window.allowAll;
     // Declare chart instances outside of updateCharts function
-    let dayChart, weekdayChart, hourChart, monthChart, yearChart, statusChart, terminalChart, categoryChart, monthlyChart;
+    let dayChart, weekdayChart, hourChart, monthChart, yearChart, statusChart, terminalChart, categoryChart, monthlyChart, slaComplianceChart, creatorChart, assigneeChart, resolverChart, unresolvedChart;  
 
     // Initialize the chart rendering with the default data
     updateCharts(data);
@@ -34,6 +34,18 @@ $(document).ready(function() {
         const ctxTerminal = document.getElementById('ticketsPerTerminalChart').getContext('2d');
         const ctxCategory = document.getElementById('ticketsByCategoryChart').getContext('2d');
         const ctxMonthly = document.getElementById('monthlyTicketTrendsChart').getContext('2d');
+        const ctxSLA = document.getElementById('slaComplianceChart').getContext('2d');
+        const ctxCreator = document.getElementById('ticketsByCreatorChart').getContext('2d');
+        const ctxAssignee = document.getElementById('ticketsByAssigneeChart').getContext('2d');
+        const ctxResolver = document.getElementById('ticketsByResolverChart').getContext('2d');
+        const ctxUnresolved = document.getElementById('unresolvedTicketsChart').getContext('2d');
+        destroyChart(unresolvedChart); 
+        destroyChart(assigneeChart); 
+
+        // Destroy old charts if exist
+        destroyChart(slaComplianceChart);
+        destroyChart(creatorChart);
+        destroyChart(resolverChart);
 
         // Destroy the previous charts if they exist
         destroyChart(dayChart);
@@ -321,6 +333,153 @@ $(document).ready(function() {
             }
         });
 
+        // SLA Chart (Doughnut)
+        slaComplianceChart = new Chart(ctxSLA, {
+            type: 'doughnut',
+            data: {
+                labels: data.slaStats.labels,
+                datasets: [{
+                    label: 'SLA Compliance',
+                    data: data.slaStats.data,
+                    backgroundColor: ['#28a745', '#dc3545'],
+                }]
+            },
+            options: {
+                responsive: true,
+                cutout: '70%', // makes the doughnut hollow
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                let value = context.raw;
+                                let percent = total ? ((value / total) * 100).toFixed(1) : 0;
+                                return `${context.label}: ${value} (${percent}%)`;
+                            }
+                        }
+                    },
+                    datalabels: {
+                        color: '#fff',
+                        formatter: (value, ctx) => {
+                            let total = ctx.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+                            return total ? ((value / total) * 100).toFixed(1) + '%' : '0%';
+                        },
+                        font: {
+                            weight: 'bold',
+                            size: 14
+                        }
+                    }
+                }
+            },
+            plugins: [ChartDataLabels] 
+        });
+
+        
+        unresolvedChart = new Chart(ctxUnresolved, {
+            type: 'doughnut',
+            data: {
+                labels: ['Resolved', 'Unresolved'],
+                datasets: [{
+                    label: 'Ticket Resolution',
+                    data: [data.resolvedTickets, data.unresolvedTickets], 
+                    backgroundColor: ['#28a745', '#dc3545'],
+                }]
+            },
+            options: {
+                responsive: true,
+                cutout: '70%',
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                let value = context.raw;
+                                let percent = total ? ((value / total) * 100).toFixed(1) : 0;
+                                return `${context.label}: ${value} (${percent}%)`;
+                            }
+                        }
+                    },
+                    datalabels: {
+                        color: '#fff',
+                        formatter: (value, ctx) => {
+                            let total = ctx.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+                            return total ? ((value / total) * 100).toFixed(1) + '%' : '0%';
+                        },
+                        font: {
+                            weight: 'bold',
+                            size: 14
+                        }
+                    }
+                }
+            },
+            plugins: [ChartDataLabels]
+        });
+
+
+        // Tickets by Creator (Bar)
+        creatorChart = new Chart(ctxCreator, {
+            type: 'bar',
+            data: {
+                labels: data.ticketsByCreator.labels,
+                datasets: [{
+                    label: 'Tickets Created',
+                    data: data.ticketsByCreator.data,
+                    backgroundColor: '#007bff',
+                }]
+            },
+            options: { responsive: true }
+        });
+
+        assigneeChart = new Chart(ctxAssignee, {
+            type: 'bar',
+            data: {
+                labels: data.ticketsByAssignee.labels,
+                datasets: [{
+                    label: 'Tickets Assigned',
+                    data: data.ticketsByAssignee.data,
+                    backgroundColor: data.ticketsByAssignee.labels.map((_, i) => {
+                        // Assign distinct colors from a palette
+                        const colors = [
+                            '#007bff', '#28a745', '#ffc107', '#dc3545',
+                            '#17a2b8', '#6f42c1', '#fd7e14', '#20c997'
+                        ];
+                        return colors[i % colors.length]; // cycle through
+                    }),
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    tooltip: { enabled: true }
+                },
+                animation: {
+                    duration: 1000,
+                    easing: 'easeOutQuart'
+                }
+            }
+        });
+
+
+        // Tickets by Resolver (Bar)
+        resolverChart = new Chart(ctxResolver, {
+            type: 'bar',
+            data: {
+                labels: data.ticketsByResolver.labels,
+                datasets: [{
+                    label: 'Tickets Resolved',
+                    data: data.ticketsByResolver.data,
+                    backgroundColor: '#17a2b8',
+                }]
+            },
+            options: { responsive: true }
+        });
+
     }
 
     function updateTicketStatusBreakdown(labels, data) {
@@ -338,15 +497,15 @@ $(document).ready(function() {
     updateTicketStatusBreakdown(data.ticketStatuses.labels, data.ticketStatuses.data);
     
     // Populate Dropdowns
-    function populateDropdown(id, items, idKey, nameKey, allowAll = true, defaultValue = null) {
+    function populateDropdown(id, items, idKey, nameKey, allowAll = true, defaultValue = null, allLabel = "All") {
         const dropdown = document.getElementById(id);
         dropdown.innerHTML = "";
 
-        // Add "All" if allowed
+        // Add "All" if allowed, with custom label
         if (allowAll) {
             const allOption = document.createElement("option");
             allOption.value = "all";
-            allOption.text = "All";
+            allOption.text = allLabel; // Use custom label
             dropdown.appendChild(allOption);
         }
 
@@ -366,19 +525,23 @@ $(document).ready(function() {
         }
     }
 
-    // Apply the initial data
+    // Apply the initial data with proper "All" labels
     if (userGroup === "Internal") {
-        // Internal: show all options
-        populateDropdown("customer-filter", data.customers, "id", "name", true);
-        populateDropdown("region-filter", data.regions, "id", "name", true);
-        populateDropdown("terminal-filter", data.terminals, "id", "branch_name", true);
+        populateDropdown("customer-filter", data.customers, "id", "name", true, null, "All Customers");
+        populateDropdown("region-filter", data.regions, "id", "name", true, null, "All Regions");
+        populateDropdown("terminal-filter", data.terminals, "id", "branch_name", true, null, "All Terminals");
     } else if (userGroup === "Overseer") {
-        // Overseer: assigned customer, others show "All"
+        //populateDropdown("customer-filter", data.customers, "id", "name", false, data.assignedCustomerId);
+        //populateDropdown("region-filter", data.regions, "id", "name", false, "all", "All Regions");
+       // populateDropdown("terminal-filter", data.terminals, "id", "branch_name", false, "all", "All Terminals");
+
+       // Customer is assigned → not changeable
         populateDropdown("customer-filter", data.customers, "id", "name", false, data.assignedCustomerId);
-        populateDropdown("region-filter", data.regions, "id", "name", false, "all");
-        populateDropdown("terminal-filter", data.terminals, "id", "branch_name", false, "all");
+
+        // Region and Terminal → allow "All" by default
+        populateDropdown("region-filter", data.regions, "id", "name", true, "all", "All Regions");
+        populateDropdown("terminal-filter", data.terminals, "id", "branch_name", true, "all", "All Terminals");
     } else if (userGroup === "Custodian") {
-        // Custodian: assigned customer, region, terminal
         populateDropdown("customer-filter", data.customers, "id", "name", false, data.assignedCustomerId);
         populateDropdown("region-filter", data.regions, "id", "name", false, data.assignedRegionId);
         populateDropdown("terminal-filter", data.terminals, "id", "branch_name", false, data.assignedTerminalId);

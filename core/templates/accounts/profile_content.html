@@ -9,35 +9,46 @@
     <link rel="stylesheet" type="text/css" href="{% static 'css/profile.css' %}" />
 </head>
 <body>
+    <!-- Profile Container -->
     <div class="profile-container fade-in">
         <div class="logo-container">
             <img src="{% static 'icons/favicon.ico' %}" alt="Site Logo" class="site-logo">
         </div>
+
         <h1>{{ user.get_full_name|default:user.username }}'s Profile</h1>
 
         <div class="profile-details">
-            <p><strong>First Name:</strong> {{ user.first_name }}</p>
-            <p><strong>Last Name:</strong> {{ user.last_name }}</p>
-            <p><strong>Username:</strong> {{ user.username }}</p>
-            <p><strong>Email:</strong> {{ user.email }}</p>
-            <p><strong>Phone Number:</strong> {{ user.profile.phone_number }}</p> 
-            <p><strong>ID Number:</strong> {{ user.profile.id_number }}</p> 
+            <!-- Basic Info Section -->
+            <div class="details-row">
+                <p><strong>First Name:</strong> {{ user.first_name }}</p>
+                <p><strong>Last Name:</strong> {{ user.last_name }}</p>
+            </div>
+            <div class="details-row">
+                <p><strong>Username:</strong> {{ user.username }}</p>
+                <p><strong>Email:</strong> {{ user.email }}</p>
+            </div>
+            <div class="details-row">
+                <p><strong>Phone Number:</strong> {{ user.profile.phone_number }}</p>
+                <p><strong>ID Number:</strong> {{ user.profile.id_number }}</p>
+            </div>
 
-            <p><strong>Role:</strong> {{ user.profile.role }}</p> 
-            
-            {% if user.profile.customer %}
-                <p><strong>Customer:</strong> {{ user.profile.customer.name }}</p> 
-            {% else %}
-                <p><strong>Customer:</strong> No customer assigned</p>
-            {% endif %}
-            
-            {% if user.profile.terminal %}
-                <p><strong>Terminal:</strong> {{ user.profile.terminal.cdm_name }}</p> 
-            {% else %}
-                <p><strong>Terminal:</strong> No terminal assigned</p>
-            {% endif %}
+            <!-- Role Section -->
+            <div class="details-row">
+                <p><strong>Role:</strong> {{ user.profile.role }}</p>
+                {% if user.profile.role == "Overseer" or user.profile.role == "Custodian" %}
+                    <p><strong>Customer:</strong> {{ user.profile.customer.name|default:"No customer assigned" }}</p>
+                {% endif %}
+                {% if user.profile.role == "Custodian" %}
+                    <p><strong>Terminal:</strong> {{ user.profile.terminal.branch_name|default:"No terminal assigned" }}</p>
+                {% endif %}
+            </div>
 
-            <p><strong>Date joined:</strong> {{ user.date_joined|date:"M d, Y" }}</p>
+
+
+            <!-- Date Joined Section -->
+            <div class="details-row">
+                <p><strong>Date joined:</strong> {{ user.date_joined|date:"M d, Y" }}</p>
+            </div>
 
             {% if user.profile.avatar %}
                 <div class="avatar-glow-container">

@@ -24,10 +24,12 @@
     animation: fadeIn 1s ease-in-out;
 }
 
-.logs-header p {
+/* Description Text */
+.logs-description {
+    text-align: center;
     font-size: 18px;
     color: #666;
-    margin-top: 10px;
+    margin-bottom: 30px;
 }
 
 /* Search Bar */
@@ -38,9 +40,8 @@
 }
 
 .search-bar input[type="text"] {
-    padding: 12px;
-    width: 100%;
-    max-width: 350px;
+    padding: 10px;
+    width: 300px;
     font-size: 16px;
     border-radius: 5px;
     border: 1px solid #ccc;
@@ -51,7 +52,7 @@
     border-color: #123692;
 }
 
-/* Table Container */
+/* Table Container with Scrolling */
 .table-container {
     overflow-x: auto;
     margin-top: 20px;
@@ -101,7 +102,7 @@ tr:nth-child(even) td {
     color: #e74c3c; /* Red for None */
 }
 
-/* Hover effect for rows */
+/* Hover effect for rows with smooth transition */
 tr:hover td {
     background-color: #e6f7ff;
     cursor: pointer;
@@ -147,89 +148,5 @@ tr:hover td {
     100% {
         opacity: 1;
         transform: translateY(0);
-    }
-}
-
-.delete-btn {
-    color: red;
-    text-decoration: none;
-    font-weight: bold;
-}
-
-.clear-all-btn {
-    background-color: #f44336;
-    color: white;
-    padding: 10px;
-    text-decoration: none;
-    margin: 10px 0;
-    display: inline-block;
-}
-
-.clear-all-btn:hover {
-    background-color: #d32f2f;
-}
-
-/* Mobile Responsiveness */
-@media screen and (max-width: 768px) {
-    .logs-container {
-        padding: 15px;
-        margin: 10px;
-    }
-
-    .logs-header h2 {
-        font-size: 28px;
-    }
-
-    .logs-header p {
-        font-size: 16px;
-    }
-
-    .search-bar input[type="text"] {
-        width: 100%;
-        max-width: 300px;
-    }
-
-    table {
-        font-size: 14px;
-    }
-
-    th, td {
-        padding: 10px;
-    }
-
-    .pagination {
-        flex-wrap: wrap;
-        justify-content: flex-start;
-    }
-
-    .pagination a {
-        margin: 5px 8px;
-    }
-
-    .clear-all-btn {
-        width: 100%;
-        text-align: center;
-    }
-}
-
-@media screen and (max-width: 480px) {
-    .logs-header h2 {
-        font-size: 24px;
-    }
-
-    th, td {
-        font-size: 12px;
-    }
-
-    .search-bar input[type="text"] {
-        padding: 8px;
-    }
-
-    .pagination a {
-        font-size: 12px;
-    }
-
-    .clear-all-btn {
-        font-size: 14px;
     }
 }

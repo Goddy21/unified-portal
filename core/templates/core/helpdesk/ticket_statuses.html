@@ -39,7 +39,7 @@
       <tbody>
         <tr>
           <td>
-            <a href="{% url 'ticket_by_status' 'open' %}" class="status-link"> {# Added status-link class #}
+            <a href="{% url 'ticket_by_status' 'open' %}" class="status-link"> 
               <span class="badge badge-open">Open</span>
             </a>
           </td>
@@ -57,31 +57,12 @@
         </tr>
         <tr>
           <td>
-            <a href="{% url 'ticket_by_status' 'resolved' %}" class="status-link">
-              <span class="badge badge-resolved">Resolved</span>
-            </a>
-          </td>
-          <td>Issues that have been addressed and are awaiting final confirmation.</td>
-          <td class="text-center"><span class="color-box bg-resolved"></span></td>
-        </tr>
-        <tr>
-          <td>
             <a href="{% url 'ticket_by_status' 'closed' %}" class="status-link">
               <span class="badge badge-closed">Closed</span>
             </a>
           </td>
           <td>Tickets that have been successfully completed and archived.</td>
           <td class="text-center"><span class="color-box bg-closed"></span></td>
-        </tr>
-        {# Example for a potential 'Pending' or 'On Hold' status if you add it later #}
-        <tr>
-          <td>
-            <a href="{% url 'ticket_by_status' 'pending' %}" class="status-link">
-              <span class="badge badge-pending">Pending</span>
-            </a>
-          </td>
-          <td>Awaiting further information or action from the customer.</td>
-          <td class="text-center"><span class="color-box bg-pending"></span></td>
         </tr>
       </tbody>
     </table>

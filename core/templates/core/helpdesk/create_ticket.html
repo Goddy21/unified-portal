@@ -83,14 +83,14 @@
                     <label for="{{ form.custom_created_at.id_for_label }}">Ticket Date (optional)</label>
                     {{ form.custom_created_at }}
                 </div>
-                <div class="form-group">
+                <!--<div class="form-group">
                     <label for="{{ form.responsible.id_for_label }}">Responsible</label>
                     {{ form.responsible }}
                 </div>
-                <!--<div class="form-group">
+                <div class="form-group">
                     <label for="comment_summary">Comments</label>
                     {{ form.comment_summary }}
-                </div>-->
+                </div>
                 <div class="form-group">
                     <label for="{{ form.created_at.id_for_label }}">Created At</label>
                     {{ form.created_at }}
@@ -98,7 +98,7 @@
                 <div class="form-group">
                     <label for="{{ form.updated_at.id_for_label }}">Updated At</label>
                     {{ form.updated_at }}
-                </div>
+                </div>-->
             </div>
         </div>
 
@@ -115,28 +115,6 @@
 
 {% block extra_js %}
 <script>
-    /*
-  document.addEventListener('DOMContentLoaded', function() {
-    const terminalSelect = document.getElementById('id_terminal');
-    const customerSelect = document.getElementById('id_customer');
-    const regionSelect = document.getElementById('id_region');
-
-    // When the terminal field changes, update the customer and region fields
-    terminalSelect.addEventListener('change', function() {
-        const terminalId = terminalSelect.value;
-        
-        if (terminalId) {
-            fetch(`/get_terminal_details/${terminalId}/`)
-                .then(response => response.json())
-                .then(data => {
-                    // Update customer and region based on selected terminal
-                    customerSelect.value = data.customer_id;
-                    regionSelect.value = data.region_id;
-                });
-        }
-    });
-  });*/
-
   document.addEventListener("DOMContentLoaded", () => {
     const categorySelect = document.getElementById("id_problem_category");
     const issueSelect    = document.getElementById("id_title");  

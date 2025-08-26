@@ -59,6 +59,9 @@ def is_director(user):
     
 def is_manager(user):
     return in_group(user, 'Manager')
+
+def is_director_or_manager(user):
+    return is_director(user) or is_manager(user)
     
 def is_staff(user):
     return in_group(user, 'Staff')
@@ -742,8 +745,10 @@ def user_list_view(request):
     paginator = Paginator(users, 10)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
+
+    can_view_logs = request.user.has_perm('core.view_fileaccesslog')
     
-    return render(request, 'core/file_management/user_list.html', {'page_obj': page_obj})
+    return render(request, 'core/file_management/user_list.html', {'page_obj': page_obj, 'can_view_logs': can_view_logs})
 
 
 @user_passes_test(is_staff)
@@ -827,12 +832,14 @@ def file_management_dashboard(request):
             file.extension = os.path.splitext(file.file.name)[1]
             visible_files.append(file)
 
+    can_view_logs = request.user.has_perm('core.view_fileaccesslog')
     # Return the render with visible files
     return render(request, 'core/file_management/dashboard.html', {
         'categories': categories,
         'recent_files': visible_files,  
         'file_types': file_types,
-        'user_name': request.user.username  
+        'user_name': request.user.username,
+        'can_view_logs': can_view_logs, 
     })
 
 @login_required
@@ -878,11 +885,14 @@ def file_list_view(request, category_name=None):
     # Fetch categories for the filter dropdown
     categories = FileCategory.objects.all()
 
+    can_view_logs = request.user.has_perm('core.view_fileaccesslog')
+
     return render(request, 'core/file_management/file_list.html', {
         'files': paginated_files,
         'categories': categories,
         'active_category': category_name,
         'validated_files': validated_files,
+        'can_view_logs': can_view_logs,
     })
 
 
@@ -1003,6 +1013,24 @@ def file_access_logs(request):
         'can_view_logs': can_view_logs
     })
 
+@login_required
+def delete_log(request, log_id):
+    # Check if the user has permission
+    if not request.user.has_perm('core.delete_fileaccesslog'):
+        return redirect('file_access_logs') 
+
+    log = get_object_or_404(FileAccessLog, id=log_id)
+    log.delete()
+    return redirect('file_access_logs') 
+
+@login_required
+def clear_all_logs(request):
+    # Check if the user has permission
+    if not request.user.has_perm('core.delete_fileaccesslog'):
+        return redirect('file_access_logs')  
+
+    FileAccessLog.objects.all().delete()  
+    return redirect('file_access_logs')
     
 @login_required
 def delete_file(request, file_id):
@@ -1085,8 +1113,7 @@ def validate_passcode(request, file_id):
         return JsonResponse({'success': False}, status=400)
 
 
-
-#@user_passes_test(is_staff)
+@login_required
 def profile_view(request):
     context = {
         'user': request.user,
@@ -1105,24 +1132,27 @@ class SettingsView(View):
         user_form = UserUpdateForm(instance=request.user)
         profile, created = Profile.objects.get_or_create(user=request.user)
         profile_form = ProfileUpdateForm(instance=profile)
+
+        # Handle visibility of role, customer, and terminal based on user role
+        if profile.role == 'Customer' or profile.role == 'Overseer' or profile.role == 'Custodian':
+            # If role is Customer, Overseer, or Custodian, show customer and terminal fields, hide the role
+            if 'role' in profile_form.fields:
+                profile_form.fields['role'].widget = forms.HiddenInput()  # Hide role field
+            if 'customer' in profile_form.fields:
+                profile_form.fields['customer'].widget = forms.HiddenInput()  # Hide customer field
+            if 'terminal' in profile_form.fields:
+                profile_form.fields['terminal'].widget = forms.HiddenInput()  # Hide terminal field
+        else:
+            # If role is Director, Manager, or Staff, hide customer and terminal fields
+            if 'customer' in profile_form.fields:
+                profile_form.fields['customer'].widget = forms.HiddenInput()  # Hide customer field
+            if 'terminal' in profile_form.fields:
+                profile_form.fields['terminal'].widget = forms.HiddenInput()  # Hide terminal field
+
         return render(request, 'accounts/settings.html', {
             'user_form': user_form,
             'profile_form': profile_form
         })
-
-    def post(self, request):
-        user_form = UserUpdateForm(request.POST, instance=request.user)
-        profile, created = Profile.objects.get_or_create(user=request.user)
-        profile_form = ProfileUpdateForm(request.POST, request.FILES, instance=profile)
-        if user_form.is_valid() and profile_form.is_valid():
-            user_form.save()
-            profile_form.save()
-            return redirect('profile_view')
-        return render(request, 'accounts/settings.html', {
-            'user_form': user_form,
-            'profile_form': profile_form
-        })
-
 
 
 @login_required(login_url='login')
@@ -1618,6 +1648,23 @@ def statistics_view(request):
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         return JsonResponse(data, safe=False)
 
+    """user_group = None
+    if Customer.objects.filter(custodian=request.user).exists():
+        user_group = "Custodian"
+    elif Customer.objects.filter(overseer=request.user).exists():
+        user_group = "Overseer"
+    else:
+        if request.user.groups.filter(name="Director").exists():
+            user_group = "Director"
+        elif request.user.groups.filter(name="Manager").exists():
+            user_group = "Manager"
+        elif request.user.groups.filter(name="Staff").exists():
+            user_group = "Staff"
+        else:
+            user_group = "Customer"
+
+    allowed_roles = ["Director", "Manager", "Staff", "Superuser"]"""
+
     return render(request, 'core/helpdesk/statistics.html', {
         "user_group": user_group,
         'customers': available_customers,
@@ -1628,10 +1675,10 @@ def statistics_view(request):
         'selected_terminal': str(terminal_filter),
         'selected_region': str(region_filter),
         'data_json': json.dumps(data, ensure_ascii=False),
-        "user_group": user_group,
         "assigned_customer": assigned_customer,
         "assigned_branch": assigned_terminal,
         "assigned_region": assigned_region,
+        #"allowed_roles": allowed_roles
     })
 
 @login_required(login_url='login')
@@ -1871,13 +1918,33 @@ def tickets(request):
     # Pagination
     paginator = Paginator(tickets_qs, 10)
     page_obj = paginator.get_page(page_number)
+    
+    user_group = None
+    if Customer.objects.filter(custodian=request.user).exists():
+        user_group = "Custodian"
+    elif Customer.objects.filter(overseer=request.user).exists():
+        user_group = "Overseer"
+    else:
+        if request.user.groups.filter(name="Director").exists():
+            user_group = "Director"
+        elif request.user.groups.filter(name="Manager").exists():
+            user_group = "Manager"
+        elif request.user.groups.filter(name="Staff").exists():
+            user_group = "Staff"
+        else:
+            user_group = "Customer"
+
+    allowed_roles = ["Director", "Manager", "Staff", "Superuser"]
 
     return render(request, 'core/helpdesk/tickets.html', {
         'tickets': page_obj,
         'search_query': query,
         'status_filter': status_filter,
+        'user_group': user_group,
+        'allowed_roles':allowed_roles,
     })
 
+"""
 @login_required(login_url='login')
 def create_ticket(request):
     user_group = None
@@ -1912,6 +1979,77 @@ def create_ticket(request):
                 ticket.region = ticket.terminal.region
 
             ticket.save()
+            return redirect('create_ticket' if 'create_another' in request.POST else 'tickets')
+    else:
+        terminal_id = request.GET.get('terminal_id')
+        if terminal_id:
+            form = TicketForm(user=request.user, terminal_id=terminal_id)
+        else:
+            form = TicketForm(user=request.user)
+
+    cats = ProblemCategory.objects.all()
+    js_mapping = { str(cat.pk): ISSUE_MAPPING.get(cat.name, []) for cat in cats }
+    return render(request, 'core/helpdesk/create_ticket.html', {
+        'form': form,
+        'issue_mapping': json.dumps(js_mapping),
+        'user_group': user_group,
+        'allowed_roles': allowed_roles})
+"""
+
+# views.py
+from channels.layers import get_channel_layer
+from django.shortcuts import render, redirect
+from django.contrib import messages
+from .forms import TicketForm
+from .models import Ticket
+
+@login_required(login_url='login')
+def create_ticket(request):
+    user_group = None
+    allowed_roles = []
+    if request.user.groups.exists():
+        user_group = request.user.groups.first().name
+    if user_group == 'Admin':
+        allowed_roles = ['Admin', 'Manager']
+    elif user_group == 'Manager':
+        allowed_roles = ['Manager', 'Staff']
+    else:
+        allowed_roles = ['Staff']
+    
+    if request.method == 'POST':
+        form = TicketForm(request.POST, user=request.user)
+        if form.is_valid():
+            ticket = form.save(commit=False)
+
+            # Prevent using inactive terminal
+            if ticket.terminal and not ticket.terminal.is_active:
+                messages.error(request, f"Terminal '{ticket.terminal.cdm_name}' is disabled. Please enable it before creating a ticket.")
+                return redirect('create_ticket')
+
+            ticket.created_by = request.user
+            custom_date = form.cleaned_data.get('custom_created_at')
+            if custom_date:
+                ticket.created_at = custom_date
+
+            if ticket.terminal:
+                ticket.customer = ticket.terminal.customer
+                ticket.region = ticket.terminal.region
+
+            ticket.save()
+
+            # Send notification about the new ticket via WebSocket
+            channel_layer = get_channel_layer()
+            channel_layer.group_send(
+                "ticket_notifications",  # Group name
+                {
+                    'type': 'send_ticket_notification',
+                    'ticket_id': ticket.id,
+                    'title': ticket.title,
+                    'priority': ticket.priority,
+                    'created_at': ticket.created_at.strftime('%Y-%m-%d %H:%M:%S')
+                }
+            )
+
             return redirect('create_ticket' if 'create_another' in request.POST else 'tickets')
     else:
         terminal_id = request.GET.get('terminal_id')
@@ -2245,7 +2383,7 @@ def resolve_ticket_view(request, ticket_id):
 
     # Check if the user is authorized to resolve the ticket
     if is_director(request.user) or is_manager(request.user) or is_staff(request.user):
-        if ticket.status != 'resolved':
+        if ticket.status != 'closed':
             ticket.resolution = resolution
             ticket.status = 'closed'
             ticket.resolved_by = request.user  
@@ -2259,8 +2397,8 @@ def resolve_ticket_view(request, ticket_id):
 
     elif request.user.has_perm('can_resolve_ticket'):
         # Custom permission check
-        if ticket.status != 'resolved':
-            ticket.status = 'resolved'
+        if ticket.status != 'closed':
+            ticket.status = 'closed'
             ticket.resolved_by = request.user  
             ticket.resolved_at = timezone.now() 
             ticket.save()
@@ -2282,16 +2420,36 @@ def delete_ticket(request, ticket_id):
     messages.success(request, "Ticket deleted successfully.")
     return redirect('tickets')
 
+@login_required(login_url='login')
 def ticket_statuses(request):
     user = request.user
     is_custodian = user.groups.filter(name="Custodian").exists()
     is_overseer = user.groups.filter(name="Overseer").exists()
     is_customer = user.groups.filter(name="Customer").exists()
 
+    user_group = None
+    if Customer.objects.filter(custodian=request.user).exists():
+        user_group = "Custodian"
+    elif Customer.objects.filter(overseer=request.user).exists():
+        user_group = "Overseer"
+    else:
+        if request.user.groups.filter(name="Director").exists():
+            user_group = "Director"
+        elif request.user.groups.filter(name="Manager").exists():
+            user_group = "Manager"
+        elif request.user.groups.filter(name="Staff").exists():
+            user_group = "Staff"
+        else:
+            user_group = "Customer"
+
+    allowed_roles = ["Director", "Manager", "Staff", "Superuser"]
+
     return render(request, 'core/helpdesk/ticket_statuses.html', {
         "is_custodian": is_custodian,
         "is_overseer": is_overseer,
         "is_customer": is_customer,
+        "user_group": user_group,
+        "allowed_roles": allowed_roles,
     })
 
 
@@ -2360,14 +2518,32 @@ def problem_category(request):
     paginator = Paginator(categories, 10)  
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
+
+    user_group = None
+    if Customer.objects.filter(custodian=request.user).exists():
+        user_group = "Custodian"
+    elif Customer.objects.filter(overseer=request.user).exists():
+        user_group = "Overseer"
+    else:
+        if request.user.groups.filter(name="Director").exists():
+            user_group = "Director"
+        elif request.user.groups.filter(name="Manager").exists():
+            user_group = "Manager"
+        elif request.user.groups.filter(name="Staff").exists():
+            user_group = "Staff"
+        else:
+            user_group = "Customer"
+
+    allowed_roles = ["Director", "Manager", "Staff", "Superuser"]
     
     return render(request, 'core/helpdesk/problem_category.html', {
         'page_obj': page_obj, 
         'search_query': query,
+        'user_group': user_group,
+        'allowed_roles': allowed_roles,
     })
 
-"""
-@user_passes_test(is_director)
+@user_passes_test(is_director_or_manager)
 def create_problem_category(request):
     if request.method == 'POST':
         print("POST received:", request.POST) 
@@ -2385,27 +2561,27 @@ def create_problem_category(request):
     else:
         form = ProblemCategoryForm()
 
-    return render(request, 'core/helpdesk/create_problem_category.html', {'form': form})
-"""
-@user_passes_test(is_director)
-def create_problem_category(request):
-    if request.method == 'POST':
-        print("POST received:", request.POST) 
-        form = ProblemCategoryForm(request.POST)
-        if form.is_valid():
-            category = form.save()
-            print("Category saved!")
-
-            # Redirect based on which button was clicked
-            if 'create_another' in request.POST:
-                return redirect('create_problem_category')
-            return redirect('problem_category')  
-        else:
-            print("Form errors:", form.errors)
+    user_group = None
+    if Customer.objects.filter(custodian=request.user).exists():
+        user_group = "Custodian"
+    elif Customer.objects.filter(overseer=request.user).exists():
+        user_group = "Overseer"
     else:
-        form = ProblemCategoryForm()
+        if request.user.groups.filter(name="Director").exists():
+            user_group = "Director"
+        elif request.user.groups.filter(name="Manager").exists():
+            user_group = "Manager"
+        elif request.user.groups.filter(name="Staff").exists():
+            user_group = "Staff"
+        else:
+            user_group = "Customer"
 
-    return render(request, 'core/helpdesk/create_problem_category.html', {'form': form})
+    allowed_roles = ["Director", "Manager", "Staff", "Superuser"]
+
+    return render(request, 'core/helpdesk/create_problem_category.html',
+                   {'form': form,
+                    'user_group': user_group,
+                    'allowed_roles': allowed_roles})
 
 @user_passes_test(is_director)
 def edit_problem_category(request, category_id):
@@ -2447,9 +2623,29 @@ def customers(request):
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
-    return render(request, "core/helpdesk/customers.html", {"customers": page_obj})
+    user_group = None
+    if Customer.objects.filter(custodian=request.user).exists():
+        user_group = "Custodian"
+    elif Customer.objects.filter(overseer=request.user).exists():
+        user_group = "Overseer"
+    else:
+        if request.user.groups.filter(name="Director").exists():
+            user_group = "Director"
+        elif request.user.groups.filter(name="Manager").exists():
+            user_group = "Manager"
+        elif request.user.groups.filter(name="Staff").exists():
+            user_group = "Staff"
+        else:
+            user_group = "Customer"
 
-@user_passes_test(is_director)
+    allowed_roles = ["Director", "Manager", "Staff", "Superuser"]
+
+    return render(request, "core/helpdesk/customers.html",
+                   {"customers": page_obj,
+                    "user_group": user_group,
+                    "allowed_roles": allowed_roles})
+
+@user_passes_test(is_director_or_manager)
 def create_customer(request):
     if request.method == "POST":
         name = request.POST.get("name", "").strip()
@@ -2460,7 +2656,26 @@ def create_customer(request):
         else:
             messages.error(request, "Customer name is required.")
 
-    return render(request, "core/helpdesk/create_customer.html")
+    user_group = None
+    if Customer.objects.filter(custodian=request.user).exists():
+        user_group = "Custodian"
+    elif Customer.objects.filter(overseer=request.user).exists():
+        user_group = "Overseer"
+    else:
+        if request.user.groups.filter(name="Director").exists():
+            user_group = "Director"
+        elif request.user.groups.filter(name="Manager").exists():
+            user_group = "Manager"
+        elif request.user.groups.filter(name="Staff").exists():
+            user_group = "Staff"
+        else:
+            user_group = "Customer"
+
+    allowed_roles = ["Director", "Manager", "Staff", "Superuser"]
+
+    return render(request, "core/helpdesk/create_customer.html",
+                   {'user_group': user_group,
+                     'allowed_roles': allowed_roles})
 
 @user_passes_test(is_director)
 def delete_customer(request, id):
@@ -2485,7 +2700,27 @@ def regions(request):
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
-    return render(request, 'core/helpdesk/regions.html', {'regions': page_obj})
+    user_group = None
+    if Customer.objects.filter(custodian=request.user).exists():
+        user_group = "Custodian"
+    elif Customer.objects.filter(overseer=request.user).exists():
+        user_group = "Overseer"
+    else:
+        if request.user.groups.filter(name="Director").exists():
+            user_group = "Director"
+        elif request.user.groups.filter(name="Manager").exists():
+            user_group = "Manager"
+        elif request.user.groups.filter(name="Staff").exists():
+            user_group = "Staff"
+        else:
+            user_group = "Customer"
+
+    allowed_roles = ["Director", "Manager", "Staff", "Superuser"]
+
+    return render(request, 'core/helpdesk/regions.html',
+                   {'regions': page_obj,
+                    'user_group': user_group,
+                    'allowed_roles': allowed_roles})
 
 @user_passes_test(is_director)
 def delete_region(request, region_id):
@@ -2571,6 +2806,23 @@ def terminals(request):
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
+    user_group = None
+    if Customer.objects.filter(custodian=request.user).exists():
+        user_group = "Custodian"
+    elif Customer.objects.filter(overseer=request.user).exists():
+        user_group = "Overseer"
+    else:
+        if request.user.groups.filter(name="Director").exists():
+            user_group = "Director"
+        elif request.user.groups.filter(name="Manager").exists():
+            user_group = "Manager"
+        elif request.user.groups.filter(name="Staff").exists():
+            user_group = "Staff"
+        else:
+            user_group = "Customer"
+
+    allowed_roles = ["Director", "Manager", "Staff", "Superuser"]
+
     # Pass the required objects to the template
     return render(request, 'core/helpdesk/terminals.html', {
         'form': form,
@@ -2578,7 +2830,9 @@ def terminals(request):
         'terminals': page_obj,
         'customers': customers,
         'regions': regions,
-        'zones': zones
+        'zones': zones,
+        'user_group': user_group,
+        'allowed_roles': allowed_roles,
     })
 
 
@@ -2650,7 +2904,27 @@ def units(request):
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
-    return render(request, 'core/helpdesk/units.html', {'page_obj': page_obj})
+    user_group = None
+    if Customer.objects.filter(custodian=request.user).exists():
+        user_group = "Custodian"
+    elif Customer.objects.filter(overseer=request.user).exists():
+        user_group = "Overseer"
+    else:
+        if request.user.groups.filter(name="Director").exists():
+            user_group = "Director"
+        elif request.user.groups.filter(name="Manager").exists():
+            user_group = "Manager"
+        elif request.user.groups.filter(name="Staff").exists():
+            user_group = "Staff"
+        else:
+            user_group = "Customer"
+
+    allowed_roles = ["Director", "Manager", "Staff", "Superuser"]
+
+    return render(request, 'core/helpdesk/units.html',
+                   {'page_obj': page_obj,
+                    'user_group': user_group,
+                    'allowed_roles': allowed_roles})
 
 @user_passes_test(is_director)
 def delete_unit(request, unit_id):
@@ -2675,7 +2949,28 @@ def system_users(request):
     paginator = Paginator(all_users, 10)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
-    return render(request, 'core/helpdesk/users.html', {'page_obj': page_obj})
+
+    user_group = None
+    if Customer.objects.filter(custodian=request.user).exists():
+        user_group = "Custodian"
+    elif Customer.objects.filter(overseer=request.user).exists():
+        user_group = "Overseer"
+    else:
+        if request.user.groups.filter(name="Director").exists():
+            user_group = "Director"
+        elif request.user.groups.filter(name="Manager").exists():
+            user_group = "Manager"
+        elif request.user.groups.filter(name="Staff").exists():
+            user_group = "Staff"
+        else:
+            user_group = "Customer"
+
+    allowed_roles = ["Director", "Manager", "Staff", "Superuser"]
+
+    return render(request, 'core/helpdesk/users.html',
+                   {'page_obj': page_obj,
+                    'user_group': user_group,
+                    'allowed_roles': allowed_roles})
 
 @user_passes_test(is_director)
 def delete_system_user(request, user_id):
@@ -2706,8 +3001,27 @@ def zones(request):
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
+    user_group = None
+    if Customer.objects.filter(custodian=request.user).exists():
+        user_group = "Custodian"
+    elif Customer.objects.filter(overseer=request.user).exists():
+        user_group = "Overseer"
+    else:
+        if request.user.groups.filter(name="Director").exists():
+            user_group = "Director"
+        elif request.user.groups.filter(name="Manager").exists():
+            user_group = "Manager"
+        elif request.user.groups.filter(name="Staff").exists():
+            user_group = "Staff"
+        else:
+            user_group = "Customer"
+
+    allowed_roles = ["Director", "Manager", "Staff", "Superuser"]
+
     return render(request, 'core/helpdesk/zones.html', {
         'page_obj': page_obj,
+        'user_group': user_group,
+        'allowed_roles': allowed_roles
     })
 
 @user_passes_test(is_director)
@@ -2810,6 +3124,25 @@ def reports(request):
     elif user_group == "Overseer" and customers.exists():
         selected_customer = customers.first()
 
+    
+    users_group = None
+    if Customer.objects.filter(custodian=request.user).exists():
+        users_group = "Custodian"
+    elif Customer.objects.filter(overseer=request.user).exists():
+        users_group = "Overseer"
+    else:
+        if request.user.groups.filter(name="Director").exists():
+            users_group = "Director"
+        elif request.user.groups.filter(name="Manager").exists():
+            users_group = "Manager"
+        elif request.user.groups.filter(name="Staff").exists():
+            users_group = "Staff"
+        else:
+            users_group = "Customer"
+
+    allowed_roles = ["Director", "Manager", "Staff", "Superuser"]
+    
+
     # Context to be passed to the template
     context = {
         'tickets': tickets_page,
@@ -2822,6 +3155,8 @@ def reports(request):
         'filter_by_customer': filter_by_customer,
         'filter_by_terminal': filter_by_terminal,
         'user_group': user_group,  
+        'users_group':users_group,
+        'allowed_roles':allowed_roles
     }
 
     return render(request, 'core/helpdesk/reports.html', context)
@@ -2975,12 +3310,31 @@ def version_controls(request):
         'terminal__branch_name', 'terminal__id'
     ).distinct()
 
+    user_group = None
+    if Customer.objects.filter(custodian=request.user).exists():
+        user_group = "Custodian"
+    elif Customer.objects.filter(overseer=request.user).exists():
+        user_group = "Overseer"
+    else:
+        if request.user.groups.filter(name="Director").exists():
+            user_group = "Director"
+        elif request.user.groups.filter(name="Manager").exists():
+            user_group = "Manager"
+        elif request.user.groups.filter(name="Staff").exists():
+            user_group = "Staff"
+        else:
+            user_group = "Customer"
+
+    allowed_roles = ["Director", "Manager", "Staff", "Superuser"]
+
     context = {
         'form': form,
         'page_obj': page_obj,
-        'versions': page_obj,  # This line ensures compatibility with both paginated and non-paginated loops
+        'versions': page_obj,  
         'terminals': terminals,
         'manufacturers': VersionControl.objects.values_list('manufacturer', flat=True).distinct(),
+        'user_group': user_group,
+        'allowed_roles': allowed_roles
         #'firmwares': VersionControl.objects.values_list('firmware', flat=True).distinct(),
         #'app_versions': VersionControl.objects.values_list('app_version', flat=True).distinct(),
     }

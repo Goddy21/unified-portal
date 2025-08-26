@@ -1,11 +1,12 @@
 {% load static %}
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
 
+
 <link rel="stylesheet" type="text/css" href="{% static 'css/navbar.css' %}">
 
 <div class="top-navbar">
   <div class="hamburger" id="hamburger">
-    <i class="fas fa-bars"></i>
+    <i class="fa-solid fa-bars"></i>
   </div>
 
   <div class="logo">BRITS Helpdesk</div>
@@ -91,7 +92,7 @@ function renderEscalations(tickets) {
   });
 }
 
-escalationSocket.onmessage = (e) => {
+/*escalationSocket.onmessage = (e) => {
   const data = JSON.parse(e.data);
 
   // Case 1: full tickets list
@@ -124,7 +125,69 @@ escalationSocket.onmessage = (e) => {
     `;
     listEl.preprend(div);
   }
+};*/
+
+escalationSocket.onmessage = (e) => {
+  const data = JSON.parse(e.data);
+
+  // Case 1: full tickets list (escalated tickets)
+  if (data.tickets) {
+    renderEscalations(data.tickets);
+  }
+
+  // Case 2: single escalation event
+  if (data.type === "escalation") {
+    const countEl = document.getElementById("notificationCount");
+    const listEl  = document.getElementById("notificationsList");
+
+    if (!countEl || !listEl) return;
+
+    let current = parseInt(countEl.textContent || "0");
+    countEl.textContent = current + 1;
+    countEl.style.display = "inline-block";
+
+    // remove "No escalations" placeholder if present
+    const emptyMsg = listEl.querySelector(".empty");
+    if (emptyMsg) emptyMsg.remove();
+
+    const div = document.createElement("div");
+    div.classList.add("notification-item");
+    div.innerHTML = ` 
+      <a class="dropdown-item" href="/tickets/${data.ticket_id}/">
+        #${data.ticket_id} - ${data.title}<br>
+        <small>${data.priority} | ${data.escalated_at}</small>
+      </a>
+    `;
+    listEl.preprend(div);
+  }
+
+  // Case 3: new ticket notification
+  if (data.type === "new_ticket") {
+    const countEl = document.getElementById("notificationCount");
+    const listEl  = document.getElementById("notificationsList");
+
+    if (!countEl || !listEl) return;
+
+    let current = parseInt(countEl.textContent || "0");
+    countEl.textContent = current + 1;
+    countEl.style.display = "inline-block";
+
+    // remove "No escalations" placeholder if present
+    const emptyMsg = listEl.querySelector(".empty");
+    if (emptyMsg) emptyMsg.remove();
+
+    const div = document.createElement("div");
+    div.classList.add("notification-item");
+    div.innerHTML = ` 
+      <a class="dropdown-item" href="/tickets/${data.ticket_id}/">
+        #${data.ticket_id} - ${data.title}<br>
+        <small>${data.priority} | ${data.created_at}</small>
+      </a>
+    `;
+    listEl.preprend(div);
+  }
 };
+
 
 escalationSocket.onclose = () => {
   console.error("WebSocket closed unexpectedly");

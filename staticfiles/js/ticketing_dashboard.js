@@ -1,5 +1,24 @@
 window.addEventListener('DOMContentLoaded', () => {
 
+  function toggleSidebar() {
+    const sidebar = document.getElementById("sidebar");
+    const overlay = document.querySelector(".sidebar-overlay");
+    sidebar.classList.toggle("active");
+    overlay.classList.toggle("active");
+  }
+
+  const hamburger = document.getElementById("hamburger");
+  if (hamburger) {
+    hamburger.addEventListener("click", toggleSidebar);
+  }
+
+  document.querySelectorAll(".has-submenu > a").forEach(link => {
+    link.addEventListener("click", function (e) {
+      e.preventDefault();
+      this.parentElement.classList.toggle("expanded");
+    });
+  });
+
   // === User Profile Dropdown Toggle ===
   const userProfile = document.getElementById('userProfile');
   if (userProfile) {

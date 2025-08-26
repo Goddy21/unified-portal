@@ -114,14 +114,34 @@ class UserUpdateForm(forms.ModelForm):
 class ProfileUpdateForm(forms.ModelForm):
     class Meta:
         model = Profile
-        fields = ['avatar', 'phone_number', 'role', 'customer', 'terminal']
+        fields = ['avatar', 'phone_number', 'id_number', 'role']  # Include role but make it read-only
 
-    # Customize widgets for better UI
     phone_number = forms.CharField(widget=forms.TextInput(attrs={'class': 'form-control'}))
-    role = forms.CharField(widget=forms.TextInput(attrs={'class': 'form-control'}))
-    customer = forms.ModelChoiceField(queryset=Customer.objects.all(), required=False, widget=forms.Select(attrs={'class': 'form-control'}))
-    terminal = forms.ModelChoiceField(queryset=Terminal.objects.all(), required=False, widget=forms.Select(attrs={'class': 'form-control'}))
-    id_number = forms.CharField(widget=forms.TextInput(attrs={'class': 'form-control'})) 
+    id_number = forms.CharField(widget=forms.TextInput(attrs={'class': 'form-control'}))
+
+    def __init__(self, *args, **kwargs):
+        user = kwargs.get('instance').user
+        super().__init__(*args, **kwargs)
+
+        # Handle visibility of role, customer, and terminal based on user role
+        if user.profile.role == 'Customer':
+            # Exclude role, customer, terminal for Customer role
+            self.fields.pop('role', None)
+            self.fields.pop('customer', None)
+            self.fields.pop('terminal', None)
+        elif user.profile.role == 'Overseer':
+            # For Overseer, make customer read-only but show terminal
+            self.fields['customer'].widget.attrs['disabled'] = True
+        elif user.profile.role == 'Custodian':
+            # For Custodian, make terminal read-only but show customer
+            self.fields['terminal'].widget.attrs['disabled'] = True
+        
+        # Make role field read-only (not editable)
+        if 'role' in self.fields:
+            self.fields['role'].widget.attrs['readonly'] = True  # Prevent changes to role
+
+
+
 
 class TicketForm(forms.ModelForm):
     problem_category = forms.ModelChoiceField(
@@ -163,7 +183,7 @@ class TicketForm(forms.ModelForm):
             'terminal': forms.Select(attrs={'class': 'form-control'}),
             #'priority': forms.Select(attrs={'class': 'form-control'}),
             'status': forms.Select(attrs={'class': 'form-control'}),
-            'responsible': forms.Select(attrs={'class': 'form-control'})
+            #'responsible': forms.Select(attrs={'class': 'form-control'})
         }
     # Override to make them required and visible
     customer = forms.ModelChoiceField(queryset=Customer.objects.all(), required=True)

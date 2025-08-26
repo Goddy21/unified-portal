@@ -368,7 +368,7 @@ button, .btn-create, .btn-update, .btn-delete {
 
 .search-form button {
   padding: 8px 15px;
-  background-color: #007bff;
+  background-color: #2e3a59;
   color: white;
   border: none;
   border-radius: 5px;
@@ -423,6 +423,93 @@ button, .btn-create, .btn-update, .btn-delete {
   background-color: #d78e10;
   color: #111;
 }
+/* Fullscreen overlay for modal */
+.modal-backdrop {
+  background-color: rgba(0, 0, 0, 0.5); /* Darken the background */
+}
+
+.modal-dialog {
+  max-width: 500px; /* Keep it a fixed width */
+  margin: 10% auto; /* Vertically center it */
+}
+
+.modal-content {
+  border-radius: 8px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2); /* More intense shadow for popup effect */
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.modal-header {
+  background-color: #2e3a59;
+  color: white;
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+}
+
+.modal-header .close {
+  color: white;
+  font-size: 1.5rem;
+  opacity: 1;
+}
+
+.modal-body {
+  background-color: #f9f9f9;
+  padding: 1.5rem;
+}
+
+.modal-footer {
+  background-color: #f1f1f1;
+  border-bottom-left-radius: 8px;
+  border-bottom-right-radius: 8px;
+  padding: 1rem;
+}
+
+.form-group label {
+  font-weight: bold;
+  color: #333;
+}
+
+.form-control {
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 0.75rem;
+}
+
+button.btn {
+  border-radius: 4px;
+  font-weight: bold;
+}
+
+button.btn-primary {
+  background-color: #2e3a59;
+  color: white;
+  border: none;
+}
+
+button.btn-primary:hover {
+  background-color: #1f243a;
+}
+
+button.btn-secondary {
+  background-color: #6c757d;
+  color: white;
+  border: none;
+}
+
+button.btn-secondary:hover {
+  background-color: #5a6268;
+}
 
 /* RESPONSIVE ADJUSTMENTS */
 @media (max-width: 900px) {
@@ -440,4 +527,106 @@ button, .btn-create, .btn-update, .btn-delete {
     flex-direction: column;
     align-items: stretch;
   }
+}
+
+/* === ENHANCED RESPONSIVENESS === */
+
+/* Base fluid text */
+html { font-size: 100%; }
+@media (min-width: 768px) { html { font-size: 110%; } }
+@media (min-width: 1200px) { html { font-size: 112.5%; } }
+
+/* Navigation */
+.dashboard-header {
+  padding: 1rem;
+  flex-wrap: wrap;
+}
+.dashboard-header nav {
+  margin-top: 0.5rem;
+  width: 100%;
+  text-align: right;
+}
+
+/* Search section adjustments */
+.search-form {
+  flex-direction: column;
+}
+.search-form input,
+.search-form button {
+  width: 100%;
+}
+.search-form button {
+  margin-top: 0.5rem;
+}
+
+/* Dashboard grid stacking */
+@media (max-width: 900px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* Cards: full width on small */
+.card {
+  padding: 1.25rem;
+}
+@media (max-width: 600px) {
+  .card {
+    padding: 1rem;
+  }
+}
+
+/* Tables: horizontal scroll on tiny screens */
+.user-table,
+.table {
+  display: block;
+  width: 100%;
+  overflow-x: auto;
+}
+.user-table th,
+.user-table td,
+.table th,
+.table td {
+  white-space: nowrap;
+}
+
+/* Forms & inline rows: full-width inputs */
+.form-inline-row,
+.create-user-form,
+.manage-customer-roles {
+  gap: 1rem;
+}
+@media (max-width: 600px) {
+  .form-inline-row,
+  .create-user-form,
+  .manage-customer-roles {
+    flex-direction: column;
+  }
+  .form-inline-row select,
+  .form-inline-row button,
+  .create-user-form input,
+  .create-user-form select {
+    width: 100%;
+  }
+}
+
+/* Button sizing */
+button,
+.btn-nav,
+.btn-create,
+.btn-update,
+.btn-delete {
+  font-size: 1rem;
+  padding: 0.75rem;
+}
+
+@media (max-width: 500px) {
+  .modal-dialog {
+    margin: 5% 0;
+    width: 95%;
+  }
+}
+
+.dashboard-container > * {
+  margin-bottom: 1.5rem;
 }

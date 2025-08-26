@@ -9,11 +9,11 @@
   padding: 0 1.5rem;
   position: fixed;
   top: 0;
-  left: 250px;
+  left: 0; /* Change from 250px to 0 */
   right: 0;
   z-index: 1050;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); /* Slightly stronger shadow for depth */
-  transition: box-shadow 0.3s ease-in-out; /* Smooth transition effect */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transition: box-shadow 0.3s ease-in-out;
 }
 
 /* Logo */
@@ -34,7 +34,7 @@
 .hamburger {
   font-size: 1.8rem;
   cursor: pointer;
-  display: none;
+  display: block;
   color: #343a40;
 }
 
@@ -114,6 +114,56 @@
   transform: scale(1.05); /* Slightly grow the image on hover */
 }
 
+.notifications {
+  position: relative;
+  cursor: pointer;
+  margin-right: 20px;
+}
+
+.notifications .fas.fa-bell {
+  font-size: 1.4rem;
+  color: #007bff;
+}
+
+.notifications .badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background: red;
+  color: white;
+  border-radius: 50%;
+  padding: 3px 6px;
+  font-size: 0.7rem;
+}
+
+.notifications-dropdown {
+  display: none;
+  position: absolute;
+  right: 0;
+  background: white;
+  color: black;
+  min-width: 250px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+  border-radius: 6px;
+  z-index: 100;
+}
+.notifications-dropdown.show {
+  display: block;
+}
+
+.notifications-dropdown .empty {
+  padding: 10px;
+  text-align: center;
+  color: gray;
+}
+
+.notifications-dropdown .view-all {
+  padding: 10px;
+  text-align: center;
+  border-top: 1px solid #ddd;
+}
+
+
 /* Dropdown menu */
 .dropdown-menu {
   display: none;
@@ -175,22 +225,24 @@
 /* Responsive Styles */
 @media (max-width: 768px) {
   .hamburger {
-    display: block;
+    display: block; 
   }
 
   .top-navbar {
     left: 0;
+    width: 100%;
   }
 
   .nav-items {
     flex-direction: column;
     position: absolute;
     top: 60px;
+    left: 0;
     right: 0;
     background-color: #fff;
     width: 100%;
     padding: 1rem;
-    display: none;
+    display: none;  /* Hide by default */
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
   }
 
