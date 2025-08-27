@@ -1,6 +1,6 @@
 document.addEventListener("DOMContentLoaded", function () {
   // Profile dropdown toggle
-  const userProfile = document.getElementById('userProfile');
+  /*const userProfile = document.getElementById('userProfile');
   if (userProfile) {
     userProfile.addEventListener('click', function (e) {
       this.classList.toggle('active');
@@ -11,6 +11,17 @@ document.addEventListener("DOMContentLoaded", function () {
       if (!userProfile.contains(e.target)) {
         userProfile.classList.remove('active');
       }
+    });
+  }*/
+
+  const userProfile = document.getElementById("userProfile");
+  if (userProfile) {
+    const profileTrigger = userProfile.querySelector(".profile-trigger");
+    const dropdownMenu = userProfile.querySelector(".dropdown-menu");
+
+    // Toggle dropdown visibility
+    profileTrigger.addEventListener("click", () => {
+      dropdownMenu.classList.toggle("show");
     });
   }
 

@@ -2339,6 +2339,73 @@ def get_terminal_details(request, terminal_id):
         return JsonResponse(response_data)
     except Terminal.DoesNotExist:
         return JsonResponse({'error': 'Terminal not found'}, status=404)
+    
+@login_required(login_url='login')
+def show_tickets(request, period):
+    now = timezone.localtime(timezone.now())
+    day_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    week_start = day_start - timedelta(days=day_start.weekday())
+    month_start = day_start.replace(day=1)
+    year_start = day_start.replace(month=1, day=1)
+
+    ticket_filter = Ticket.objects.none()
+    profile = getattr(request.user, 'profile', None)
+
+    # Role-based filtering
+    if request.user.is_superuser or request.user.groups.filter(name__in=['Director', 'Manager', 'Staff']).exists():
+        ticket_filter = Ticket.objects.all()  
+    else:
+        customer = Customer.objects.filter(overseer=request.user).first()
+        if customer:
+            ticket_filter = Ticket.objects.filter(customer=customer) 
+        elif profile and profile.terminal:
+            ticket_filter = Ticket.objects.filter(terminal=profile.terminal) 
+
+    # Filter tickets based on the period
+    if period == 'daily':
+        tickets = ticket_filter.filter(created_at__gte=day_start)
+    elif period == 'weekly':
+        tickets = ticket_filter.filter(created_at__gte=week_start)
+    elif period == 'monthly':
+        tickets = ticket_filter.filter(created_at__gte=month_start)
+    elif period == 'yearly':
+        tickets = ticket_filter.filter(created_at__gte=year_start)
+    else:
+        tickets = []
+
+    # Search functionality (applied to filtered tickets)
+    search_query = request.GET.get('q', '')
+    if search_query:
+        tickets = tickets.filter(
+            Q(title__icontains=search_query) |
+            Q(customer__name__icontains=search_query) |  # Search customer name
+            Q(assigned_to__username__icontains=search_query)  # Search assigned user's username
+        )
+
+    user_group = None
+    if Customer.objects.filter(custodian=request.user).exists():
+        user_group = "Custodian"
+    elif Customer.objects.filter(overseer=request.user).exists():
+        user_group = "Overseer"
+    else:
+        if request.user.groups.filter(name="Director").exists():
+            user_group = "Director"
+        elif request.user.groups.filter(name="Manager").exists():
+            user_group = "Manager"
+        elif request.user.groups.filter(name="Staff").exists():
+            user_group = "Staff"
+        else:
+            user_group = "Customer"  
+
+    allowed_roles = ["Director", "Manager", "Staff", "Superuser"]
+    
+    # Pass tickets and period to the template
+    return render(request, 'core/helpdesk/ticket_list.html', {
+        'tickets': tickets,
+        'period': period,
+        'user_group': user_group,
+        'allowed_roles': allowed_roles
+    })
 
 @login_required
 def edit_comment(request, comment_id):
@@ -2604,6 +2671,7 @@ def delete_problem_category(request, category_id):
     return redirect('problem_category')
 
 # Master Data Views
+@login_required(login_url='login')
 def customers(request):
     if request.method == "POST" and request.FILES.get("file"):
         csv_file = request.FILES["file"]
@@ -2644,6 +2712,40 @@ def customers(request):
                    {"customers": page_obj,
                     "user_group": user_group,
                     "allowed_roles": allowed_roles})
+
+@login_required(login_url='login')
+def customer_terminals(request, customer_id):
+    customer = get_object_or_404(Customer, id=customer_id)
+    terminals_list = Terminal.objects.filter(customer=customer)
+    
+    # Pagination setup
+    paginator = Paginator(terminals_list, 10)  
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    user_group = None
+    if Customer.objects.filter(custodian=request.user).exists():
+        user_group = "Custodian"
+    elif Customer.objects.filter(overseer=request.user).exists():
+        user_group = "Overseer"
+    else:
+        if request.user.groups.filter(name="Director").exists():
+            user_group = "Director"
+        elif request.user.groups.filter(name="Manager").exists():
+            user_group = "Manager"
+        elif request.user.groups.filter(name="Staff").exists():
+            user_group = "Staff"
+        else:
+            user_group = "Customer"
+
+    allowed_roles = ["Director", "Manager", "Staff", "Superuser"]
+
+    return render(request, 'core/helpdesk/customer_terminals.html', {
+        'customer': customer,
+        'terminals': page_obj,
+        'user_group': user_group,
+        'allowed_roles': allowed_roles
+    })
 
 @user_passes_test(is_director_or_manager)
 def create_customer(request):

@@ -73,8 +73,10 @@ urlpatterns = [
 
     path('ticketing/', views.ticketing_dashboard, name='ticketing_dashboard'),
     path('tickets/', views.tickets, name='tickets'),
+    path('tickets/<int:ticket_id>/', views.ticket_detail, name='ticket_detail'),  
+    path('tickets/period/<str:period>/', views.show_tickets, name='show_tickets_by_period'),
+    path('tickets/', views.show_tickets, name='ticket_list'),
     path('create_ticket/', views.create_ticket, name= 'create_ticket'),
-    path('tickets/<int:ticket_id>/', views.ticket_detail, name='ticket_detail'), 
     path('comments/<int:comment_id>/edit/', views.edit_comment, name='edit_comment'),
     path('comments/<int:comment_id>/delete/', views.delete_comment, name='delete_comment'),
     path('ticket/<int:ticket_id>/resolve/', views.resolve_ticket_view, name='resolve_ticket'),
@@ -92,6 +94,7 @@ urlpatterns = [
     # Master Data
     path('master-data/customers/', views.customers, name='customers'),
     path("customers/create/", views.create_customer, name="create_customer"),
+    path('customers/<int:customer_id>/terminals/', views.customer_terminals, name='customer_terminals'),
     path('customers/delete/<int:id>/', views.delete_customer, name='delete_customer'),
 
     path('master-data/regions/', views.regions, name='regions'),

@@ -43,7 +43,9 @@
       {% for customer in customers %}
       <tr>
         <td>{{ forloop.counter }}</td>
-        <td>{{ customer.name }}</td>
+        <td>
+          <a href="{% url 'customer_terminals' customer.id %}">{{ customer.name }}</a>
+        </td>
         <td>
           <a href="{% url 'delete_customer' customer.id %}" class="view-link" onclick="return confirm('Are you sure you want to delete this customer?');">Remove</a>
         </td>

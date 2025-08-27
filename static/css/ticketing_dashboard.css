@@ -178,12 +178,33 @@ body {
   transform: scale(1.1); /* Subtle zoom on menu icons */
 }
 
+.user-profile {
+  position: relative; 
+  z-index: 1050; 
+}
 /* User profile dropdown active state */
 .user-profile.active {
-    box-shadow: 0 0 0 3px rgba(79, 163, 247, 0.3); /* Accent color glow */
+    box-shadow: 0 0 0 3px rgba(79, 163, 247, 0.3); 
     border-radius: var(--border-radius);
+    position: relative;
+    z-index: 1050;
 }
 
+.user-profile.active .dropdown-menu {
+  display: block !important; 
+}
+
+.user-profile.active .dropdown-menu {
+  position: absolute;
+  top: 100%; 
+  right: 0;
+  z-index: 1060; 
+  display: none; 
+}
+
+.user-profile.active .dropdown-menu.show {
+  display: block;
+}
 /* Improve search input focus state */
 #navbarSearchInput:focus {
     border-color: var(--accent-color);
@@ -331,6 +352,14 @@ body, h1, h2, h3, p, span, div, button, input, canvas {
   .chart-card {
     padding: 1rem; /* Smaller chart card padding */
   }
+
+  @media (max-width: 768px) {
+    .user-profile.active .dropdown-menu {
+      top: 60px; /* Ensure it's correctly positioned */
+      position: fixed;
+    }
+  }
+
 }
 
 @media (max-width: 480px) {

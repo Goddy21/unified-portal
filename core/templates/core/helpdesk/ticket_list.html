@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'css/ticket_list.css' %}">
+{% endblock %}
+
+{% block title %}🎫 Ticket List{% endblock %}
+
+{% block content %}
+<div class="ticket-list-container">
+    <h1>Tickets for {{ period|capfirst }} Period</h1>
+
+    <!-- Search Bar -->
+    <div class="search-bar-container">
+        <form method="get" action="{% url 'show_tickets_by_period' period=period %}" class="search-form">
+            <input type="text" name="q" placeholder="Search tickets..." value="{{ request.GET.q }}" class="search-bar">
+            <button type="submit" class="search-button">Search</button>
+        </form>
+    </div>
+
+    <!-- Ticket List -->
+    <div class="ticket-list">
+        {% for ticket in tickets %}
+        <a href="{% url 'ticket_detail' ticket_id=ticket.id %}" class="ticket-item">
+            <h4>{{ ticket.title }}</h4>
+            <p><strong>Status:</strong> <span class="status-{{ ticket.status|lower }}">{{ ticket.status }}</span></p>
+            <p><strong>Priority:</strong> <span class="priority-{{ ticket.priority|lower }}">{{ ticket.priority }}</span></p>
+            <p><strong>Customer:</strong> {{ ticket.customer.name }}</p>
+            <p><strong>Assigned to:</strong> {{ ticket.assigned_to }}</p>
+            <p><strong>Created on:</strong> {{ ticket.created_at|date:"Y-m-d" }}</p>
+        </a>
+        {% empty %}
+        <p>No tickets found for the selected period.</p>
+        {% endfor %}
+    </div>
+</div>
+
+<script src="{% static 'js/ticketing_dashboard.js' %}"></script>
+{% endblock %}

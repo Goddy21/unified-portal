@@ -1,0 +1,193 @@
+/* Base Styles */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f1f4f8;
+    margin: 0;
+    padding: 0;
+    color: #333;
+    line-height: 1.6;
+}
+
+/* Heading Styling */
+h1 {
+    font-size: 2.2rem;
+    font-weight: 600;
+    color: #2d3a4f;
+    text-align: center;
+    margin: 40px 0;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    transition: color 0.3s ease-in-out;
+}
+
+/* Ticket List Container */
+.ticket-list-container {
+    width: 85%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 30px;
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    margin-top: 30px;
+    background: linear-gradient(145deg, #ffffff, #f2f7fc);
+    transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+}
+
+/* Hover Effect on Ticket Container */
+.ticket-list-container:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 45px rgba(0, 0, 0, 0.15);
+}
+
+/* Search Bar */
+.search-bar-container {
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+}
+
+.search-form {
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+.search-bar {
+    padding: 12px;
+    font-size: 1rem;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    width: 100%;
+    max-width: 300px;
+    margin-right: 15px;
+    transition: all 0.3s ease;
+}
+
+.search-bar:focus {
+    border-color: #007bff;
+    outline: none;
+}
+
+.search-button {
+    padding: 12px 20px;
+    background-color: #007bff;
+    border: none;
+    color: white;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.search-button:hover {
+    background-color: #0056b3;
+}
+
+/* Ticket List */
+.ticket-list {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 30px;
+    margin-top: 20px;
+    transition: grid-template-columns 0.3s ease;
+}
+
+/* Ticket Item */
+.ticket-item {
+    background-color: #ffffff;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    animation: fadeIn 0.5s ease-in-out;
+    text-decoration: none;
+    color: inherit;
+}
+
+.ticket-item:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
+}
+
+/* Title Styling */
+.ticket-item h4 {
+    font-size: 1.4rem;
+    font-weight: 500;
+    color: #2d3a4f;
+    margin-bottom: 15px;
+    line-height: 1.4;
+}
+
+/* Ticket Paragraph Styling */
+.ticket-item p {
+    font-size: 1rem;
+    color: #7d8b99;
+    margin: 8px 0;
+    display: inline-block;
+}
+
+.ticket-item p strong {
+    font-weight: 600;
+    color: #2d3a4f;
+}
+
+/* Status and Priority Colors */
+.ticket-item p .status-low {
+    color: #28a745;
+}
+
+.ticket-item p .status-medium {
+    color: #ffc107;
+}
+
+.ticket-item p .status-high {
+    color: #dc3545;
+}
+
+.ticket-item p .priority-low {
+    color: #28a745;
+}
+
+.ticket-item p .priority-medium {
+    color: #ffc107;
+}
+
+.ticket-item p .priority-high {
+    color: #dc3545;
+}
+
+/* Empty State Styling */
+.ticket-list p {
+    font-size: 1.1rem;
+    color: #888;
+    text-align: center;
+    grid-column: span 3;
+    padding: 40px;
+    font-weight: 500;
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+    .ticket-list {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .ticket-list {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Fade-in Animation */
+@keyframes fadeIn {
+    0% {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

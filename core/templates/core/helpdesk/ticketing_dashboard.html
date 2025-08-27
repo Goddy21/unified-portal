@@ -19,27 +19,19 @@
   <!-- KPI Stats -->
   <section class="kpi-section">
     {% for label, id, icon in kpi_data %}
-      <div class="kpi-card gradient-{{ forloop.counter }}">
-        <div class="icon"><i class="fas {{ icon }} fa-2x"></i></div>
-        <div class="details">
-          <h3>{{ label }}</h3>
-          <p id="{{ id }}">0</p>
-        </div>
-      </div>
+        <a href="{% url 'show_tickets_by_period' period=label|lower %}" class="kpi-card gradient-{{ forloop.counter }}" data-period="{{ label|lower }}">
+            <div class="icon"><i class="fas {{ icon }} fa-2x"></i></div>
+            <div class="details">
+                <h3>{{ label }}</h3>
+                <p id="{{ id }}">0</p>
+            </div>
+        </a>
     {% endfor %}
-  </section>
+</section>
+
 
   <!-- Charts Grid -->
   <section class="charts-grid">
-
-    <!-- Modal Structure -->
-    <div id="chartModal" class="modal">
-      <div class="modal-content" id="modalContent">
-        <!-- More info will be dynamically inserted here -->
-      </div>
-      <button onclick="document.getElementById('chartModal').style.display='none'">Close</button>
-    </div>
-
     <!-- Ticket Trends Overview -->
     <div class="chart-card full-width" id="ticketTrendsOverview">
       <div class="card-header">

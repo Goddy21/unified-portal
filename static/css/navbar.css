@@ -179,7 +179,15 @@
 }
 
 .user-profile.active .dropdown-menu {
-  display: block;
+  position: absolute;
+  top: 100%; 
+  right: 0;
+  z-index: 1060;
+  display: none; 
+}
+
+.user-profile.active .dropdown-menu.show {
+  display: block; 
 }
 
 .dropdown-menu a,
@@ -286,3 +294,11 @@
     width: calc(100% - 250px);
   }
 }
+
+@media (max-width: 768px) {
+  .user-profile.active .dropdown-menu {
+    position: fixed;
+    top: 60px; 
+  }
+}
+

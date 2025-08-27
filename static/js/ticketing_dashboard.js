@@ -20,7 +20,7 @@ window.addEventListener('DOMContentLoaded', () => {
   });
 
   // === User Profile Dropdown Toggle ===
-  const userProfile = document.getElementById('userProfile');
+ /* const userProfile = document.getElementById('userProfile');
   if (userProfile) {
     userProfile.addEventListener('click', function (event) {
       this.classList.toggle('active');
@@ -31,7 +31,20 @@ window.addEventListener('DOMContentLoaded', () => {
         userProfile.classList.remove('active');
       }
     });
+  }*/
+
+    
+  const userProfile = document.getElementById("userProfile");
+  if (userProfile) {
+    const profileTrigger = userProfile.querySelector(".profile-trigger");
+    const dropdownMenu = userProfile.querySelector(".dropdown-menu");
+
+    // Toggle dropdown visibility
+    profileTrigger.addEventListener("click", () => {
+      dropdownMenu.classList.toggle("show");
+    });
   }
+
 
   // === Sidebar Submenu Toggles ===
   const masterDataToggle = document.getElementById('masterDataToggle');
@@ -210,6 +223,47 @@ window.addEventListener('DOMContentLoaded', () => {
       chartInstance.destroy();
     }
   }
+
+   // Handle KPI clicks
+    const kpiCards = document.querySelectorAll('.kpi-card');
+
+    kpiCards.forEach(card => {
+        card.addEventListener('click', function() {
+            const period = card.getAttribute('data-period'); 
+            window.location.href = `/tickets/${period}/`; 
+        });
+    });
+
+
+    // Function to fetch tickets for the selected period
+    function fetchTickets(period) {
+      fetch(`/tickets/${period}/`)  
+          .then(response => {
+              if (!response.ok) {
+                  throw new Error(`HTTP error! status: ${response.status}`);
+              }
+              return response.json();
+          })
+          .then(data => {
+              const ticketList = document.getElementById('ticket-list');
+              ticketList.innerHTML = ''; // Clear current tickets
+              data.tickets.forEach(ticket => {
+                  const ticketElement = document.createElement('div');
+                  ticketElement.classList.add('ticket-item');
+                  ticketElement.innerHTML = `
+                      <h4>${ticket.title}</h4>
+                      <p>Status: ${ticket.status}</p>
+                      <p>Priority: ${ticket.priority}</p>
+                  `;
+                  ticketList.appendChild(ticketElement);
+              });
+          })
+          .catch(error => console.error('Error fetching tickets:', error));
+  }
+
+
+  // Initial Load: Fetch Daily Tickets by Default
+  fetchTickets('daily');
 
   const ticketReportChart = document.getElementById('ticketReportChart');
   if (ticketReportChart) {
