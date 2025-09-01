@@ -167,7 +167,7 @@ function showPasscodeModal(fileId, targetUrl, action) {
   const uploaderElement = document.getElementById(`file-uploaded-by-${fileId}`);
   if (!uploaderElement) {
     console.error("Uploader element not found for file ID:", fileId);
-    return false; // Exit if the element is missing
+    return false; 
   }
 
   const isUploader = uploaderElement.value === '{{ request.user.id }}';
@@ -175,7 +175,8 @@ function showPasscodeModal(fileId, targetUrl, action) {
   // Always show the modal to the uploader
   if (isUploader) {
     const modal = document.getElementById('passcode-modal-' + fileId);
-    modal.style.display = 'flex';
+    modal.classList.add('show');
+    document.body.style.overflow = 'hidden'; 
     pendingRedirect = { fileId, targetUrl, action };
     return false;
   }
@@ -210,14 +211,16 @@ function showPasscodeModal(fileId, targetUrl, action) {
     return false;
   }
 
-  modal.style.display = 'flex';
+  modal.classList.add('show');
   pendingRedirect = { fileId, targetUrl, action };
   return false;
 }
 
 
 function closePasscodeModal(fileId) {
-  document.getElementById('passcode-modal-' + fileId).style.display = 'none';
+  const modal = document.getElementById('passcode-modal-' + fileId);
+  if (modal) modal.classList.remove('show');
+  document.body.style.overflow = '';  
   pendingRedirect = null;
 }
 

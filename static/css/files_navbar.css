@@ -3,6 +3,9 @@ body {
   font-family: 'Segoe UI', sans-serif;
 }
 
+/* ===============================
+   Top Navbar
+   =============================== */
 .top-navbar {
   position: fixed;
   top: 0;
@@ -18,13 +21,15 @@ body {
   z-index: 1000;
 }
 
-
 .logo {
   font-weight: bold;
   font-size: 1.2rem;
   white-space: nowrap;
 }
 
+/* ===============================
+   Search Bar
+   =============================== */
 .search-bar {
   display: flex;
   align-items: center;
@@ -50,61 +55,9 @@ body {
   font-size: 1rem;
 }
 
-.user-profile {
-  position: relative;
-  cursor: pointer;
-}
-
-.profile-dropdown {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.profile-dropdown img {
-  border-radius: 50%;
-  width: 32px;
-  height: 32px;
-  object-fit: cover;
-}
-
-.dropdown-content {
-  display: none;
-  position: absolute;
-  top: 45px;
-  right: 0;
-  background: white;
-  color: black;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  border-radius: 5px;
-  overflow: hidden;
-  min-width: 150px;
-  z-index: 1001;
-}
-
-.dropdown-content a {
-  display: block;
-  padding: 10px;
-  text-decoration: none;
-  color: #333;
-}
-
-.dropdown-content a:hover {
-  background-color: #f0f0f0;
-}
-
-.user-profile.active .dropdown-content {
-  display: block;
-}
-
-.hamburger {
-  display: none;
-  background: none;
-  border: none;
-  color: white;
-  font-size: 1.5rem;
-  margin-right: 10px;
-}
+/* ===============================
+   User Profile + Dropdown
+   =============================== */
 .user-profile {
   position: relative;
   cursor: pointer;
@@ -123,6 +76,7 @@ body {
   object-fit: cover;
 }
 
+/* Dropdown menu */
 .dropdown-content {
   position: absolute;
   top: 100%;
@@ -148,10 +102,6 @@ body {
   background-color: #f1f1f1;
 }
 
-/* Show dropdown when .active is added to .user-profile */
-.user-profile.active .dropdown-content {
-  display: block;
-}
 .dropdown-link.logout-btn {
   background: none;
   border: none;
@@ -162,7 +112,27 @@ body {
   cursor: pointer;
 }
 
-/* Responsive */
+/* Show dropdown when user-profile is active */
+.user-profile.active .dropdown-content {
+  display: block;
+}
+
+/* ===============================
+   Hamburger (mobile)
+   =============================== */
+.hamburger {
+  display: none;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  margin-right: 10px;
+  cursor: pointer;
+  color: #333;
+}
+
+/* ===============================
+   Responsive
+   =============================== */
 @media (max-width: 768px) {
   .hamburger {
     display: block;

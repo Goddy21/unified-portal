@@ -40,6 +40,7 @@ class CustomUserCreationForm(forms.ModelForm):
             raise ValidationError("A user with that username already exists.")
         return username
 
+    """
     def save(self, commit=True):
         # Save the user without committing to the database
         user = super().save(commit=False)
@@ -66,6 +67,29 @@ class CustomUserCreationForm(forms.ModelForm):
             profile.save()
 
         return user
+        """
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        user.set_password(self.cleaned_data['password'])
+        if commit:
+            user.save()
+
+        profile, created = Profile.objects.get_or_create(user=user)
+
+        if created:
+            profile.phone_number = self.cleaned_data['phone']
+            profile.id_number = self.cleaned_data['id_number']
+
+            # ✅ Explicitly set role here
+            profile.role = 'Guest'   # Or whatever default you want
+            profile.save()
+        else:
+            profile.phone_number = self.cleaned_data['phone']
+            profile.id_number = self.cleaned_data['id_number']
+            profile.save()
+
+        return user
+
 
 
 
@@ -138,7 +162,7 @@ class ProfileUpdateForm(forms.ModelForm):
         
         # Make role field read-only (not editable)
         if 'role' in self.fields:
-            self.fields['role'].widget.attrs['readonly'] = True  # Prevent changes to role
+            self.fields['role'].disabled = True
 
 
 

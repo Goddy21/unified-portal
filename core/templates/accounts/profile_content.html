@@ -34,7 +34,7 @@
 
             <!-- Role Section -->
             <div class="details-row">
-                <p><strong>Role:</strong> {{ user.profile.role }}</p>
+                <p><strong>Role:</strong>{{ user.profile.get_role_display }}</p>
                 {% if user.profile.role == "Overseer" or user.profile.role == "Custodian" %}
                     <p><strong>Customer:</strong> {{ user.profile.customer.name|default:"No customer assigned" }}</p>
                 {% endif %}
