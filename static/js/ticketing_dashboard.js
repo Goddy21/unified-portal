@@ -1,39 +1,4 @@
 window.addEventListener('DOMContentLoaded', () => {
-
-  function toggleSidebar() {
-    const sidebar = document.getElementById("sidebar");
-    const overlay = document.querySelector(".sidebar-overlay");
-    sidebar.classList.toggle("active");
-    overlay.classList.toggle("active");
-  }
-
-  const hamburger = document.getElementById("hamburger");
-  if (hamburger) {
-    hamburger.addEventListener("click", toggleSidebar);
-  }
-
-  document.querySelectorAll(".has-submenu > a").forEach(link => {
-    link.addEventListener("click", function (e) {
-      e.preventDefault();
-      this.parentElement.classList.toggle("expanded");
-    });
-  });
-
-  // === User Profile Dropdown Toggle ===
- /* const userProfile = document.getElementById('userProfile');
-  if (userProfile) {
-    userProfile.addEventListener('click', function (event) {
-      this.classList.toggle('active');
-      event.stopPropagation();
-    });
-    window.addEventListener('click', function (event) {
-      if (!userProfile.contains(event.target)) {
-        userProfile.classList.remove('active');
-      }
-    });
-  }*/
-
-    
   const userProfile = document.getElementById("userProfile");
   if (userProfile) {
     const profileTrigger = userProfile.querySelector(".profile-trigger");
@@ -42,24 +7,6 @@ window.addEventListener('DOMContentLoaded', () => {
     // Toggle dropdown visibility
     profileTrigger.addEventListener("click", () => {
       dropdownMenu.classList.toggle("show");
-    });
-  }
-
-
-  // === Sidebar Submenu Toggles ===
-  const masterDataToggle = document.getElementById('masterDataToggle');
-  if (masterDataToggle) {
-    masterDataToggle.addEventListener('click', function (event) {
-      event.preventDefault();
-      this.classList.toggle('expanded');
-    });
-  }
-
-  const reportsToggle = document.getElementById('reportsToggle');
-  if (reportsToggle) {
-    reportsToggle.addEventListener('click', function (event) {
-      event.preventDefault();
-      this.classList.toggle('expanded');
     });
   }
 
@@ -382,46 +329,46 @@ window.addEventListener('DOMContentLoaded', () => {
   }
 
   const priorityChart = document.getElementById('priorityChart');
-  if (priorityChart) {
-    destroyExistingChart('priorityChart');
-    console.log(PRIORITY_DATA);
-    const priorityLabels = PRIORITY_DATA.map(item => item.priority.replace(/\b\w/g, l => l.toUpperCase()));
-    const priorityCounts = PRIORITY_DATA.map(item => item.count);
-    new Chart(priorityChart, {
-      type: 'pie',
-      data: {
-        labels: priorityLabels,
-        datasets: [{
-          data: priorityCounts,
-          backgroundColor: [COLOR_MAP.low, COLOR_MAP.medium, COLOR_MAP.high, COLOR_MAP.critical],
-          borderColor: '#fff',
-          borderWidth: 2
-        }]
-      },
-      options: animationOptions
-    });
-  }
+    if (priorityChart) {
+      destroyExistingChart('priorityChart');
+      console.log(PRIORITY_DATA);
+      const priorityLabels = PRIORITY_DATA.map(item => item.priority.replace(/\b\w/g, l => l.toUpperCase()));
+      const priorityCounts = PRIORITY_DATA.map(item => item.count);
+      new Chart(priorityChart, {
+        type: 'pie',
+        data: {
+          labels: priorityLabels,
+          datasets: [{
+            data: priorityCounts,
+            backgroundColor: [COLOR_MAP.low, COLOR_MAP.medium, COLOR_MAP.high, COLOR_MAP.critical],
+            borderColor: '#fff',
+            borderWidth: 2
+          }]
+        },
+        options: animationOptions
+      });
+    }
 
-  const statusChart = document.getElementById('statusChart');
-  if (statusChart) {
-    destroyExistingChart('statusChart');
-    const statusLabels = STATUS_DATA.map(item => item.status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()));
-    const statusCounts = STATUS_DATA.map(item => item.count);
-    new Chart(statusChart, {
-      type: 'pie',
-      data: {
-        labels: statusLabels,
-        datasets: [{
-          data: statusCounts,
-          backgroundColor: [COLOR_MAP.open, COLOR_MAP.in_progress, COLOR_MAP.closed],
-          borderColor: '#fff',
-          borderWidth: 2
-        }]
-      },
-      options: animationOptions
-    });
-  }
-
+    const statusChart = document.getElementById('statusChart');
+    if (statusChart) {
+      destroyExistingChart('statusChart');
+      const statusLabels = STATUS_DATA.map(item => item.status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()));
+      const statusCounts = STATUS_DATA.map(item => item.count);
+      new Chart(statusChart, {
+        type: 'pie',
+        data: {
+          labels: statusLabels,
+          datasets: [{
+            data: statusCounts,
+            backgroundColor: [COLOR_MAP.open, COLOR_MAP.in_progress, COLOR_MAP.closed],
+            borderColor: '#fff',
+            borderWidth: 2
+          }]
+        },
+        options: animationOptions
+      });
+    }
+    
   const timeTrendChart = document.getElementById('timeTrendChart');
   if (timeTrendChart) {
     destroyExistingChart('timeTrendChart');

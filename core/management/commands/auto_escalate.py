@@ -5,16 +5,13 @@ from django.utils import timezone
 from datetime import timedelta
 
 from core.utilss.escalation_constants import ESCALATION_FLOW, ESCALATION_TIME_LIMITS
-
-# 🔁 Import constants from a dedicated file to avoid circular import
-#from core.utils.escalation_constants import ESCALATION_TIME_LIMITS, ESCALATION_FLOW
-
+from core.utilss.escalation_rules import escalate_ticket  # add import
 
 class Command(BaseCommand):
     help = 'Auto-escalates tickets past escalation thresholds'
 
     def handle(self, *args, **kwargs):
-        from core.models import Ticket, EscalationHistory  # ✅ Local import to avoid circular import
+        from core.models import Ticket, EscalationHistory  
 
         now = timezone.now()
         tickets = Ticket.objects.filter(status__in=['open', 'in_progress'])

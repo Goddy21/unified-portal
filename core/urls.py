@@ -81,6 +81,7 @@ urlpatterns = [
     path('comments/<int:comment_id>/delete/', views.delete_comment, name='delete_comment'),
     path('ticket/<int:ticket_id>/resolve/', views.resolve_ticket_view, name='resolve_ticket'),
     path('ticket/<int:ticket_id>/activity/', views.ticket_activity_log, name='ticket_activity_log'),
+    path('ticket/<int:ticket_id>/activity/clear/', views.clear_activity_logs, name='clear_activity_logs'),
     path('get_terminal_details/<int:terminal_id>/', views.get_terminal_details, name='get_terminal_details'),
     path('tickets/<int:ticket_id>/escalate/', views.escalate_ticket, name='escalate_ticket'),
     path('tickets/delete/<int:ticket_id>/', views.delete_ticket, name='delete_ticket'),
@@ -130,4 +131,7 @@ urlpatterns = [
     path('tickets/<int:ticket_id>/escalate/', views.escalate_ticket, name='escalate_ticket'),
     path('notifications/escalated/', views.get_escalated_tickets, name='get_escalated_tickets'),
     path('tickets/escalated/', views.escalated_tickets_page, name='escalated_tickets_list'),
+
+    path('notifications/', views.get_notifications, name='get_notifications'),
+    path("notifications/mark_read/<int:ticket_id>/", views.mark_notification_read, name="mark_notification_read"),
 ]+ static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

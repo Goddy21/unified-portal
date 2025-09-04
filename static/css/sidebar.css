@@ -105,15 +105,20 @@ body {
   transform: rotate(90deg);
 }
 
+/* Submenu with smooth transition */
 .sub-menu {
-  display: none;
   list-style: none;
   padding-left: 20px;
   margin-top: 5px;
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: max-height 0.3s ease, opacity 0.3s ease;
 }
 
 .has-submenu.expanded > .sub-menu {
-  display: block;
+  max-height: none;
+  opacity: 1;
 }
 
 .sub-menu li a {
@@ -123,11 +128,18 @@ body {
   display: flex;
   align-items: center;
   border-radius: 6px;
+  transition: background 0.3s ease, color 0.3s ease;
 }
 
-.sub-menu li a:hover {
+.sub-menu li a:hover,
+.sub-menu li a.active {
   background-color: var(--sidebar-hover);
   color: var(--primary-color);
+}
+
+.sub-menu li a .icon {
+  width: 18px;
+  color: inherit;
 }
 
 /* Main Content */
@@ -136,17 +148,6 @@ body {
   padding: 2rem;
   width: calc(100% - var(--sidebar-width));
   transition: margin-left 0.3s ease;
-}
-
-/* Enhance submenu transitions */
-.sub-menu {
-  max-height: 0;
-  overflow: hidden;
-  transition: max-height 0.3s ease;
-}
-
-.has-submenu.expanded > .sub-menu {
-  max-height: 500px;
 }
 
 /* Rotate chevron icon when expanded */
@@ -175,26 +176,6 @@ body {
   color: var(--sidebar-text);
 }
 
-.sub-menu li a {
-  padding: 10px 20px 10px 40px;
-  gap: 10px;
-  display: flex;
-  align-items: center;
-  border-radius: 6px;
-  transition: background 0.3s ease, color 0.3s ease;
-}
-
-.sub-menu li a:hover,
-.sub-menu li a.active {
-  background-color: var(--sidebar-hover);
-  color: var(--primary-color);
-}
-
-.sub-menu li a .icon {
-  width: 18px;
-  color: inherit;
-}
-
 /* Active submenu highlight */
 .has-submenu.expanded > a {
   background-color: var(--sidebar-hover);
@@ -205,7 +186,6 @@ body {
 }
 
 /* Mobile Responsive */
-/* Sidebar styles for mobile */
 @media (max-width: 992px) {
   .sidebar {
     transform: translateX(-100%); /* Initially hidden */
@@ -264,7 +244,7 @@ body {
     inset: 0;
   }
   .sidebar-overlay.active {
-      display: block;
+    display: block;
   }
   .sidebar.active + .sidebar-overlay {
     display: block; 

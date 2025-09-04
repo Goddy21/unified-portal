@@ -23,21 +23,12 @@ body {
   box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
   border-radius: 10px;
   overflow: hidden;
+  flex-wrap: wrap;
 }
 
 /* Left branding panel */
 .login-wrapper .left-panel {
-  /*background: linear-gradient(135deg,
-  /*#ffffff 0%,      /* clean white start */
-  /*#fbe4e4 30%,     /* gentle red blush */
-  /*#e8433f 45%,     /* rich corporate red */
-  /*#a5b8e1 70%,     /* soft steel blue bridge */
-  /*#123692 100%      bold deep blue anchor */
-/*);*/
-
-background: linear-gradient(to bottom right, #ffffff, #e74c3c, #3498db); 
-
-
+  background: linear-gradient(to bottom right, #ffffff, #e74c3c, #3498db);
   color: #f8f1f1;
   width: 50%;
   padding: 40px 30px;
@@ -71,6 +62,8 @@ background: linear-gradient(to bottom right, #ffffff, #e74c3c, #3498db);
   display: flex;
   flex-direction: column;
   justify-content: center;
+  max-height: 100%;
+  overflow-y: auto;
 }
 
 .right-panel h2 {
@@ -137,9 +130,9 @@ background: linear-gradient(to bottom right, #ffffff, #e74c3c, #3498db);
   text-decoration: underline;
 }
 
-/* ✅ FIXED: OTP Modal Overlay */
+/* OTP Modal styling */
 .otp-modal {
-  display: none; /* initially hidden */
+  display: none; 
   position: fixed;
   top: 0; 
   left: 0;
@@ -152,7 +145,6 @@ background: linear-gradient(to bottom right, #ffffff, #e74c3c, #3498db);
   justify-content: center;
 }
 
-/* Modal Box Styling */
 .otp-modal-content {
   background: #ffffff;
   padding: 30px;
@@ -204,7 +196,7 @@ background: linear-gradient(to bottom right, #ffffff, #e74c3c, #3498db);
   margin-top: 10px;
 }
 
-
+/* Loader overlay */
 .loader-overlay {
   position: fixed;
   top: 0;
@@ -232,9 +224,9 @@ background: linear-gradient(to bottom right, #ffffff, #e74c3c, #3498db);
   100% { transform: rotate(360deg); }
 }
 
-
-/* Responsive */
+/* Mobile Responsiveness */
 @media screen and (max-width: 768px) {
+  /* Adjust the layout of the login form */
   .login-wrapper {
     flex-direction: column;
     height: auto;
@@ -243,6 +235,44 @@ background: linear-gradient(to bottom right, #ffffff, #e74c3c, #3498db);
   .login-wrapper .left-panel,
   .login-wrapper .right-panel {
     width: 100%;
-    padding: 30px;
+    padding: 20px;
+  }
+
+  /* Left panel adjustments */
+  .left-panel h1 {
+    font-size: 26px;  /* Decrease font size */
+    margin-bottom: 15px;
+  }
+
+  .left-panel p {
+    font-size: 14px;  /* Adjust paragraph size */
+  }
+
+  /* Right panel adjustments */
+  .right-panel h2 {
+    font-size: 24px; /* Reduced font size */
+    margin-bottom: 15px;
+  }
+
+  .right-panel p {
+    font-size: 14px; /* Adjusted font size for smaller screens */
+  }
+
+  .login-form input {
+    font-size: 14px; /* Smaller font for mobile inputs */
+    padding: 10px;
+  }
+
+  .btn-login {
+    font-size: 14px;  /* Adjust button font size */
+    padding: 10px;
+  }
+
+  .login-links {
+    font-size: 12px;  /* Slightly smaller link text */
+  }
+
+  .login-links .link {
+    font-size: 14px; /* Ensure it's legible */
   }
 }

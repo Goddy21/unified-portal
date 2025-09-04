@@ -175,14 +175,18 @@ def log_ticket_update(sender, instance, created, **kwargs):
             new_assignee = instance.assigned_to.username if instance.assigned_to else "None"
             changes.append(f"Assigned to: {old_assignee} → {new_assignee}")
 
-    # Default generic update if no field-specific changes
-    action = " | ".join(changes) if changes else f"Ticket updated: {instance.title}"
+    if changes:
+        action = f"Ticket updated: {instance.title}\n" + "\n".join(f"• {c}" for c in changes)
+    else:
+        action = f"Ticket updated: {instance.title}"
+
 
     ActivityLog.objects.create(
         ticket=instance,
         action=action,
         user=instance.updated_by
     )
+
 
 
 @receiver(post_save, sender=TicketComment)

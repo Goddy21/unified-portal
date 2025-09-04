@@ -1,10 +1,10 @@
-# core/utils/escalation_constants.py
+# core/utilss/escalation_constants.py
 
 ESCALATION_TIME_LIMITS = {
-    'low': 0.3, #8
-    'medium': 0.25, #2
-    'high': 0.2, #1
-    'critical': 0.1, #0.5
+    'low': 8,      
+    'medium': 2,
+    'high': 1,
+    'critical': 0.5,
 }
 
 ESCALATION_FLOW = {

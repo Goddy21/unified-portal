@@ -9,11 +9,11 @@
   padding: 0 1.5rem;
   position: fixed;
   top: 0;
-  left: 0; /* Change from 250px to 0 */
+  left: 250px;
   right: 0;
   z-index: 1050;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  transition: box-shadow 0.3s ease-in-out;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); /* Slightly stronger shadow for depth */
+  transition: box-shadow 0.3s ease-in-out; /* Smooth transition effect */
 }
 
 /* Logo */
@@ -34,7 +34,7 @@
 .hamburger {
   font-size: 1.8rem;
   cursor: pointer;
-  display: block;
+  display: none;
   color: #343a40;
 }
 
@@ -126,14 +126,14 @@
 }
 
 .notifications .badge {
-  position: absolute;
-  top: -5px;
-  right: -5px;
-  background: red;
-  color: white;
-  border-radius: 50%;
-  padding: 3px 6px;
-  font-size: 0.7rem;
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background-color: red;
+    color: white;
+    border-radius: 50%;
+    padding: 5px 10px;
+    font-size: 12px;
 }
 
 .notifications-dropdown {
@@ -142,10 +142,24 @@
   right: 0;
   background: white;
   color: black;
-  min-width: 250px;
+  min-width: 280px;
   box-shadow: 0 4px 6px rgba(0,0,0,0.2);
   border-radius: 6px;
   z-index: 100;
+}
+
+#notificationsList {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.notification-item {
+    padding: 8px;
+    border-bottom: 1px solid #e0e0e0;
+}
+.notification-item a {
+    text-decoration: none;
+    color: #333;
 }
 .notifications-dropdown.show {
   display: block;
@@ -158,9 +172,40 @@
 }
 
 .notifications-dropdown .view-all {
+  border-top: 1px solid #ddd;
   padding: 10px;
   text-align: center;
-  border-top: 1px solid #ddd;
+  background-color: #f9f9f9;
+}
+
+.notification-item.new-message {
+  background: #fef3c7;
+  border-left: 3px solid #f59e0b;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.badge-unassigned {
+  background-color: #ffc107; 
+  color: #fff;
+  font-size: 0.7rem;
+  padding: 2px 6px;
+  border-radius: 6px;
+  margin-right: 4px;
+}
+
+.badge-escalated {
+  background-color: #dc3545;
+  color: #000;
+}
+
+.badge-new {
+  background-color: #0d6efd; 
+  color: #fff;
 }
 
 
@@ -171,7 +216,7 @@
   right: 0;
   top: 120%;
   background-color: #fff;
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1); /* Stronger shadow for emphasis */
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1); 
   border-radius: 8px;
   min-width: 180px;
   overflow: hidden;
@@ -225,33 +270,29 @@
 /* Responsive Styles */
 @media (max-width: 768px) {
   .hamburger {
-    display: block; 
+    display: block;
   }
 
   .top-navbar {
     left: 0;
+    right: 0;
     width: 100%;
+    padding: 0 1rem;
   }
 
   .nav-items {
-    flex-direction: column;
-    position: absolute;
-    top: 60px;
-    left: 0;
-    right: 0;
-    background-color: #fff;
-    width: 100%;
-    padding: 1rem;
-    display: none;  /* Hide by default */
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+    display: none;
   }
 
   .nav-items.active {
     display: flex;
-  }
-
-  .search-bar {
+    flex-direction: column;
     width: 100%;
-    margin: 0.5rem 0;
+    background: #fff;
+    position: absolute;
+    top: 60px;
+    left: 0;
+    padding: 1rem;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
   }
 }

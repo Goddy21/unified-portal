@@ -6,35 +6,40 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ user.get_full_name|default:user.username }}'s Profile</title>
-    <link rel="stylesheet" type="text/css" href="{% static 'css/profile.css' %}" />
+    <link rel="stylesheet" type="text/css" href="{% static 'css/profile_content.css' %}" />
 </head>
 <body>
-    <!-- Profile Container -->
     <div class="profile-container fade-in">
-        <div class="logo-container">
-            <img src="{% static 'icons/favicon.ico' %}" alt="Site Logo" class="site-logo">
+
+        <!-- Profile Header -->
+        <div class="profile-header">
+            {% if user.profile.avatar %}
+                <img src="{{ user.profile.avatar.url }}" alt="Avatar" class="profile-avatar">
+            {% else %}
+                <img src="{% static 'icons/default-avatar.png' %}" alt="Default Avatar" class="profile-avatar">
+            {% endif %}
+            <div class="profile-info">
+                <h1>{{ user.get_full_name|default:user.username }}</h1>
+                <p>{{ user.profile.get_role_display }}</p>
+            </div>
         </div>
 
-        <h1>{{ user.get_full_name|default:user.username }}'s Profile</h1>
-
+        <!-- Profile Details -->
         <div class="profile-details">
-            <!-- Basic Info Section -->
-            <div class="details-row">
+
+            <!-- Basic Info -->
+            <div class="details-card">
+                <h2>👤 Basic Info</h2>
                 <p><strong>First Name:</strong> {{ user.first_name }}</p>
                 <p><strong>Last Name:</strong> {{ user.last_name }}</p>
-            </div>
-            <div class="details-row">
                 <p><strong>Username:</strong> {{ user.username }}</p>
                 <p><strong>Email:</strong> {{ user.email }}</p>
             </div>
-            <div class="details-row">
-                <p><strong>Phone Number:</strong> {{ user.profile.phone_number }}</p>
-                <p><strong>ID Number:</strong> {{ user.profile.id_number }}</p>
-            </div>
 
-            <!-- Role Section -->
-            <div class="details-row">
-                <p><strong>Role:</strong>{{ user.profile.get_role_display }}</p>
+            <!-- Role & Assignments -->
+            <div class="details-card">
+                <h2>🛠 Role & Assignments</h2>
+                <p><strong>Role:</strong> {{ user.profile.get_role_display }}</p>
                 {% if user.profile.role == "Overseer" or user.profile.role == "Custodian" %}
                     <p><strong>Customer:</strong> {{ user.profile.customer.name|default:"No customer assigned" }}</p>
                 {% endif %}
@@ -43,30 +48,28 @@
                 {% endif %}
             </div>
 
-
-
-            <!-- Date Joined Section -->
-            <div class="details-row">
-                <p><strong>Date joined:</strong> {{ user.date_joined|date:"M d, Y" }}</p>
+            <!-- Account Info -->
+            <div class="details-card">
+                <h2>📅 Account Info</h2>
+                <p><strong>Phone Number:</strong> {{ user.profile.phone_number }}</p>
+                <p><strong>ID Number:</strong> {{ user.profile.id_number }}</p>
+                <p><strong>Date Joined:</strong> {{ user.date_joined|date:"M d, Y" }}</p>
             </div>
 
-            {% if user.profile.avatar %}
-                <div class="avatar-glow-container">
-                    <img src="{{ user.profile.avatar.url }}" alt="Avatar" class="profile-avatar zoom-in">
-                </div>
-            {% endif %}
         </div>
 
-        <div class="profile-links">
-            <a href="{% url 'settings' %}">⚙️ Update Settings</a>
+        <!-- Action Buttons -->
+        <div class="profile-actions">
+            <a href="{% url 'settings' %}" class="settings">⚙️ Update Settings</a>
+            
             <form method="post" action="{% url 'logout' %}">
                 {% csrf_token %}
-                <button type="submit">🚪 Logout</button>
+                <button type="submit" class="logout">🚪 Logout</button>
             </form>
-            <a href="{% url 'pre_dashboards' %}">Back To Pre-dashboards</a>
+            
+            <a href="{% url 'pre_dashboards' %}" class="back">⬅️ Back to Pre-dashboards</a>
         </div>
-    </div>
 
-    <script src="{% static 'js/profile.js' %}"></script>
+    </div>
 </body>
 </html>

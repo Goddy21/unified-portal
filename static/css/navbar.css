@@ -1,40 +1,43 @@
+:root { --sidebar-width: 250px; }
+
 /* Base Layout */
 .top-navbar {
+  position: fixed;
+  top: 0;
+  left: var(--sidebar-width);
+  right: 0; /* keep this so it stretches to the edge */
+  width: calc(100% - var(--sidebar-width));
   height: 60px;
-  background-color: #fff;
-  border-bottom: 1px solid #e0e0e0;
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 1.5rem;
-  position: fixed;
-  top: 0;
-  left: 0;
+  background: #fff;
+  border-bottom: 1px solid #e0e0e0;
   z-index: 1050;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  transition: box-shadow 0.3s ease-in-out;
-  width: 100%; /* Full width */
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  transition: left .3s ease, width .3s ease;
 }
 
 /* Logo */
 .logo {
   font-weight: 700;
-  font-size: 1.5rem;
+  font-size: 1.5rem; 
   color: #123692;
-  letter-spacing: 1px;
+  letter-spacing: 1px; 
   flex-shrink: 0;
-  transition: color 0.3s ease;
+  transition: color 0.3s ease; 
 }
 
 .logo:hover {
-  color: #172d69;
+  color: #172d69; /* Darken on hover */
 }
 
 /* Hamburger for small screens */
 .hamburger {
   font-size: 1.8rem;
   cursor: pointer;
-  display: block;
+  display: none;
   color: #343a40;
 }
 
@@ -42,27 +45,35 @@
 .nav-items {
   display: flex;
   align-items: center;
-  gap: 2rem;
+  gap: 2rem; /* Increased spacing for better readability */
 }
+
+/* layout helpers */
+.left { display:flex; align-items:center; gap:1rem; }
+.nav-right { display:flex; align-items:center; gap:0.75rem; }
+
+/* ensure these are visible and aligned */
+.nav-right .notifications,
+.nav-right .user-profile { display:flex; align-items:center; }
 
 /* Search bar */
 .search-bar {
   display: flex;
   align-items: center;
   background-color: #f1f3f5;
-  border-radius: 25px;
+  border-radius: 25px; /* More rounded corners for a sleek look */
   padding: 0.4rem 1.2rem;
   max-width: 300px;
-  transition: width 0.3s ease;
+  transition: width 0.3s ease; /* Smooth transition on hover */
 }
 
 .search-bar:hover {
-  width: 320px;
+  width: 320px; /* Expand on hover for a more interactive feel */
 }
 
 .search-bar i {
   color: #6c757d;
-  font-size: 1.2rem;
+  font-size: 1.2rem; /* Larger icon for better clarity */
 }
 
 .search-bar input {
@@ -77,7 +88,7 @@
 }
 
 .search-bar input:focus {
-  border-color: #123692;
+  border-color: #123692; /* Add a blue border when focused */
 }
 
 /* User profile dropdown */
@@ -90,28 +101,28 @@
   height: 40px;
   display: flex;
   align-items: center;
-  gap: 0.8rem;
+  gap: 0.8rem; /* Increased space between image and name */
   font-size: 1rem;
   color: #343a40;
   transition: color 0.3s ease;
 }
 
 .profile-trigger:hover {
-  color: #172d69;
+  color: #172d69; /* Change color on hover */
 }
 
 .profile-trigger img {
-  width: 36px;
+  width: 36px; /* Slightly larger for better visibility */
   height: 36px;
   object-fit: cover;
   border-radius: 50%;
   border: 2px solid #ddd;
   display: inline-block;
-  transition: transform 0.3s ease;
+  transition: transform 0.3s ease; /* Subtle hover animation */
 }
 
 .profile-trigger img:hover {
-  transform: scale(1.05);
+  transform: scale(1.05); /* Slightly grow the image on hover */
 }
 
 .notifications {
@@ -126,14 +137,14 @@
 }
 
 .notifications .badge {
-  position: absolute;
-  top: -5px;
-  right: -5px;
-  background: red;
-  color: white;
-  border-radius: 50%;
-  padding: 3px 6px;
-  font-size: 0.7rem;
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background-color: red;
+    color: white;
+    border-radius: 50%;
+    padding: 5px 10px;
+    font-size: 12px;
 }
 
 .notifications-dropdown {
@@ -142,12 +153,25 @@
   right: 0;
   background: white;
   color: black;
-  min-width: 250px;
+  min-width: 280px;
   box-shadow: 0 4px 6px rgba(0,0,0,0.2);
   border-radius: 6px;
   z-index: 100;
 }
 
+#notificationsList {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.notification-item {
+    padding: 8px;
+    border-bottom: 1px solid #e0e0e0;
+}
+.notification-item a {
+    text-decoration: none;
+    color: #333;
+}
 .notifications-dropdown.show {
   display: block;
 }
@@ -159,10 +183,42 @@
 }
 
 .notifications-dropdown .view-all {
+  border-top: 1px solid #ddd;
   padding: 10px;
   text-align: center;
-  border-top: 1px solid #ddd;
+  background-color: #f9f9f9;
 }
+
+.notification-item.new-message {
+  background: #fef3c7;
+  border-left: 3px solid #f59e0b;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.badge-unassigned {
+  background-color: #ffc107; 
+  color: #fff;
+  font-size: 0.7rem;
+  padding: 2px 6px;
+  border-radius: 6px;
+  margin-right: 4px;
+}
+
+.badge-escalated {
+  background-color: #dc3545;
+  color: #000;
+}
+
+.badge-new {
+  background-color: #0d6efd; 
+  color: #fff;
+}
+
 
 /* Dropdown menu */
 .dropdown-menu {
@@ -171,7 +227,7 @@
   right: 0;
   top: 120%;
   background-color: #fff;
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1); 
   border-radius: 8px;
   min-width: 180px;
   overflow: hidden;
@@ -179,15 +235,7 @@
 }
 
 .user-profile.active .dropdown-menu {
-  position: absolute;
-  top: 100%; 
-  right: 0;
-  z-index: 1060;
-  display: none; 
-}
-
-.user-profile.active .dropdown-menu.show {
-  display: block; 
+  display: block;
 }
 
 .dropdown-menu a,
@@ -221,7 +269,7 @@
 
 .dropdown-link.logout-btn:hover {
   background-color: #f8f9fa;
-  color: #dc3545;
+  color: #dc3545; /* Red for logout for visual emphasis */
 }
 
 /* Animation */
@@ -230,28 +278,32 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
+@media (min-width: 769px) {
+  .nav-items { /* center area; optional */ flex: 1; display:flex; justify-content:center; align-items:center; }
+}
+
 /* Responsive Styles */
-@media (max-width: 992px) {
-  .hamburger {
-    display: block; 
-  }
+@media (max-width: 768px) {
 
   .top-navbar {
-    left: 0;
-    width: 100%;
-    max-width: 100%; /* Ensure it takes up full width on smaller screens */
+    left: 0 !important; 
+    right: 0 !important;
+    width: 100% !important; 
+  }
+
+  .hamburger {
+    display: block;
   }
 
   .nav-items {
     flex-direction: column;
     position: absolute;
     top: 60px;
-    left: 0;
     right: 0;
     background-color: #fff;
     width: 100%;
     padding: 1rem;
-    display: none;  /* Hide by default */
+    display: none;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
   }
 
@@ -259,46 +311,52 @@
     display: flex;
   }
 
-  .search-bar {
-    width: 100%;
-    margin: 0.5rem 0;
-  }
-
-  /* Ensure notifications and profile are visible */
-  .notifications, .user-profile {
-    display: flex !important;
-    align-items: center;
-    margin-left: 1rem; /* Add some spacing */
-    order: -1; /* Ensure they appear first in the stack */
-  }
-
-  .profile-trigger {
-    font-size: 1rem;
-  }
-
-  .notifications .fas, .profile-trigger img {
-    font-size: 1.4rem;
-    height: 36px;
-    width: 36px;
-  }
+  .profile-name { display: none; }         
+  .nav-right { gap: 0.5rem; padding-right: 0.5rem; }
 
   .notifications .badge {
-    font-size: 0.75rem;
+    top: 6px; right: 6px; padding: 3px 6px; font-size: 11px;
+  }
+
+  /* ensure dropdowns float above everything */
+  .dropdown-menu, .notifications-dropdown {
+    z-index: 3000;
   }
 }
 
-/* For large screens */
-@media (min-width: 993px) {
+/* Extra small screens (phones <480px) */
+@media (max-width: 480px) {
   .top-navbar {
-    margin-left: 250px; 
-    width: calc(100% - 250px);
+    padding: 0 0.75rem;
+    height: auto;                
+    flex-wrap: wrap;      
+  }
+
+  .logo {
+    font-size: 1.1rem;          
+  }
+
+  .profile-trigger span { 
+    display: none;              
+  }
+
+  .nav-right {
+    gap: 0.5rem;              
+  }
+
+  .notifications .fas.fa-bell {
+    font-size: 1.2rem;          
+  }
+
+  .profile-trigger img {
+    width: 32px;                 
+    height: 32px;
+  }
+
+  .dropdown-menu,
+  .notifications-dropdown {
+    min-width: 90vw;
+    right: 0;
+    left: auto;
   }
 }
-
-@media (max-width: 768px) {
-  .user-profile.active .dropdown-menu {
-    position: fixed;
-    top: 60px; 
-  }
-}
-

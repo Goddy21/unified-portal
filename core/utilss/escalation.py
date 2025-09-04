@@ -6,6 +6,8 @@ from datetime import timedelta, timezone
 from .escalation_rules import CATEGORY_TO_ESCALATION_TYPE, ESCALATION_MATRIX, TIER_MAPPING
 
 from core.utilss.escalation_constants import ESCALATION_TIME_LIMITS, ESCALATION_FLOW
+from core.utilss.escalation_rules import escalate_ticket  # add import
+
 
 def get_escalation_guidance(problem_category, priority):
     category = problem_category.strip().lower()

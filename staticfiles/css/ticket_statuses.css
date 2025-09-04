@@ -122,21 +122,17 @@ body {
 }
 
 .badge-open {
-    background-color: #2ecc71; /* Brighter green */
+    background-color: #007bff; /* Brighter green */
 }
-.badge-in-progress { /* Renamed from badge-pending for consistency */
-    background-color: #f39c12; /* Deeper orange */
-    color: #fff; /* Ensure text is white */
+.badge-in-progress { 
+    background-color: #c0392b; 
+    color: #fff; 
 }
-.badge-resolved {
-    background-color: #3498db; /* Deeper blue */
-}
+
 .badge-closed {
-    background-color: #95a5a6; /* Softer grey */
+    background-color: rgb(25, 164, 25); 
 }
-.badge-pending { /* New status if you add it */
-    background-color: #e67e22; /* More distinct orange */
-}
+
 /* Ensure other badges from your original CSS remain or are updated */
 .badge-high { background-color: #e74c3c; } /* Red */
 .badge-medium { background-color: #f1c40f; color: #333;} /* Yellow */
@@ -165,11 +161,9 @@ body {
     vertical-align: middle;
 }
 
-.bg-open { background-color: #2ecc71; }
-.bg-in-progress { background-color: #f39c12; }
-.bg-resolved { background-color: #3498db; }
-.bg-closed { background-color: #95a5a6; }
-.bg-pending { background-color: #e67e22; }
+.bg-open { background-color: #007bff; }
+.bg-in-progress { background-color: #c0392b; }
+.bg-closed { background-color: rgb(25, 164, 25); }
 
 .text-center {
     text-align: center;

@@ -4,6 +4,7 @@ from tkinter.font import Font
 from django.shortcuts import render, get_list_or_404, redirect
 from django.core.serializers.json import DjangoJSONEncoder
 from core.signals import assign_director_permissions, assign_manager_permissions, assign_staff_permissions
+from core.uttils.serializers import serialize_ticket
 from .models import ISSUE_MAPPING, ActivityLog, File, FileAccessLog, EscalationHistory
 from django.http import FileResponse, JsonResponse, HttpResponse
 from .forms import FilePasscodeForm, FileUploadForm, ProblemCategoryForm, TicketForm
@@ -19,7 +20,7 @@ from django.utils.decorators import method_decorator
 from .forms import  EscalationNoteForm, UserUpdateForm, ProfileUpdateForm, TerminalForm,TerminalUploadForm, VersionControlForm, FileUploadForm, CustomUserCreationForm, LoginForm, OTPForm,TicketEditForm,TicketComment, TicketCommentForm, TicketForm
 from django.views import View
 import csv
-from .models import Customer, Region, Terminal, Unit, SystemUser, Zone, ProblemCategory, VersionControl,VersionComment, Report, Ticket, Profile, EmailOTP,TicketComment
+from .models import Customer, Region, Terminal, Unit, SystemUser, Zone, ProblemCategory, VersionControl,VersionComment, Report, Ticket, Profile, EmailOTP,TicketComment, UserNotification
 from django.core.mail import send_mail, EmailMultiAlternatives, EmailMessage
 from django.utils.html import strip_tags
 from django.contrib import messages
@@ -50,6 +51,8 @@ from core.priority_rules import determine_priority
 from django.conf import settings
 from django.urls import reverse
 from openpyxl.styles import Border, Side
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync 
 
 def in_group(user, group_name):
     return user.is_authenticated and (user.is_superuser or user.groups.filter(name=group_name).exists())
@@ -1134,28 +1137,41 @@ class SettingsView(View):
         profile_form = ProfileUpdateForm(instance=profile)
 
         # Handle visibility of role, customer, and terminal based on user role
-        if profile.role == 'Customer' or profile.role == 'Overseer' or profile.role == 'Custodian':
-            # If role is Customer, Overseer, or Custodian, show customer and terminal fields, hide the role
+        if profile.role in ['Customer', 'Overseer', 'Custodian']:
             if 'role' in profile_form.fields:
-                profile_form.fields['role'].widget = forms.HiddenInput()  # Hide role field
+                profile_form.fields['role'].widget = forms.HiddenInput()
             if 'customer' in profile_form.fields:
-                profile_form.fields['customer'].widget = forms.HiddenInput()  # Hide customer field
+                profile_form.fields['customer'].widget = forms.HiddenInput()
             if 'terminal' in profile_form.fields:
-                profile_form.fields['terminal'].widget = forms.HiddenInput()  # Hide terminal field
+                profile_form.fields['terminal'].widget = forms.HiddenInput()
         else:
-            # If role is Director, Manager, or Staff, hide customer and terminal fields
             if 'customer' in profile_form.fields:
-                profile_form.fields['customer'].widget = forms.HiddenInput()  # Hide customer field
+                profile_form.fields['customer'].widget = forms.HiddenInput()
             if 'terminal' in profile_form.fields:
-                profile_form.fields['terminal'].widget = forms.HiddenInput()  # Hide terminal field
+                profile_form.fields['terminal'].widget = forms.HiddenInput()
 
         return render(request, 'accounts/settings.html', {
             'user_form': user_form,
             'profile_form': profile_form
         })
 
+    def post(self, request):
+        user_form = UserUpdateForm(request.POST, instance=request.user)
+        profile, created = Profile.objects.get_or_create(user=request.user)
+        profile_form = ProfileUpdateForm(request.POST, request.FILES, instance=profile)
 
-@login_required(login_url='login')
+        if user_form.is_valid() and profile_form.is_valid():
+            user_form.save()
+            profile_form.save()
+            messages.success(request, "Your settings have been updated.")
+            return redirect('settings') 
+
+        return render(request, 'accounts/settings.html', {
+            'user_form': user_form,
+            'profile_form': profile_form
+        })
+
+@login_required
 def ticketing_dashboard(request):
     now = timezone.localtime(timezone.now())
     day_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
@@ -1178,8 +1194,6 @@ def ticketing_dashboard(request):
         if customer:
             ticket_filter = Ticket.objects.filter(customer=customer)
         elif profile and profile.terminal:
-            # For custodian: filter by the terminal they are assigned to
-            # A custodian should see only the tickets associated with their assigned terminal
             ticket_filter = Ticket.objects.filter(terminal=profile.terminal)
             print(f"{request.user.username} is Custodian for {profile.terminal.branch_name} with customer {profile.customer.name}")
         else:
@@ -1194,8 +1208,22 @@ def ticketing_dashboard(request):
     }
 
     # Aggregated counts (status & priority)
-    status_counts = ticket_filter.values('status').annotate(count=Count('id'))
-    priority_counts = ticket_filter.values('priority').annotate(count=Count('id'))
+    priority_counts = list(ticket_filter.values('priority').annotate(count=Count('id')))
+    status_counts = list(ticket_filter.values('status').annotate(count=Count('id')))
+    # >>> ADD SORTING HERE <<<
+    PRIORITY_ORDER = ['low', 'medium', 'high', 'critical']
+    STATUS_ORDER = ['open', 'in_progress', 'closed']
+
+    priority_counts.sort(
+        key=lambda x: PRIORITY_ORDER.index(x['priority'].lower())
+                    if x['priority'] and x['priority'].lower() in PRIORITY_ORDER else len(PRIORITY_ORDER)
+    )
+
+    status_counts.sort(
+        key=lambda x: STATUS_ORDER.index(x['status'].lower().replace(' ', '_'))
+                     if x['status'] and x['status'].lower().replace(' ', '_') in STATUS_ORDER else len(STATUS_ORDER)
+    )
+    # >>> END OF ADDITION <<<
 
     # Monthly ticket trends
     monthly_trends = (
@@ -1957,64 +1985,6 @@ def create_ticket(request):
         allowed_roles = ['Manager', 'Staff']
     else:
         allowed_roles = ['Staff']
-    if request.method == 'POST':
-        form = TicketForm(request.POST, user=request.user)
-        if form.is_valid():
-            ticket = form.save(commit=False)
-
-            # Prevent using inactive terminal
-            if ticket.terminal and not ticket.terminal.is_active:
-                messages.error(request, f"Terminal '{ticket.terminal.cdm_name}' is disabled. Please enable it before creating a ticket.")
-                return redirect('create_ticket')
-
-            #category_name = ticket.problem_category.name if ticket.problem_category else 'other'
-            #ticket.priority = determine_priority(category_name, ticket.description)
-            ticket.created_by = request.user
-            custom_date = form.cleaned_data.get('custom_created_at')
-            if custom_date:
-                ticket.created_at = custom_date
-
-            if ticket.terminal:
-                ticket.customer = ticket.terminal.customer
-                ticket.region = ticket.terminal.region
-
-            ticket.save()
-            return redirect('create_ticket' if 'create_another' in request.POST else 'tickets')
-    else:
-        terminal_id = request.GET.get('terminal_id')
-        if terminal_id:
-            form = TicketForm(user=request.user, terminal_id=terminal_id)
-        else:
-            form = TicketForm(user=request.user)
-
-    cats = ProblemCategory.objects.all()
-    js_mapping = { str(cat.pk): ISSUE_MAPPING.get(cat.name, []) for cat in cats }
-    return render(request, 'core/helpdesk/create_ticket.html', {
-        'form': form,
-        'issue_mapping': json.dumps(js_mapping),
-        'user_group': user_group,
-        'allowed_roles': allowed_roles})
-"""
-
-# views.py
-from channels.layers import get_channel_layer
-from django.shortcuts import render, redirect
-from django.contrib import messages
-from .forms import TicketForm
-from .models import Ticket
-
-@login_required(login_url='login')
-def create_ticket(request):
-    user_group = None
-    allowed_roles = []
-    if request.user.groups.exists():
-        user_group = request.user.groups.first().name
-    if user_group == 'Admin':
-        allowed_roles = ['Admin', 'Manager']
-    elif user_group == 'Manager':
-        allowed_roles = ['Manager', 'Staff']
-    else:
-        allowed_roles = ['Staff']
     
     if request.method == 'POST':
         form = TicketForm(request.POST, user=request.user)
@@ -2065,6 +2035,76 @@ def create_ticket(request):
         'issue_mapping': json.dumps(js_mapping),
         'user_group': user_group,
         'allowed_roles': allowed_roles})
+"""
+
+@login_required(login_url='login')
+def create_ticket(request):
+    # Determine the user's group and allowed roles
+    user_group = None
+    allowed_roles = []
+    if request.user.groups.exists():
+        user_group = request.user.groups.first().name
+    if user_group == 'Admin':
+        allowed_roles = ['Admin', 'Manager', 'Staff']
+    elif user_group == 'Manager':
+        allowed_roles = ['Manager', 'Staff']
+    else:
+        allowed_roles = ['Staff']
+    # Handle form submission
+    if request.method == 'POST':
+        form = TicketForm(request.POST, user=request.user)
+        if form.is_valid():
+            ticket = form.save(commit=False)
+            # Prevent using an inactive terminal
+            if ticket.terminal and not ticket.terminal.is_active:
+                messages.error(
+                    request,
+                    f"Terminal '{ticket.terminal.cdm_name}' is disabled. "
+                    "Please enable it before creating a ticket."
+                )
+                return redirect('create_ticket')
+            # Set audit fields
+            ticket.created_by = request.user
+            custom_date = form.cleaned_data.get('custom_created_at')
+            if custom_date:
+                ticket.created_at = custom_date
+            # Auto-assign customer & region if a terminal is chosen
+            if ticket.terminal:
+                ticket.customer = ticket.terminal.customer
+                ticket.region = ticket.terminal.region
+            ticket.save()
+            # Broadcast the new ticket over WebSocket
+            channel_layer = get_channel_layer()
+            async_to_sync(channel_layer.group_send)(
+                "escalations",
+                {
+                    "type": "ticket_creation",
+                    "ticket": ticket.id, 
+                }
+            )
+            # Redirect based on “create another” checkbox
+            if 'create_another' in request.POST:
+                return redirect('create_ticket')
+            return redirect('tickets')
+    else:
+        # GET: instantiate empty form (optionally prefilling terminal_id)
+        terminal_id = request.GET.get('terminal_id')
+        if terminal_id:
+            form = TicketForm(user=request.user, terminal_id=terminal_id)
+        else:
+            form = TicketForm(user=request.user)
+    # Build issue-category → sub-issues map for JS
+    cats = ProblemCategory.objects.all()
+    js_mapping = {
+        str(cat.pk): ISSUE_MAPPING.get(cat.name, [])
+        for cat in cats
+    }
+    return render(request, 'core/helpdesk/create_ticket.html', {
+        'form': form,
+        'issue_mapping': json.dumps(js_mapping),
+        'user_group': user_group,
+        'allowed_roles': allowed_roles,
+    })
 
 
 from django.template.loader import render_to_string 
@@ -2166,6 +2206,7 @@ def notify_group(level, ticket):
         fail_silently=False
     )
 
+@login_required
 def get_escalated_tickets(request):
     # Filter tickets that are escalated
     escalated_tickets = Ticket.objects.filter(is_escalated=True).order_by('-escalated_at')
@@ -2185,15 +2226,105 @@ def get_escalated_tickets(request):
     }
     return JsonResponse(data)
 
+
+@login_required
+def get_notifications(request):
+    profile = getattr(request.user, "profile", None)
+    qs = UserNotification.objects.none()
+
+    # Internal staff: see all tickets
+    if request.user.is_superuser or request.user.groups.filter(
+        name__in=['Admin','Director','Manager','Staff']
+    ).exists():
+        qs = UserNotification.objects.all()
+
+    # Overseer: see tickets for all terminals under customers they oversee
+    elif Customer.objects.filter(overseer=request.user).exists():
+        overseer_customers = Customer.objects.filter(overseer=request.user)
+        qs = UserNotification.objects.filter(
+            ticket__customer__in=overseer_customers
+        )
+
+    # Custodian: see tickets for the terminal they are assigned to
+    elif profile and profile.terminal:
+        custodian_terminal = profile.terminal
+        if custodian_terminal.custodian == request.user:
+            qs = UserNotification.objects.filter(
+                ticket__terminal=custodian_terminal
+            )
+
+    # ---- Prepare response ----
+    total_unread = qs.filter(is_read=False).count()
+    top5 = qs.select_related("ticket", "ticket__customer", "ticket__terminal") \
+             .order_by("-ticket__created_at")[:5]
+
+    if not top5:
+        return JsonResponse({
+            "tickets": [],
+            "count": total_unread,
+            "message": "No notifications available for your role or assignment."
+        })
+
+    payload = [serialize_ticket(un.ticket) for un in top5]
+    return JsonResponse({
+        "tickets": payload,
+        "count": total_unread,
+    })
+
+
+
+
+@login_required
+@require_POST
+def mark_notification_read(request, ticket_id):
+    try:
+        data = json.loads(request.body.decode("utf-8") or "{}")
+        notif_type = data.get("type")
+    except json.JSONDecodeError:
+        notif_type = None
+
+    notif = UserNotification.objects.filter(
+        user=request.user,
+        ticket_id=ticket_id,
+        is_read=False
+    ).first()
+
+    if notif:
+        notif.is_read = True
+        notif.save()
+        return JsonResponse({"success": True, "type": notif_type})
+
+    return JsonResponse({
+        "success": False,
+        "info": "No UserNotification found, handled client-side",
+        "type": notif_type,
+    })
+
+@login_required
 def escalated_tickets_page(request):
     tickets = Ticket.objects.filter(is_escalated=True).order_by('-escalated_at')
     return render(request, "core/helpdesk/escalated_list.html", {"tickets": tickets})
 
-
+@login_required
 def ticket_activity_log(request, ticket_id):
-    logs = ActivityLog.objects.filter(ticket_id=ticket_id).order_by('-timestamp')
-    return render(request, 'core/helpdesk/ticket_activity_logs.html', {'logs': logs})
+    ticket = get_object_or_404(Ticket, id=ticket_id)
+    activity_logs = ActivityLog.objects.filter(ticket=ticket).order_by('-timestamp')
+    return render(request, 'core/helpdesk/ticket_activity_logs.html', {
+        'ticket': ticket,
+        'activity_logs': activity_logs,
+    })
 
+@login_required
+def clear_activity_logs(request, ticket_id):
+    ticket = get_object_or_404(Ticket, id=ticket_id)
+    
+    if request.method == "POST":
+        ActivityLog.objects.filter(ticket=ticket).delete()
+        messages.success(request, "All activity logs have been cleared.")
+    
+    return redirect('ticket_activity_log', ticket_id=ticket.id)
+
+@login_required
 def ticket_detail(request, ticket_id):
     ticket = get_object_or_404(Ticket, id=ticket_id)
     comments = ticket.comments.order_by('-created_at')
@@ -2240,12 +2371,27 @@ def ticket_detail(request, ticket_id):
                 ticket.save()
                 # Log the changes to the activity log
                 if changes:
-                    change_summary = "; ".join([f"{field}: {old} → {new}" for field, old, new in changes])
+                    # Format each change on its own line with bullet points
+                    change_summary = "\n".join([
+                        f"• {field.replace('_', ' ').title()}: {old} → {new}"
+                        for field, old, new in changes
+                    ])
+
+                    # If escalation-related fields were changed, log as escalation
+                    escalation_changes = [c for c in changes if c[0] in ['is_escalated', 'current_escalation_level']]
+                    if escalation_changes:
+                        action = f"Ticket escalated:\n{change_summary}"
+                    else:
+                        action = f"Ticket updated:\n{change_summary}"
+
+                    print("Logging activity:", action)    
+
                     ActivityLog.objects.create(
                         ticket=ticket,
-                        action=f"Ticket updated: {change_summary}",
+                        action=action,
                         user=request.user
                     )
+
                 return redirect('ticket_detail', ticket_id=ticket.id)
 
         elif 'assign_ticket' in request.POST and is_manager:
@@ -2315,6 +2461,8 @@ def ticket_detail(request, ticket_id):
 
                 return redirect('ticket_detail', ticket_id=ticket.id)
 
+    activity_logs = ActivityLog.objects.filter(ticket=ticket).order_by('-timestamp')
+
     context = {
         'ticket': ticket,
         'form': form,
@@ -2324,11 +2472,13 @@ def ticket_detail(request, ticket_id):
         'is_editor': request.user.groups.filter(name='Editor').exists(),
         'can_resolve': request.user.groups.filter(name='Resolver').exists(),
         'is_manager': is_manager,
-        'staff_users': staff_users if is_manager else None
+        'staff_users': staff_users if is_manager else None,
+        'activity_logs': activity_logs,
     }
 
     return render(request, 'core/helpdesk/ticket_detail.html', context)
 
+@login_required
 def get_terminal_details(request, terminal_id):
     try:
         terminal = Terminal.objects.get(id=terminal_id)
@@ -2340,6 +2490,8 @@ def get_terminal_details(request, terminal_id):
     except Terminal.DoesNotExist:
         return JsonResponse({'error': 'Terminal not found'}, status=404)
     
+from django.core.paginator import Paginator
+
 @login_required(login_url='login')
 def show_tickets(request, period):
     now = timezone.localtime(timezone.now())
@@ -2353,15 +2505,15 @@ def show_tickets(request, period):
 
     # Role-based filtering
     if request.user.is_superuser or request.user.groups.filter(name__in=['Director', 'Manager', 'Staff']).exists():
-        ticket_filter = Ticket.objects.all()  
+        ticket_filter = Ticket.objects.all()
     else:
         customer = Customer.objects.filter(overseer=request.user).first()
         if customer:
-            ticket_filter = Ticket.objects.filter(customer=customer) 
+            ticket_filter = Ticket.objects.filter(customer=customer)
         elif profile and profile.terminal:
-            ticket_filter = Ticket.objects.filter(terminal=profile.terminal) 
+            ticket_filter = Ticket.objects.filter(terminal=profile.terminal)
 
-    # Filter tickets based on the period
+    # Filter tickets by period
     if period == 'daily':
         tickets = ticket_filter.filter(created_at__gte=day_start)
     elif period == 'weekly':
@@ -2371,18 +2523,23 @@ def show_tickets(request, period):
     elif period == 'yearly':
         tickets = ticket_filter.filter(created_at__gte=year_start)
     else:
-        tickets = []
+        tickets = Ticket.objects.none()
 
-    # Search functionality (applied to filtered tickets)
+    # Search filter
     search_query = request.GET.get('q', '')
     if search_query:
         tickets = tickets.filter(
             Q(title__icontains=search_query) |
-            Q(customer__name__icontains=search_query) |  # Search customer name
-            Q(assigned_to__username__icontains=search_query)  # Search assigned user's username
+            Q(customer__name__icontains=search_query) |
+            Q(assigned_to__username__icontains=search_query)
         )
 
-    user_group = None
+    # Pagination (10 per page)
+    paginator = Paginator(tickets, 10)
+    page_number = request.GET.get('page')
+    tickets_page = paginator.get_page(page_number)
+
+    # User group resolution
     if Customer.objects.filter(custodian=request.user).exists():
         user_group = "Custodian"
     elif Customer.objects.filter(overseer=request.user).exists():
@@ -2395,17 +2552,18 @@ def show_tickets(request, period):
         elif request.user.groups.filter(name="Staff").exists():
             user_group = "Staff"
         else:
-            user_group = "Customer"  
+            user_group = "Customer"
 
     allowed_roles = ["Director", "Manager", "Staff", "Superuser"]
-    
-    # Pass tickets and period to the template
+
     return render(request, 'core/helpdesk/ticket_list.html', {
-        'tickets': tickets,
+        'tickets': tickets_page,
         'period': period,
         'user_group': user_group,
-        'allowed_roles': allowed_roles
+        'allowed_roles': allowed_roles,
+        'search_query': search_query,
     })
+
 
 @login_required
 def edit_comment(request, comment_id):
@@ -2574,7 +2732,7 @@ def tickets_by_status(request, status):
 
 
 
-
+@login_required
 def problem_category(request):
     print(">>> problem_category view reached")
     query = request.GET.get('search', '')

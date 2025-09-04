@@ -11,10 +11,14 @@ if (hamburger) {
   hamburger.addEventListener("click", toggleSidebar);
 }
 
-// Submenu toggle
-document.querySelectorAll(".has-submenu > a").forEach(link => {
-  link.addEventListener("click", function (e) {
-    e.preventDefault();
-    this.parentElement.classList.toggle("expanded");
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.has-submenu > a').forEach(link => {
+    link.addEventListener('click', e => {
+      // only block navigation if it's a toggle (href="#" or empty)
+      if (link.getAttribute('href') === '#' || link.getAttribute('href') === '') {
+        e.preventDefault();
+        link.parentElement.classList.toggle('expanded');
+      }
+    });
   });
 });

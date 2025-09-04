@@ -101,19 +101,13 @@ h2 {
 
 /* Different status colors */
 .status-open {
-  background-color: #27ae60;  /* green */
+  background-color: #007bff;  
 }
 .status-in_progress {
-  background-color: #f39c12;  /* orange */
-}
-.status-pending {
-  background-color: #8e44ad;  /* purple */
+  background-color: #c0392b;  
 }
 .status-closed {
-  background-color: #c0392b;  /* red */
-}
-.status-resolved {
-  background-color: #2980b9;  /* blue */
+  background-color: rgb(25, 164, 25);  
 }
 
 /* Responsive */

@@ -20,7 +20,7 @@ window.addEventListener('DOMContentLoaded', () => {
   });
 
   // === User Profile Dropdown Toggle ===
-  const userProfile = document.getElementById('userProfile');
+ /* const userProfile = document.getElementById('userProfile');
   if (userProfile) {
     userProfile.addEventListener('click', function (event) {
       this.classList.toggle('active');
@@ -31,7 +31,20 @@ window.addEventListener('DOMContentLoaded', () => {
         userProfile.classList.remove('active');
       }
     });
+  }*/
+
+    
+  const userProfile = document.getElementById("userProfile");
+  if (userProfile) {
+    const profileTrigger = userProfile.querySelector(".profile-trigger");
+    const dropdownMenu = userProfile.querySelector(".dropdown-menu");
+
+    // Toggle dropdown visibility
+    profileTrigger.addEventListener("click", () => {
+      dropdownMenu.classList.toggle("show");
+    });
   }
+
 
   // === Sidebar Submenu Toggles ===
   const masterDataToggle = document.getElementById('masterDataToggle');
@@ -79,43 +92,50 @@ window.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // === Global Color Mapping (Revised) ===
-  // This must be defined BEFORE animationOptions
+  // === Global Color Mapping 
   const COLOR_MAP = {
-    // Primary Action/Highlight Colors
-    primary: '#007ACC',            // A vibrant, reliable blue
-    secondary: '#FF8C00',          // A warm, engaging orange
+    primary: '#007ACC',           
+    secondary: '#FF8C00',          
 
     // Status/Categorization Colors
-    success: '#4CAF50',            // Classic green for success/positive
-    warning: '#FFC107',            // Bright yellow for warning/pending
-    danger: '#DC3545',             // Clear red for critical/urgent
-    info: '#17A2B8',               // Standard teal for informational/time-based
+    success: '#4CAF50',            
+    warning: '#FFC107',           
+    danger: '#DC3545',            
+    info: '#17A2B8', 
+    
+    low: '#17b845',            
+    medium: '#007bff',           
+    high: '#dc9c35',            
+    critical: '#e74c3c',     
+    
+    open: '#007bff',
+    in_progress: '#c0392b',
+    closed: 'rgb(25, 164, 25)',
 
     // Neutral/Supporting Colors
-    neutralDark: '#34495E',        // Deep, modern charcoal for text/background elements
-    neutralLight: '#ECF0F1',       // Soft, light gray for backgrounds/borders
-    textDark: '#2C3E50',           // Darker text for readability
-    textLight: '#7F8C8D',          // Lighter gray for secondary text
+    neutralDark: '#34495E',        
+    neutralLight: '#ECF0F1',      
+    textDark: '#2C3E50',          
+    textLight: '#7F8C8D',         
 
     // Lighter Tones for Backgrounds/Fills
-    primaryLight: 'rgba(0, 122, 204, 0.15)',  // Light primary for fills
-    infoLight: 'rgba(23, 162, 184, 0.15)',    // Light info for fills
+    primaryLight: 'rgba(0, 122, 204, 0.15)',  
+    infoLight: 'rgba(23, 162, 184, 0.15)',    
 
     // Gradient Set for diverse categories or multi-series charts
     gradientSet: [
-      '#007ACC', // Vibrant Blue
-      '#673AB7', // Deep Purple
-      '#FF8C00', // Engaging Orange
-      '#00BCD4', // Cyan/Teal
-      '#8BC34A', // Lime Green
-      '#FF5722', // Deep Orange/Red
-      '#9C27B0', // Magenta/Violet
-      '#FFD700'  // Gold (for highlights or specific categories)
+      '#007ACC', 
+      '#673AB7', 
+      '#FF8C00', 
+      '#00BCD4', 
+      '#8BC34A', 
+      '#FF5722', 
+      '#9C27B0', 
+      '#FFD700'  
     ],
 
-    // Specific Use Case Colors (adjust as needed based on your data)
-    terminalRegionBase: '#4A6572' // A muted blue-gray for terminal/region base tone
+    // Specific Use Case Colors
+    terminalRegionBase: '#4A6572' 
   };
 
   // === Chart Animation and Styling Config ===
@@ -203,6 +223,47 @@ window.addEventListener('DOMContentLoaded', () => {
       chartInstance.destroy();
     }
   }
+
+   // Handle KPI clicks
+    const kpiCards = document.querySelectorAll('.kpi-card');
+
+    kpiCards.forEach(card => {
+        card.addEventListener('click', function() {
+            const period = card.getAttribute('data-period'); 
+            window.location.href = `/tickets/${period}/`; 
+        });
+    });
+
+
+    // Function to fetch tickets for the selected period
+    function fetchTickets(period) {
+      fetch(`/tickets/${period}/`)  
+          .then(response => {
+              if (!response.ok) {
+                  throw new Error(`HTTP error! status: ${response.status}`);
+              }
+              return response.json();
+          })
+          .then(data => {
+              const ticketList = document.getElementById('ticket-list');
+              ticketList.innerHTML = ''; // Clear current tickets
+              data.tickets.forEach(ticket => {
+                  const ticketElement = document.createElement('div');
+                  ticketElement.classList.add('ticket-item');
+                  ticketElement.innerHTML = `
+                      <h4>${ticket.title}</h4>
+                      <p>Status: ${ticket.status}</p>
+                      <p>Priority: ${ticket.priority}</p>
+                  `;
+                  ticketList.appendChild(ticketElement);
+              });
+          })
+          .catch(error => console.error('Error fetching tickets:', error));
+  }
+
+
+  // Initial Load: Fetch Daily Tickets by Default
+  fetchTickets('daily');
 
   const ticketReportChart = document.getElementById('ticketReportChart');
   if (ticketReportChart) {
@@ -321,46 +382,46 @@ window.addEventListener('DOMContentLoaded', () => {
   }
 
   const priorityChart = document.getElementById('priorityChart');
-  if (priorityChart) {
-    destroyExistingChart('priorityChart');
-    console.log(PRIORITY_DATA);
-    const priorityLabels = PRIORITY_DATA.map(item => item.priority.replace(/\b\w/g, l => l.toUpperCase()));
-    const priorityCounts = PRIORITY_DATA.map(item => item.count);
-    new Chart(priorityChart, {
-      type: 'pie',
-      data: {
-        labels: priorityLabels,
-        datasets: [{
-          data: priorityCounts,
-          backgroundColor: [COLOR_MAP.danger, COLOR_MAP.warning, COLOR_MAP.success, COLOR_MAP.primary],
-          borderColor: '#fff',
-          borderWidth: 2
-        }]
-      },
-      options: animationOptions
-    });
-  }
+    if (priorityChart) {
+      destroyExistingChart('priorityChart');
+      console.log(PRIORITY_DATA);
+      const priorityLabels = PRIORITY_DATA.map(item => item.priority.replace(/\b\w/g, l => l.toUpperCase()));
+      const priorityCounts = PRIORITY_DATA.map(item => item.count);
+      new Chart(priorityChart, {
+        type: 'pie',
+        data: {
+          labels: priorityLabels,
+          datasets: [{
+            data: priorityCounts,
+            backgroundColor: [COLOR_MAP.low, COLOR_MAP.medium, COLOR_MAP.high, COLOR_MAP.critical],
+            borderColor: '#fff',
+            borderWidth: 2
+          }]
+        },
+        options: animationOptions
+      });
+    }
 
-  const statusChart = document.getElementById('statusChart');
-  if (statusChart) {
-    destroyExistingChart('statusChart');
-    const statusLabels = STATUS_DATA.map(item => item.status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()));
-    const statusCounts = STATUS_DATA.map(item => item.count);
-    new Chart(statusChart, {
-      type: 'pie',
-      data: {
-        labels: statusLabels,
-        datasets: [{
-          data: statusCounts,
-          backgroundColor: [COLOR_MAP.success, COLOR_MAP.warning, COLOR_MAP.primary, COLOR_MAP.neutralDark],
-          borderColor: '#fff',
-          borderWidth: 2
-        }]
-      },
-      options: animationOptions
-    });
-  }
-
+    const statusChart = document.getElementById('statusChart');
+    if (statusChart) {
+      destroyExistingChart('statusChart');
+      const statusLabels = STATUS_DATA.map(item => item.status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()));
+      const statusCounts = STATUS_DATA.map(item => item.count);
+      new Chart(statusChart, {
+        type: 'pie',
+        data: {
+          labels: statusLabels,
+          datasets: [{
+            data: statusCounts,
+            backgroundColor: [COLOR_MAP.open, COLOR_MAP.in_progress, COLOR_MAP.closed],
+            borderColor: '#fff',
+            borderWidth: 2
+          }]
+        },
+        options: animationOptions
+      });
+    }
+    
   const timeTrendChart = document.getElementById('timeTrendChart');
   if (timeTrendChart) {
     destroyExistingChart('timeTrendChart');

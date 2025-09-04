@@ -205,9 +205,7 @@ class TicketForm(forms.ModelForm):
             'brts_unit': forms.Select(attrs={'class': 'form-control'}),
             'problem_category': forms.Select(attrs={'class': 'form-control'}),
             'terminal': forms.Select(attrs={'class': 'form-control'}),
-            #'priority': forms.Select(attrs={'class': 'form-control'}),
             'status': forms.Select(attrs={'class': 'form-control'}),
-            #'responsible': forms.Select(attrs={'class': 'form-control'})
         }
     # Override to make them required and visible
     customer = forms.ModelChoiceField(queryset=Customer.objects.all(), required=True)

@@ -134,71 +134,20 @@ h1 {
     padding: 20px;
 }
 
-/* Pagination */
-.pagination {
-    margin-top: 20px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 12px;
-    flex-wrap: wrap;
-}
-
-.page-btn {
-    padding: 8px 14px;
-    background-color: #123692;
-    color: #fff;
-    text-decoration: none;
-    border-radius: 6px;
-    font-size: 0.9rem;
-    transition: background 0.3s ease;
-}
-
-.page-btn:hover {
-    background-color: #0d285f;
-}
-
-.page-info {
-    font-size: 0.9rem;
-    font-weight: 500;
-    color: #333;
-}
-
 /* Responsive Design */
 @media (max-width: 768px) {
-    .ticket-table-container {
-        overflow-x: auto;
-    }
-
     .ticket-table th,
     .ticket-table td {
-        font-size: 0.85rem;
-        padding: 8px 10px;
-        white-space: nowrap;
+        padding: 10px;
+        font-size: 0.9rem;
     }
 
-    .search-form {
-        flex-direction: column;
-        gap: 10px;
-        max-width: 100%;
+    h1 {
+        font-size: 1.8rem;
+        margin: 20px 0;
     }
 
-    .search-bar {
-        margin-right: 0;
-        width: 100%;
-    }
-
-    .search-button {
-        width: 100%;
-    }
-
-    .pagination {
-        flex-direction: column;
-        gap: 8px;
-    }
-
-    .page-btn, .page-info {
-        width: 100%;
-        text-align: center;
+    .ticket-list-container {
+        padding: 15px;
     }
 }

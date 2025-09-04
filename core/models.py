@@ -285,12 +285,22 @@ class Report(models.Model):
     def download_url(self):
         return self.file.url
 
+class UserNotification(models.Model):
+    user       = models.ForeignKey(User, on_delete=models.CASCADE, related_name="notifications")
+    ticket     = models.ForeignKey("Ticket", on_delete=models.CASCADE, related_name="notifications")
+    is_read    = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["user", "ticket"], name="unique_user_ticket_notification")
+        ]
+    def __str__(self):
+        return f"Notification for {self.user.username} - Ticket #{self.ticket.id}"
 
 class Ticket(models.Model):
     STATUS_CHOICES = [
         ('open', 'Open'),
         ('in_progress', 'In Progress'),
-        ('resolved', 'Resolved'),
         ('closed', 'Closed'),
     ]
     PRIORITY_CHOICES = [
@@ -307,11 +317,11 @@ class Ticket(models.Model):
         ('Tier 4', 'Tier 4'),
     ]
 
-    #title = models.CharField(max_length=255, null=True)
     title = models.CharField(max_length=255, default="Unknown Issue")
     brts_unit = models.ForeignKey(Unit, on_delete=models.SET_NULL, null=True)
     problem_category = models.ForeignKey(ProblemCategory, on_delete=models.SET_NULL, null=True)
     terminal = models.ForeignKey(Terminal, on_delete=models.CASCADE, null=True, blank=True)
+    zone = models.ForeignKey('Zone', on_delete=models.SET_NULL, null=True, blank=True)
     description = models.TextField()
 
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE, null=False, blank=False)
@@ -361,17 +371,26 @@ class Ticket(models.Model):
         return self.title
     
     def save(self, *args, **kwargs):
+        if self.terminal and not self.zone:
+            self.zone = self.terminal.zone
+
         if self.problem_category and self.priority:
             from core.utilss.escalation import get_escalation_guidance
             guidance = get_escalation_guidance(self.problem_category.name, self.priority)
             self.escalation_type = guidance['escalation_type']
             self.escalation_action = guidance['escalation_action']
-            self.current_escalation_level = guidance['escalation_tier']
-            
-        if not self.priority:  
-            self.priority = determine_priority(self.problem_category.name if self.problem_category else "", self.title, self.description)
-        
-        super().save(*args, **kwargs) 
+
+            if not self.current_escalation_level:
+                self.current_escalation_level = guidance['escalation_tier']
+
+        if not self.priority:
+            self.priority = determine_priority(
+                self.problem_category.name if self.problem_category else "",
+                self.title,
+                self.description
+            )
+
+        super().save(*args, **kwargs)
 
 class EscalationHistory(models.Model):
         
@@ -397,13 +416,20 @@ class TicketComment(models.Model):
 
     def __str__(self):
         return f"{self.ticket.id}" - {self.created_by} 
-    
+
 class ActivityLog(models.Model):
     ticket = models.ForeignKey(Ticket, on_delete=models.CASCADE)
-    action = models.CharField(max_length=200)  
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)  
     timestamp = models.DateTimeField(auto_now_add=True)
-    #details = models.TextField(null=True, blank=True)  # Extra details, e.g. the comment added
+    action = models.CharField(max_length=1000)
 
-    def __str__(self):
-        return f'{self.ticket} - {self.action}'   
+
+    class Meta:
+        ordering = ['-timestamp']
+        indexes = [
+            models.Index(fields=['ticket', 'timestamp']),
+        ]
+
+
+    def _str_(self):
+        return f'{self.ticket.title if self.ticket else "Unknown Ticket"} - {self.action}' 
